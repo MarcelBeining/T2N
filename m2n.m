@@ -394,6 +394,17 @@ if params.changed.basic || params.changed.lib || params.changed.morph     %rewri
     fprintf(nfile,'f.close()\n');
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Load standard libraries *****\n');
+    if isfield(params,'nrnmech')
+        if iscell(params.nrnmech)
+            for c = 1:numel(params.nrnmech)
+                fprintf(nfile,sprintf('nrn_load_dll("lib_mech/%s")\n',params.nrnmech{c}));
+            end
+        else
+            fprintf(nfile,sprintf('nrn_load_dll("lib_mech/%s")\n',params.nrnmech));
+        end
+    else
+       fprintf(nfile,'nrn_load_dll("lib_mech/nrnmech.dll")\n');
+    end
     if params.openNeuron
         fprintf(nfile,'load_file("nrngui.hoc")\n');     % load the NEURON GUI
     else
