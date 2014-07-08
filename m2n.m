@@ -21,7 +21,7 @@ function [out, minterf,params,tree] = m2n(tree,params,neuron,path,options)
 %                       Automatic run is not executed and output files are only read if copied back
 %
 % This code is based on an idea of Johannes Kasper, a former group-member
-% in the morphological modelling lab Frankfurt.
+% in the morphological modeling lab Frankfurt.
 %
 % Copyright by marcel.beining@gmail.com, April 2014
 
@@ -157,7 +157,12 @@ nrn_exchfolder = regexprep(nrn_exchfolder,'\\','/');
 %      nrn_exchfolder = regexprep(nrn_exchfolder,'\\','/');
 % %      sshfrommatlabissue(params.server.connect,sprintf('mkdir -p %s',cl_exchfolder))
 %  end
-
+if ~isfield(params,'cvode')
+    params.cvode = false;
+end
+if ~isfield(params,'use_local_dt')
+    params.use_local_dt = 0;
+end
 if ~isfield(params,'openNeuron')
     params.openNeuron = false;
 end
@@ -229,6 +234,10 @@ if strfind(options,'-q')
     params.openNeuron = 0;
 end
 
+if params.cvode && isnumeric(params.dt)
+     warning ('m2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
+end
+     
 if nargin < 3 || isempty(neuron)
     if debug == 1
         %% individual input structure for debug
@@ -376,7 +385,7 @@ if params.changed.basic || params.changed.lib || params.changed.morph     %rewri
     
     fprintf(nfile,'// ***** Initialize Variables *****\n');
     fprintf(nfile,'objref f\n');
-    fprintf(nfile,'objref nil,strf,tvec,cell,cellList,syn,synList,stim,stimList,con,conList,rec,recList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList \n cellList = new List() \n stimList = new List() \n synList = new List() \n conList = new List() \n recList = new List()\n playtList = new List()\n playList = new List()\n APCList = new List()\n APCrecList = new List()\n APCconList = new List()\n');%[',numel(tree),']\n'  ;
+    fprintf(nfile,'objref nil,cvode,strf,tvec,cell,cellList,syn,synList,stim,stimList,con,conList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList \n cellList = new List() \n stimList = new List() \n synList = new List() \n conList = new List() \n recList = new List()\n rectList = new List()\n playtList = new List()\n playList = new List()\n APCList = new List()\n APCrecList = new List()\n APCconList = new List()\n cvode = new CVode()\n');%[',numel(tree),']\n'  ;
     
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Define some basic parameters *****\n');
@@ -387,11 +396,20 @@ if params.changed.basic || params.changed.lib || params.changed.morph     %rewri
         fprintf(nfile,'accuracy = 0\n' );
     end
     fprintf(nfile,'strf = new StringFunctions()\n');
-    fprintf(nfile,sprintf('tvec = new Vector()\ntvec.indgen(%f,%f,%f)\n',params.tstart,params.tstop,params.dt));
-    fprintf(nfile,'f = new File()\n');      %create a new filehandle
-    fprintf(nfile,sprintf('f.wopen("%s/tvec.dat")\n',nrn_exchfolder)  );  % open file for this time vector with write perm.
-    fprintf(nfile,sprintf('tvec.printf(f,"%%%%-20.10g")\n') );%"%%%%-20.10g")\n', c ) );    % print the data of the vector into the file
-    fprintf(nfile,'f.close()\n');
+    if params.cvode
+        fprintf(nfile,'cvode.active(1)\n');
+        %         fprintf(nfile,'cvode.minstep(0.0000001)\n');    % less does not make any sense
+        if params.use_local_dt
+            fprintf(nfile,'cvode.use_local_dt(1)\n');
+        end
+    else
+        fprintf(nfile,'cvode.active(0)\n');
+        fprintf(nfile,sprintf('tvec = new Vector()\ntvec.indgen(%f,%f,%f)\n',params.tstart,params.tstop,params.dt));
+        fprintf(nfile,'f = new File()\n');      %create a new filehandle
+        fprintf(nfile,sprintf('f.wopen("%s/tvec.dat")\n',nrn_exchfolder)  );  % open file for this time vector with write perm.
+        fprintf(nfile,sprintf('tvec.printf(f,"%%%%-20.10g")\n') );%"%%%%-20.10g")\n', c ) );    % print the data of the vector into the file
+        fprintf(nfile,'f.close()\n');
+    end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Load standard libraries *****\n');
     if isfield(params,'nrnmech')
@@ -417,8 +435,8 @@ if params.changed.basic || params.changed.lib || params.changed.morph     %rewri
     fprintf(nfile,'// ***** Load custom libraries *****\n');
     if ~isempty(params.custom)
         for c = 1:size(params.custom,1)
-            if strcmpi(params.custom{c,2},'start') && exist(fullfile(nrn_path,'lib_customroutines',params.custom{c,1}),'file')
-                fprintf(nfile,sprintf('load_file("%s/lib_customroutines/%s")\n',nrn_path,params.custom{c,1}));
+            if strcmpi(params.custom{c,2},'start') && exist(fullfile(nrn_path,'lib_custom',params.custom{c,1}),'file')
+                fprintf(nfile,sprintf('load_file("%slib_custom/%s")\n',nrn_path,params.custom{c,1}));
             end
         end
     end
@@ -463,11 +481,11 @@ if params.changed.basic || params.changed.lib || params.changed.morph     %rewri
     end
     fprintf(nfile,'make_nseg()\n');
     fprintf(nfile,'\n\n');
-    fprintf(nfile,'// ***** Include custom code *****\n');
+    fprintf(nfile,'// ***** Include prerun or standard run replacing custom code *****\n');
     if ~isempty(params.custom)
         for c = 1:size(params.custom,1)
-            if strcmpi(params.custom{c,2},'mid') && exist(fullfile(path,'lib_customroutines',params.custom{c,1}),'file')
-                fprintf(nfile,sprintf('load_file("%s/lib_customroutines/%s")\n',path,params.custom{c,1}));
+            if strcmpi(params.custom{c,2},'mid') && exist(fullfile(path,'lib_custom',params.custom{c,1}),'file')
+                fprintf(nfile,sprintf('load_file("%slib_custom/%s")\n',path,params.custom{c,1}));
 %                 if size(params.custom(c),2) > 2 && strcmpi(params.custom{c,3},'skiprun')
 %                     skiprun = true;
 %                 end
@@ -489,11 +507,11 @@ if params.changed.basic || params.changed.lib || params.changed.morph     %rewri
     fprintf(nfile,sprintf('xopen("%s/save_rec.hoc")\n',nrn_exchfolder) );
 
     fprintf(nfile,'\n\n');
-    fprintf(nfile,'// ***** Include further custom code *****\n');
+    fprintf(nfile,'// ***** Include finishing custom code *****\n');
     if ~isempty(params.custom)
         for c = 1:size(params.custom,1)
-            if strcmpi(params.custom{c,2},'end') && exist(fullfile(path,'lib_customroutines',params.custom{c,1}),'file')
-                fprintf(nfile,sprintf('load_file("%s/lib_customroutines/%s")\n',path,params.custom{c,1}));
+            if strcmpi(params.custom{c,2},'end') && exist(fullfile(path,'lib_custom',params.custom{c,1}),'file')
+                fprintf(nfile,sprintf('load_file("%slib_custom/%s")\n',path,params.custom{c,1}));
             end
         end
     end
@@ -968,14 +986,28 @@ if isfield(neuron,'record')
                     for n = 1:size(realrecs,1)
                         %             fprintf(ofile,sprintf('cellList.o(%d).allregobj.o(%d).sec {\n',t-1,minterf{t}(inode,2) ) );
                         fprintf(ofile,sprintf('rec = new Vector(%f)\n',(params.tstop-params.tstart)/params.dt+1 ) );    % create new recording vector
+                        if params.cvode
+                            fprintf(ofile,sprintf('rect = new Vector(%f)\n',(params.tstop-params.tstart)/params.dt+1 ) );    % create new recording vector
+                        end
                         if (strcmpi(neuron.record{t}{r,2},'i') || strcmpi(neuron.record{t}{r,2},'icur')) && ~isempty(neuron.stim{t})  %record from electrode, not from cell
                             fprintf(ofile,sprintf('rec.label("%s of %s electrode %d at location %06.4f of section %d of cell %d")\n', neuron.record{t}{r,2} , neuron.stim{t}{neuron.record{t}{r,1},2}, neuron.record{t}{r,1}, minterf{t}(find(minterf{t}(:,1) == neuron.stim{t}{neuron.record{t}{r,1},1},1,'first'),[4 2]) ,t-1) ); % label the vector for plotting
-                            fprintf(ofile,sprintf('rec.record(&stimList.o(%d).%s,tvec)\n',sum(stimnum(1:t-1))+n-1, neuron.record{t}{r,2} ) ); % record the parameter x at site y as specified in neuron.record
+                            if params.cvode
+                                fprintf(ofile,sprintf('cellList.o(%d).allregobj.o(%d).sec {cvode.record(&stimList.o(%d).%s,rec,rect)}\n',t-1, realrecs(n,1),sum(stimnum(1:t-1))+n-1, neuron.record{t}{r,2} ) ); % record the parameter x at site y as specified in neuron.record
+                            else
+                                fprintf(ofile,sprintf('rec.record(&stimList.o(%d).%s,tvec)\n',sum(stimnum(1:t-1))+n-1, neuron.record{t}{r,2} ) ); % record the parameter x at site y as specified in neuron.record
+                            end
                         else
                             fprintf(ofile,sprintf('rec.label("%s at location %06.4f of section %d of cell %d")\n', neuron.record{t}{r,2} , realrecs(n,2), realrecs(n,1) ,t-1) ); % label the vector for plotting
-                            fprintf(ofile,sprintf('rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),tvec)\n',t-1,realrecs(n,1), neuron.record{t}{r,2}, realrecs(n,2) ) ); % record the parameter x at site y as specified in neuron.record
+                            if params.cvode
+                                fprintf(ofile,sprintf('cellList.o(%d).allregobj.o(%d).sec {cvode.record(&%s(%f),rec,rect)}\n',t-1,realrecs(n,1), neuron.record{t}{r,2}, realrecs(n,2) ) ); % record the parameter x at site y as specified in neuron.record
+                            else
+                                fprintf(ofile,sprintf('rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),tvec)\n',t-1,realrecs(n,1), neuron.record{t}{r,2}, realrecs(n,2) ) ); % record the parameter x at site y as specified in neuron.record
+                            end
                         end
                         fprintf(ofile,'recList.append(rec)\n\n' );  %append recording vector to recList
+                        if params.cvode
+                             fprintf(ofile,'rectList.append(rect)\n\n' );  %append time recording vector to recList
+                        end
                         %                     fprintf(ofile,sprintf('rec = new Vector(%f)\n',params.tstop/params.dt ) );    % create new recording vector
                         %                     fprintf(ofile,sprintf('rec.label("%s at node %d of cell %d")\n', neuron.record{t}{r,2} , inode ,t-1) ); % label the vector for plotting
                         %                     fprintf(ofile,sprintf('rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f))\n',t-1,minterf{t}(inode,2), neuron.record{t}{r,2}, minterf{t}(inode,3) ) ); % record the parameter x at site y as specified in neuron.record
@@ -994,8 +1026,10 @@ if isfield(neuron,'record')
     end
     if params.changed.rec || params.changed.morph     %rewrite only if something has changed influencing this file
         fprintf(ofile, 'objref rec\n');
+        fprintf(ofile, 'objref rect\n');
     end
 end
+
 if params.changed.rec || params.changed.morph     %rewrite only if something has changed influencing this file
     fprintf(ofile,'\n\n');
     fprintf(ofile,'// ***** Define APCount sites *****\n');
@@ -1090,7 +1124,9 @@ if params.changed.rec || params.changed.morph     %rewrite only if something has
 end
 if isfield(neuron,'record')
     out.record = cell(1,numcell);   % initialize output of cn
-    c=0;
+    
+    c = 0;
+    
     for t = 1:numel(tree)
         if numel(neuron.record) >= t && ~isempty(neuron.record{t})  && ~isfield(tree{t},'artificial') 
             for r = 1: size(neuron.record{t},1)
@@ -1098,8 +1134,14 @@ if isfield(neuron,'record')
                     if params.changed.rec || params.changed.morph     %rewrite only if something has changed influencing this file
                         fprintf(ofile,'f = new File()\n');      %create a new filehandle
                         fprintf(ofile,sprintf('f.wopen("%s/%s")\n',nrn_exchfolder,sprintf('cell%d_sec%d_loc%06.4f_%s.dat',t-1, neuron.record{t}{r,3}(n,1), neuron.record{t}{r,3}(n,2), neuron.record{t}{r,2} ))  );  % open file for this vector with write perm.
-                        fprintf(ofile,sprintf('recList.o(%d).printf(f, "%%%%-20.10g")\n', c ) );    % print the data of the vector into the file
+                        fprintf(ofile,sprintf('recList.o(%d).printf(f, "%%%%-20.20g")\n', c ) );    % print the data of the vector into the file
                         fprintf(ofile,'f.close()\n');   %close the filehandle
+                        if params.cvode
+                            fprintf(ofile,'f = new File()\n');      %create a new filehandle
+                            fprintf(ofile,sprintf('f.wopen("%s/%s")\n',nrn_exchfolder,sprintf('cell%d_sec%d_loc%06.4f_%s_tvec.dat',t-1, neuron.record{t}{r,3}(n,1), neuron.record{t}{r,3}(n,2), neuron.record{t}{r,2} ))  );  % open file for this vector with write perm.
+                            fprintf(ofile,sprintf('rectList.o(%d).printf(f, "%%%%-20.20g")\n', c ) );    % print the data of the vector into the file
+                            fprintf(ofile,'f.close()\n');   %close the filehandle
+                        end
                     end
                     c= c+1;
                     noutfiles = noutfiles +1;
@@ -1376,18 +1418,31 @@ if strfind(options,'-cl')
     scptomatlab(params.server.connect,exchfolder,outputnames)
 end
 
-% load time vector from NEURON (necessary because of roundoff errors
-fn = fullfile(exchfolder,'tvec.dat');
-out.t = load(fn,'-ascii');  
-            
+if ~params.cvode
+    % load time vector from NEURON (necessary because of roundoff errors
+    fn = fullfile(exchfolder,'tvec.dat');
+    out.t = load(fn,'-ascii');
+end
+
 % load the results:
 for f = 1:noutfiles
     fn = fullfile(exchfolder,readfiles{f}{1});
     %         varargout{f} = load(fn,'-ascii');
+%      readfiles{noutfiles} = {sprintf('cell%d_sec%d_loc%06.4f_%s.dat',t-1, neuron.record{t}{r,3}(n,1), neuron.record{t}{r,3}(n,2), neuron.record{t}{r,2} ) , 'record' ,  t , neuron.record{t}{r,2} ,neuron.record{t}{r,3}(n,1) ,neuron.record{t}{r,3}(n,2) };
     switch readfiles{f}{2}
         case 'record'
             readfiles{f}{7} = load(fn,'-ascii');    %temporary loading of file. association is done below
-            
+            if params.cvode
+                if params.use_local_dt  % if yes, dt was different for each cell, so there is more than one time vector
+                    if numel(out.t) < readfiles{f}{3} || isempty(out.t{readfiles{f}{3}})
+                        out.t{readfiles{f}{3}} = load(strcat(fn(1:end-4),'_tvec',fn(end-3:end)),'-ascii');    %loading of one time vector file per cell (sufficient)
+                    end
+                elseif ~ isfield(out,'t')       % if it has been loaded in a previous loop
+                    out.t = load(strcat(fn(1:end-4),'_tvec',fn(end-3:end)),'-ascii');    %loading of one time vector file at all (sufficient)
+                end
+                out.t(find(diff(out.t,1) == 0) + 1) = out.t(find(diff(out.t,1) == 0) + 1) + 1e-10;  % add tiny time step to tvec to avoid problems with step functions
+                readfiles{f}{8} = load(strcat(fn(1:end-4),'_tvec',fn(end-3:end)),'-ascii');    %temporary loading of file. association is done below
+            end
             %                 out.(readfiles{f}{2}){readfiles{f}{3}}.(readfiles{f}{4}){readfiles{f}{5}} = load(fn,'-ascii');
         case 'APCtimes'
             out.(readfiles{f}{2}){readfiles{f}{3}}{readfiles{f}{4}} = load(fn,'-ascii');
