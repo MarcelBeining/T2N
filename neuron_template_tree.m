@@ -276,7 +276,7 @@ switch format
                         num2str(tree.Y (indy (te)),15),', ', ...
                         num2str(tree.Z (indy (te)),15),', ', ...
                         num2str(tree.D (indy (te)),15),')',  char(13), char(10)], 'char');
-                    minterf((counteri-1)*249+countero,:) = [indy(te) , sum(H1(1:find(uR == R(e))-1))+ie-1 , (te-1)/(length(indy)-1)];   %sectionref can be assessed with allregobj.o(minterf(x,2) %!%!
+                    minterf((counteri-1)*249+countero,:) = [indy(te)-1 , sum(H1(1:find(uR == R(e))-1))+ie-1 , (te-1)/(length(indy)-1)];   %sectionref can be assessed with allregobj.o(minterf(x,2) %!%!
                     %                     minterf((counteri-1)*249+countero,:) = [indy(te) , sprintf('%s[%d]',rnames{find(uR == R(e))},ie - 1) , (te-1)/(length(indy)-1)]; %alternatively sectionref is name of section (cell would be necessary)
                     
                     countero = countero + 1;
