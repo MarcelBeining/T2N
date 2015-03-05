@@ -145,6 +145,7 @@ end
 
 if exist(params.neuronpath,'file') ~= 2
     errordlg(sprintf('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath));
+    return
 end
 
 if isfield(params,'exchfolder')
@@ -1013,6 +1014,26 @@ for n = 1:numel(neuron)
                             rectype = 'stim';
                         end
                     end
+                    if strcmp(rectype,'node')
+                        Rs = tree{t}.rnames(tree{t}.R(neuron(n).record{t}{r,1}));       % all region names of trees nodes
+                        strs = regexp(neuron(n).record{t}{r,2},'_','split');            % split record string to get mechanism name
+                        if numel(strs)>1   %any(strcmp(strs{1},{'v','i'}))             % check if record variable is variable of a mechanism or maybe global
+                            ignorethese = false(1,numel(neuron(n).record{t}{r,1}));
+                            uRs = unique(Rs);
+                            str = '';
+                            for u = 1:numel(uRs)                                            % go through regions to be recorded
+                                if ~isfield(neuron.mech{t}.(uRs{u}),strs{end})               % check if this region also has the mechanism to be recorded
+                                    ignorethese = ignorethese | strcmp(uRs{u},Rs);           % if not ignore these region for recording
+                                    str = strcat(str,uRs{u},'/');
+                                end
+                            end
+                            if ~isempty(str)
+                                neuron(n).record{t}{r,1}(ignorethese) = [];                     % delete the recording nodes which should be ignored
+                                warndlg(sprintf('Region(s) "%s" of tree %d do not contain mechanism "%s" for recording. Recording in this region is ignored',str(1:end-1),t,strs{end}))
+                            end
+                        end
+                    end
+                    
                     
                     inode = zeros(numel(neuron(n).record{t}{r,1}),1);
                     for in = 1:numel(neuron(n).record{t}{r,1})
