@@ -1022,7 +1022,7 @@ for n = 1:numel(neuron)
                             uRs = unique(Rs);
                             str = '';
                             for u = 1:numel(uRs)                                            % go through regions to be recorded
-                                if ~isfield(neuron.mech{t}.(uRs{u}),strs{end})               % check if this region also has the mechanism to be recorded
+                                if (~isfield(neuron.mech{t},uRs{u}) || isfield(neuron.mech{t},uRs{u}) && ~isfield(neuron.mech{t}.(uRs{u}),strs{end})) &&  (~isfield(neuron.mech{t},'all') || isfield(neuron.mech{t},'all') && ~isfield(neuron.mech{t}.all,strs{end}))             % check if this region also has the mechanism to be recorded
                                     ignorethese = ignorethese | strcmp(uRs{u},Rs);           % if not ignore these region for recording
                                     str = strcat(str,uRs{u},'/');
                                 end
