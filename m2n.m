@@ -356,6 +356,13 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
                 Ra = max(Ra,neuron{n}.mech{t}.all.pas.Ra);
                 cm = max(cm,neuron{n}.mech{t}.all.pas.cm);
             end
+            fnames = fieldnames(neuron{n}.mech{t});
+            for f = 1:numel(fnames)
+                try
+                    Ra = max(Ra,neuron{n}.mech{t}.(fnames{f}).pas.Ra);
+                    cm = max(cm,neuron{n}.mech{t}.(fnames{f}).pas.cm);
+                end                
+            end
         end
         if cm > 0 && Ra > 0
             mech.all.pas.Ra = Ra;
@@ -691,26 +698,49 @@ for n = 1:numel(neuron)
                             fprintf(ofile,'// ***** Set specified range variables *****\n');
                             str = '';
                             [nix, ia] = unique(minterf{t}(:,[2,4]),'rows','stable');
-                            ia(numel(ia)+1) = numel(tree{t}.X)+1;
+                            ia(end+1) = numel(tree{t}.X)+1;
                             
-                            for r = 1:size(neuron{n}.mech{t}.range,1)
-                                if numel(neuron{n}.mech{t}.range{r,2}) == numel(tree{t}.X)
-                                    for in = 1:numel(ia)-1
-                                        if minterf{t}(ia(in),1) == 0   % accounting for added zero length section
-                                            thisval = neuron{n}.mech{t}.range{r,2}(1);  
-                                        else 
-                                            thisval = nanmean(neuron{n}.mech{t}.range{r,2}(minterf{t}(ia(in),1):minterf{t}(ia(in+1)-1,1)));
-                                        end
-                                        if ~isnan(thisval)
-                                            str = sprintf('%scellList.o(%d).allregobj.o(%d).sec {%s(%f) = %f}\n',str,t-1,minterf{t}(ia(in),2),neuron{n}.mech{t}.range{r,1},minterf{t}(ia(in),3),thisval);
+                            mechs = fieldnames(neuron{n}.mech{t}.range);
+                            
+                            for in = 1:numel(ia)-1
+                                if in == 1 || minterf{t}(ia(in),2) ~= minterf{t}(ia(in-1),2)
+                                    substr = sprintf('cellList.o(%d).allregobj.o(%d).sec {\n',t-1,minterf{t}(ia(in),2));
+                                    strflag = false;
+                                end
+                                
+                                for m = 1:numel(mechs)
+                                    vars = fieldnames(neuron{n}.mech{t}.range.(mechs{m}));
+                                    for r = 1:numel(vars)
+                                        if any(numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == [numel(tree{t}.X) 1])
+                                            if numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == 1
+                                                flag = true;
+                                            else
+                                                flag = false;
+                                            end
+                                            
+                                            if minterf{t}(ia(in),1) == 0 || flag   % accounting for added zero length section and if only one value given
+                                                thisval = neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(1);
+                                            else
+                                                thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{t}(ia(in),1):minterf{t}(ia(in+1)-1,1)));
+                                            end
+                                            if ~isnan(thisval)
+                                                strflag = true;
+                                                substr = sprintf('%s%s_%s(%f) = %f\n',substr,vars{r},mechs{m},minterf{t}(ia(in),3),thisval);
+                                            end
+                                            
+                                            
+                                        else
+                                            errordlg('Range variable definition should be a vector with same number of elements as tree has nodes')
+                                            return
                                         end
                                     end
-                                    
-                                else
-                                    errordlg('Range variable definition should be a vector with same number of elements as tree has nodes')
-                                    return
                                 end
-                                str = strcat(str,'\n');
+                                if minterf{t}(ia(in),2) ~= minterf{t}(ia(in+1),2)
+                                    if strflag
+                                        str = sprintf('%s%s}\n\n',str,substr);
+                                    end
+                                    %  str = strcat(str,'\n');
+                                end
                             end
                         else
                             errordlg('Setting range variables for artificial cells is invalid')
@@ -1424,41 +1454,51 @@ for n = 1:numel(neuron)
     
     if strfind(options,'-cl') %transfer files to server
         filenames = {interf_file,'init_cells.hoc','init_mech.hoc','init_pp.hoc','init_con.hoc','init_stim.hoc','init_rec.hoc','save_rec.hoc','init_play.hoc'}; %'init_pas.hoc',
-        localfilename = cell(0);
-        remotefilename = cell(0);
+        localfilename = cell(max(sum(structfun(@(x) x,params.changed))-1+params.changed.rec,params.changed.morph*10),1);
+        remotefilename = cell(max(sum(structfun(@(x) x,params.changed))-1+params.changed.rec,params.changed.morph*10),1);
+        m = 1;
         if params.changed.basic || params.changed.lib || params.changed.morph
-            localfilename{end+1} = fullfile(exchfolder,thisfolder,filenames{1});
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{1});
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{1});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{1});
+            m = m + 1;
         end
         if params.changed.morph
-            localfilename{end+1} = fullfile(exchfolder,thisfolder,filenames{2});
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{2});
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{2});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{2});
+            m = m + 1;
         end
         if  params.changed.mech || params.changed.morph
-            localfilename{end+1} = fullfile(exchfolder,thisfolder,filenames{4});
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{4});
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{4});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{4});
+            m = m + 1;
         end
         if params.changed.pp || params.changed.morph
-            localfilename{end+1} = fullfile(exchfolder,thisfolder,filenames{5});
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{5});
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{5});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{5});
+            m = m + 1;
         end
         if params.changed.con || params.changed.morph
-            localfilename{end+1} = fullfile(exchfolder,thisfolder,filenames{6});
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{6});
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{6});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{6});
+            m = m + 1;
         end
         if params.changed.stim || params.changed.morph
-            localfilename{end+1} = fullfile(exchfolder,thisfolder,filenames{7});
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{7});
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{7});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{7});
+            m = m + 1;
         end
         if params.changed.rec || params.changed.morph
-            localfilename{end+1} = fullfile(exchfolder,thisfolder,filenames{8});
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{8});
-            localfilename{end+1} = fullfile(exchfolder,thisfolder,filenames{9});
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{9});
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{8});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{8});
+            m = m + 1;
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{9});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{9});
+            m = m + 1;
         end
         if params.changed.play || params.changed.morph
-            localfilename{end+1} = fullfile(exchfolder,thisfolder,filenames{10});
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{10});
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{10});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{10});
+            m = m + 1;
         end
         if isempty(strfind(options,'-f'))
             %create job
@@ -1476,8 +1516,8 @@ for n = 1:numel(neuron)
             fprintf(ofile,'# start your program with mpirun with 5 processes\n');
             fprintf(ofile,sprintf('mpirun -np 5 nrngui -nobanner -nogui -mpi %s//%s \n',nrn_exchfolder,interf_file));
             fclose(ofile);
-            localfilename{end+1} = fullfile(exchfolder,'start_nrn.job');
-            remotefilename{end+1} = sprintf('%s/%s/%s',nrn_exchfolder,'start_nrn.job');
+            localfilename{m} = fullfile(exchfolder,'start_nrn.job');
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,'start_nrn.job');
         end
         params.server.connect = sftpfrommatlab(params.server.connect,localfilename,remotefilename);
     end
@@ -1708,7 +1748,7 @@ if noutfiles > 0 % if output is expected
                     errordlg(sprintf('Data "%s" not specified for output',readfiles{f}{2}))
             end
         else
-            out.error = 1;
+            out{readfiles{f}{1}}.error = 1;
         end
     end
     if isfield(neuron{n},'record')
