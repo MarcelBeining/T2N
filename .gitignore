@@ -3,3 +3,5 @@ old/m2n_exec.m
 old/m2n_write.m
 oldm2n.m
 m2n.asv
+*.tmp
+~$cumentation M2N.docx

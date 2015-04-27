@@ -172,6 +172,7 @@ else
     else
         nrn_exchfolder = exchfolder;
     end
+    params.exchfolder = 'm2n_exchange';
 end
 nrn_exchfolder = regexprep(nrn_exchfolder,'\\','/');
 
@@ -236,6 +237,7 @@ if isfield(params,'morphfolder')
     morphfolder = fullfile(params.path,params.morphfolder);
 else
     morphfolder = exchfolder;
+    params.morphfolder = exchfolder;
 end
 
 if strfind(options,'-cl')
@@ -289,6 +291,7 @@ minterf = cell(numcell,1);
 if strfind(options,'-d')
     tim = tic;
 end
+treename = cell(numel(tree),1);
 for t=1:numel(tree)     % make neuron templates from trees and save/get minterface file
     artflag = false;
     if ~isfield(tree{t},'artificial')
@@ -300,44 +303,44 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         artflag = true;
     end
     if isfield(params,'tname') && ischar(params.tname) && ~isempty(params.tname)
-        tname = params.tname;
+        treename{t} = params.tname;
         tflag = true;
     elseif artflag && ~isfield(tree{t},'name')
-        tname = tree{t}.artificial;
+        treename{t} = tree{t}.artificial;
         tflag = true;
     elseif isfield(tree{t},'name')
-        tname = tree{t}.name;
+        treename{t} = tree{t}.name;
         tflag = false;
     else
-        tname = 'Tree';
+        treename{t} = 'Tree';
         tflag = true;
     end
-    if any(strfind(tname,'%'))
-        badchars = badchars +numel(strfind(tname,'%'));
-        tname(strfind(tname,'%')) = [];
+    if any(strfind(treename{t},'%'))
+        badchars = badchars +numel(strfind(treename{t},'%'));
+        treename{t}(strfind(treename{t},'%')) = [];
     end
-    if any(strfind(tname,'.'))
-        badchars = badchars +numel(strfind(tname,'.'));
-        tname(strfind(tname,'.')) = '_';
+    if any(strfind(treename{t},'.'))
+        badchars = badchars +numel(strfind(treename{t},'.'));
+        treename{t}(strfind(treename{t},'.')) = '_';
     end
     
-    tname = strcat('cell_',tname);
+    treename{t} = strcat('cell_',treename{t});
     if tflag
-        tname = sprintf('%s_%d%d',tname,floor(t/10),rem(t,10));
+        treename{t} = sprintf('%s_%d%d',treename{t},floor(t/10),rem(t,10));
     end
     for n = 1:numel(neuron)
-        neuron{n}.cellIDs{t} = tname;  % save tree names as cellIDs for neuron
+        neuron{n}.cellIDs{t} = treename{t};  % save tree names as cellIDs for neuron
     end
     if strfind(options,'-cl')
-        [params.server.connect, answer] = sshfrommatlabissue(params.server.connect,sprintf('ls %s/%s.hoc',nrn_morphfolder,tname));
+        [params.server.connect, answer] = sshfrommatlabissue(params.server.connect,sprintf('ls %s/%s.hoc',nrn_morphfolder,treename{t}));
         fchk =  ~isempty(answer{1});
     else
-        fchk = exist(fullfile(morphfolder,sprintf('%s.hoc',tname)),'file');
+        fchk = exist(fullfile(morphfolder,sprintf('%s.hoc',treename{t})),'file');
     end
     
     if params.changed.morph || fchk == 0     % if morphology does not already exists
-        oname = tname;
-        [tname, nix, minterf{t}] = neuron_template_tree (tree{t}, fullfile(morphfolder,sprintf('%s.hoc',tname)), [], '-m');
+        oname = treename{t};
+        [nix, nix, minterf{t}] = neuron_template_tree (tree{t}, fullfile(morphfolder,sprintf('%s.hoc',treename{t})), [], '-m');
         if strfind(options,'-cl')   %transfer files to server
             params.server.connect = sftpfrommatlab(params.server.connect,fullfile(morphfolder,sprintf('%s.hoc',oname)),sprintf('%s/%s.hoc',nrn_morphfolder,oname));
             pause(0.1)
@@ -346,7 +349,7 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
             params.server.connect = sftpfrommatlab(params.server.connect,fullfile(morphfolder,sprintf('%s_minterf.mat',oname)),sprintf('%s/%s_minterf.mat',nrn_morphfolder,oname));
         end
     else
-        minterf{t} = load(fullfile(morphfolder,sprintf('%s_minterf.dat',tname)));
+        minterf{t} = load(fullfile(morphfolder,sprintf('%s_minterf.dat',treename{t})));
     end
     if ~artflag
         Ra = 0;
@@ -436,12 +439,12 @@ for n = 1:numel(neuron)
         fprintf(nfile,'// ***** This is a NEURON hoc file automatically created by the Matlab-NEURON interface. *****\n');
         fprintf(nfile,'// ***** Copyright by Marcel Beining and Johannes Kasper, Clinical Neuroanatomy, Goethe University Frankfurt*****\n\n');
         %initialize variables in NEURON
-        fprintf(nfile,'// General variables: i, CELLINDEX, debug_mode, accuracy\n');
+        fprintf(nfile,'// General variables: i, CELLINDEX, debug_mode, accuracy\n\n');
         
         fprintf(nfile,'// ***** Initialize Variables *****\n');
-        fprintf(nfile,'objref f\n');
-        fprintf(nfile,'objref nil,cvode,strf,tvec,cell,cellList,pp,ppList,stim,stimList,con,conList,nilcon,nilconList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList \n cellList = new List() // comprises all instances of cell templates, also artificial cells\n stimList = new List() // comprises all SEClamp/VClamp/IClamp electrodes introduced into any cell\n ppList = new List() // comprises all Point Processes of any cell\n conList = new List() // comprises all NetCon objects\n recList = new List() //comprises all recording vectors\n rectList = new List() //comprises all time vectors of recordings\n playtList = new List() //comprises all time vectors for play objects\n playList = new List() //comprises all vectors played into an object\n APCList = new List() //comprises all APC objects\n APCrecList = new List()\n APCconList = new List() //comprises all APC recording vectors\n cvode = new CVode() //the Cvode object\n');%[',numel(tree),']\n'  ;
-        
+        fprintf(nfile,'strdef tmpstr // temporary string object\nobjref f\n');
+        fprintf(nfile,'objref nil,cvode,strf,tvec,cell,cellList,pp,ppList,stim,stimList,con,conList,nilcon,nilconList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList,thissec,thisseg,thisval \n cellList = new List() // comprises all instances of cell templates, also artificial cells\n stimList = new List() // comprises all SEClamp/VClamp/IClamp electrodes introduced into any cell\n ppList = new List() // comprises all Point Processes of any cell\n conList = new List() // comprises all NetCon objects\n recList = new List() //comprises all recording vectors\n rectList = new List() //comprises all time vectors of recordings\n playtList = new List() //comprises all time vectors for play objects\n playList = new List() //comprises all vectors played into an object\n APCList = new List() //comprises all APC objects\n APCrecList = new List()\n APCconList = new List() //comprises all APC recording vectors\n cvode = new CVode() //the Cvode object\n thissec = new Vector() //for reading range variables\n thisseg = new Vector() //for reading range variables\n thisval = new Vector() //for reading range variables\n\n');%[',numel(tree),']\n'  ;
+        fprintf(nfile,sprintf('\nchdir("%s") // change directory to main simulation folder \n',nrn_path));
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Define some basic parameters *****\n');
         fprintf(nfile,sprintf('debug_mode = %d\n',debug) );
@@ -461,7 +464,7 @@ for n = 1:numel(neuron)
             fprintf(nfile,'io = cvode.active(0)\n');
             fprintf(nfile,sprintf('tvec = new Vector()\ntvec = tvec.indgen(%f,%f,%f)\n',params.tstart,params.tstop,params.dt));
             fprintf(nfile,'f = new File()\n');      %create a new filehandle
-            fprintf(nfile,sprintf('io = f.wopen("%s//%s//tvec.dat")\n',nrn_exchfolder,thisfolder)  );  % open file for this time vector with write perm.
+            fprintf(nfile,sprintf('io = f.wopen("%s//%s//tvec.dat")\n',params.exchfolder,thisfolder)  );  % open file for this time vector with write perm.
             fprintf(nfile,sprintf('io = tvec.printf(f,"%%%%-20.10g\\\\n")\n') );%"%%%%-20.10g")\n', c ) );    % print the data of the vector into the file
             fprintf(nfile,'io = f.close()\n');
         end
@@ -483,42 +486,58 @@ for n = 1:numel(neuron)
         else
             fprintf(nfile,'io = load_file("stdgui.hoc")\n');     % ony load other standard procedures
         end
-        fprintf(nfile, sprintf('io = xopen("%s/lib_genroutines/fixnseg.hoc")\n',nrn_path) );
-        fprintf(nfile, sprintf('io = xopen("%s/lib_genroutines/genroutines.hoc")\n',nrn_path) );
-        fprintf(nfile, sprintf('io = xopen("%s/lib_genroutines/pasroutines.hoc")\n',nrn_path) );
+        fprintf(nfile, sprintf('io = xopen("lib_genroutines/fixnseg.hoc")\n') );
+        fprintf(nfile, sprintf('io = xopen("lib_genroutines/genroutines.hoc")\n') );
+        fprintf(nfile, sprintf('io = xopen("lib_genroutines/pasroutines.hoc")\n') );
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Load custom libraries *****\n');
         if ~isempty(params.custom)
             for c = 1:size(params.custom,1)
                 if strcmpi(params.custom{c,2},'start') && exist(fullfile(nrn_path,'lib_custom',params.custom{c,1}),'file')
-                    fprintf(nfile,sprintf('io = load_file("%s/lib_custom/%s")\n',nrn_path,params.custom{c,1}));
+                    fprintf(nfile,sprintf('io = load_file("lib_custom/%s")\n',params.custom{c,1}));
                 end
             end
         end
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Load cell morphologies and create artificial cells *****\n');
         fprintf(nfile,sprintf('io = xopen("%s/%s/init_cells.hoc")\n',nrn_exchfolder,thisfolder) );
-        %     fprintf(nfile,'\n\n');
-        %     fprintf(nfile,'// ***** Load passive model *****\n');
-        %     fprintf(nfile,sprintf('io = xopen("%s/init_pas.hoc")\n',nrn_exchfolder) );
+        fprintf(nfile,'make_nseg()\n');
+        fprintf(nfile,sprintf('\n\nchdir("%s/%s") // change directory to folder of simulation #%d \n',params.exchfolder,thisfolder,n));
         fprintf(nfile,'\n\n');
+%         fprintf(nfile,'// ***** Load mechanisms *****\n');
+%         fprintf(nfile,sprintf('io = xopen("%s/%s/init_mech.hoc")\n',nrn_exchfolder,thisfolder) );
+%         fprintf(nfile,'\n\n');
+%         fprintf(nfile,'// ***** Place Point Processes *****\n');
+%         fprintf(nfile,sprintf('io = xopen("%s/%s/init_pp.hoc")\n',nrn_exchfolder,thisfolder) );
+%         fprintf(nfile,'\n\n');
+%         fprintf(nfile,'// ***** Define Connections *****\n');
+%         fprintf(nfile,sprintf('io = xopen("%s/%s/init_con.hoc")\n',nrn_exchfolder,thisfolder) );
+%         fprintf(nfile,'\n\n');
+%         fprintf(nfile,'// ***** Place stimulations *****\n');
+%         fprintf(nfile,sprintf('io = xopen("%s/%s/init_stim.hoc")\n',nrn_exchfolder,thisfolder) );
+%         fprintf(nfile,'\n\n');
+%         fprintf(nfile,'// ***** Define recording sites *****\n');
+%         fprintf(nfile,sprintf('io = xopen("%s/%s/init_rec.hoc")\n',nrn_exchfolder,thisfolder) );
+%         fprintf(nfile,'\n\n');
+%         fprintf(nfile,'// ***** Define vector play sites *****\n');
+%         fprintf(nfile,sprintf('io = xopen("%s/%s/init_play.hoc")\n',nrn_exchfolder,thisfolder) );
         fprintf(nfile,'// ***** Load mechanisms *****\n');
-        fprintf(nfile,sprintf('io = xopen("%s/%s/init_mech.hoc")\n',nrn_exchfolder,thisfolder) );
+        fprintf(nfile,'io = xopen("init_mech.hoc")\n' );
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Place Point Processes *****\n');
-        fprintf(nfile,sprintf('io = xopen("%s/%s/init_pp.hoc")\n',nrn_exchfolder,thisfolder) );
+        fprintf(nfile,'io = xopen("init_pp.hoc")\n' );
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Define Connections *****\n');
-        fprintf(nfile,sprintf('io = xopen("%s/%s/init_con.hoc")\n',nrn_exchfolder,thisfolder) );
+        fprintf(nfile,'io = xopen("init_con.hoc")\n' );
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Place stimulations *****\n');
-        fprintf(nfile,sprintf('io = xopen("%s/%s/init_stim.hoc")\n',nrn_exchfolder,thisfolder) );
+        fprintf(nfile,'io = xopen("init_stim.hoc")\n' );
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Define recording sites *****\n');
-        fprintf(nfile,sprintf('io = xopen("%s/%s/init_rec.hoc")\n',nrn_exchfolder,thisfolder) );
+        fprintf(nfile,'io = xopen("init_rec.hoc")\n' );
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Define vector play sites *****\n');
-        fprintf(nfile,sprintf('io = xopen("%s/%s/init_play.hoc")\n',nrn_exchfolder,thisfolder) );
+        fprintf(nfile,'io = xopen("init_play.hoc")\n' );
         
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Last settings *****\n');
@@ -534,7 +553,6 @@ for n = 1:numel(neuron)
         if numel(params.access) > 1 % if there is any non-artificial cell defined
             fprintf(nfile,sprintf('access cellList.o(%d).allregobj.o(%d).sec\n',params.access(1)-1,minterf{1}(params.access(2),2)) );
         end
-        fprintf(nfile,'make_nseg()\n');
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Include prerun or standard run replacing custom code *****\n');
         if ~isempty(params.custom)
@@ -559,7 +577,8 @@ for n = 1:numel(neuron)
         
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Write Data to Files *****\n');
-        fprintf(nfile,sprintf('io = xopen("%s/%s/save_rec.hoc")\n',nrn_exchfolder,thisfolder) );
+%         fprintf(nfile,sprintf('io = xopen("%s/%s/save_rec.hoc")\n',nrn_exchfolder,thisfolder) );
+        fprintf(nfile,'io = xopen("save_rec.hoc")\n' );
         
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Include finishing custom code *****\n');
@@ -573,7 +592,7 @@ for n = 1:numel(neuron)
         fprintf(nfile,'\n\n');
         fprintf(nfile,'// ***** Make Matlab notice end of simulation *****\n');
         fprintf(nfile,'f = new File()\n');       %create a new filehandle
-        fprintf(nfile,sprintf('io = f.wopen("%s/%s/%s")\n',nrn_exchfolder,thisfolder,'readyflag' ) );       % create the readyflag file
+        fprintf(nfile,'io = f.wopen("readyflag")\n' );       % create the readyflag file
         fprintf(nfile,'io = f.close()\n');   % close the filehandle
         if ~params.openNeuron
             fprintf(nfile,'quit()\n');  % exit NEURON if it was defined so in the parameters
@@ -593,7 +612,7 @@ for n = 1:numel(neuron)
             % load templates generated by neuron_template_tree, create one
             % instance of them and add them to the cellList
             
-            fprintf(ofile,sprintf('io = xopen("%s//%s.hoc")\n',nrn_morphfolder,neuron{n}.cellIDs{t}) );
+            fprintf(ofile,sprintf('io = xopen("%s//%s.hoc")\n',params.morphfolder,neuron{n}.cellIDs{t}) );
             fprintf(ofile, sprintf('cell = new %s()\n', neuron{n}.cellIDs{t}) );
             fprintf(ofile, 'io = cellList.append(cell)\n');
             
@@ -691,101 +710,119 @@ for n = 1:numel(neuron)
                             end
                         end
                     end
-                    
+%                     
+%                     if any(strcmpi(fields,'range')) 
+%                         if ~isfield(tree{t},'artificial')
+%                             fprintf(ofile,'\n\n');
+%                             fprintf(ofile,'// ***** Set specified range variables *****\n');
+%                             str = '';
+%                             [nix, ia] = unique(minterf{t}(:,[2,4]),'rows','stable');
+%                             ia(end+1) = numel(tree{t}.X)+1;
+%                             
+%                             mechs = fieldnames(neuron{n}.mech{t}.range);
+%                             
+%                             for in = 1:numel(ia)-1
+%                                 if in == 1 || minterf{t}(ia(in),2) ~= minterf{t}(ia(in-1),2)
+%                                     substr = sprintf('cellList.o(%d).allregobj.o(%d).sec {\n',t-1,minterf{t}(ia(in),2));
+%                                     strflag = false;
+%                                 end
+%                                 
+%                                 for m = 1:numel(mechs)
+%                                     vars = fieldnames(neuron{n}.mech{t}.range.(mechs{m}));
+%                                     for r = 1:numel(vars)
+%                                         if any(numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == [numel(tree{t}.X) 1])
+%                                             if numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == 1
+%                                                 flag = true;
+%                                             else
+%                                                 flag = false;
+%                                             end
+%                                             
+%                                             if minterf{t}(ia(in),1) == 0 || flag   % accounting for added zero length section and if only one value given
+%                                                 thisval = neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(1);
+%                                             else
+%                                                 thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{t}(ia(in),1):minterf{t}(ia(in+1)-1,1)));
+%                                             end
+%                                             if ~isnan(thisval)
+%                                                 strflag = true;
+%                                                 substr = sprintf('%s%s_%s(%f) = %f\n',substr,vars{r},mechs{m},minterf{t}(ia(in),3),thisval);
+%                                             end
+%                                             
+%                                             
+%                                         else
+%                                             errordlg('Range variable definition should be a vector with same number of elements as tree has nodes')
+%                                             return
+%                                         end
+%                                     end
+%                                 end
+%                                 if minterf{t}(ia(in),2) ~= minterf{t}(ia(in+1),2)
+%                                     if strflag
+%                                         str = sprintf('%s%s}\n\n',str,substr);
+%                                     end
+%                                     %  str = strcat(str,'\n');
+%                                 end
+%                             end
+%                         else
+%                             errordlg('Setting range variables for artificial cells is invalid')
+%                             return
+%                         end
+%                         fprintf(ofile,sprintf('%s\n\n',str));
+%                         
+%                     end
                     if any(strcmpi(fields,'range')) 
                         if ~isfield(tree{t},'artificial')
                             fprintf(ofile,'\n\n');
                             fprintf(ofile,'// ***** Set specified range variables *****\n');
-                            str = '';
-                            [nix, ia] = unique(minterf{t}(:,[2,4]),'rows','stable');
-                            ia(end+1) = numel(tree{t}.X)+1;
+%                             str = '';
+                            [nix, ia] = unique(minterf{t}(:,[2,4]),'rows','stable');  % find real segments in neuron simulation
+                            ia(end+1) = size(minterf{t},1)+1;   % add one entry
                             
                             mechs = fieldnames(neuron{n}.mech{t}.range);
-                            
-                            for in = 1:numel(ia)-1
-                                if in == 1 || minterf{t}(ia(in),2) ~= minterf{t}(ia(in-1),2)
-                                    substr = sprintf('cellList.o(%d).allregobj.o(%d).sec {\n',t-1,minterf{t}(ia(in),2));
-                                    strflag = false;
-                                end
-                                
-                                for m = 1:numel(mechs)
-                                    vars = fieldnames(neuron{n}.mech{t}.range.(mechs{m}));
-                                    for r = 1:numel(vars)
-                                        if any(numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == [numel(tree{t}.X) 1])
-                                            if numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == 1
-                                                flag = true;
-                                            else
-                                                flag = false;
-                                            end
-                                            
-                                            if minterf{t}(ia(in),1) == 0 || flag   % accounting for added zero length section and if only one value given
+                            for m = 1:numel(mechs)
+                                vars = fieldnames(neuron{n}.mech{t}.range.(mechs{m}));
+                                for r = 1:numel(vars)
+                                    if numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == numel(tree{t}.X)
+                                        allvals = zeros(3,0);
+                                        for in = 1:numel(ia)-1
+                                            if minterf{t}(ia(in),1) == 0  % accounting for added zero length section 
                                                 thisval = neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(1);
                                             else
-                                                thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{t}(ia(in),1):minterf{t}(ia(in+1)-1,1)));
+                                                thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{t}(ia(in),1):minterf{t}(ia(in+1)-1,1))); % the value is the mean of all tree nodes which are simulated by this segment
                                             end
                                             if ~isnan(thisval)
-                                                strflag = true;
-                                                substr = sprintf('%s%s_%s(%f) = %f\n',substr,vars{r},mechs{m},minterf{t}(ia(in),3),thisval);
+                                                allvals = cat(2,allvals,[minterf{t}(ia(in),[2,4]),thisval]');
                                             end
-                                            
-                                            
-                                        else
-                                            errordlg('Range variable definition should be a vector with same number of elements as tree has nodes')
-                                            return
                                         end
+                                        secname = sprintf('range_%s_%s_%s_sec.dat',treename{t},vars{r},mechs{m});
+                                        f = fopen(fullfile(exchfolder,thisfolder,secname) ,'wt'); 
+                                        fprintf(f,'%g\n',allvals(1,:));
+                                        fclose(f);
+                                        segname = sprintf('range_%s_%s_%s_seg.dat',treename{t},vars{r},mechs{m});
+                                        f = fopen(fullfile(exchfolder,thisfolder,segname) ,'wt'); 
+                                        fprintf(f,'%g\n',allvals(2,:));
+                                        fclose(f);
+                                        valname = sprintf('range_%s_%s_%s_val.dat',treename{t},vars{r},mechs{m});
+                                        f = fopen(fullfile(exchfolder,thisfolder,valname) ,'wt'); 
+                                        fprintf(f,'%g\n',allvals(3,:));
+                                        fclose(f);
+                                        fprintf(ofile,sprintf('set_range(%d,"%s","%s","%s","%s_%s")\n',t-1,secname,segname,valname,vars{r},mechs{m}));
+%                                         fprintf(ofile,'thissec.resize(0)\nthisseg.resize(0)\nthisval.resize(0)\n');
+%                                         fprintf(ofile,sprintf('f = new File()\nio = f.ropen("%s")\nio = thissec.scanf(f)\nio = f.close()\n',secname));
+%                                         fprintf(ofile,sprintf('f = new File()\nio = f.ropen("%s")\nio = thisseg.scanf(f)\nio = f.close()\n',segname));
+%                                         fprintf(ofile,sprintf('f = new File()\nio = f.ropen("%s")\nio = thisval.scanf(f)\nio = f.close()\n',valname));
+%                                         fprintf(ofile,sprintf('for c = 0, thissec.size()-1 {\ncellList.o(%d).allregobj.o(thissec.x(c)).sec     %s_%s(thisseg.x(c)) = thisval.x(c)\n}\n',t-1,vars{r},mechs{m}));
+                                    else
+                                        errordlg('Range variable definition should be a vector with same number of elements as tree has nodes')
+                                        return
+                                        
                                     end
-                                end
-                                if minterf{t}(ia(in),2) ~= minterf{t}(ia(in+1),2)
-                                    if strflag
-                                        str = sprintf('%s%s}\n\n',str,substr);
-                                    end
-                                    %  str = strcat(str,'\n');
                                 end
                             end
+                               
                         else
                             errordlg('Setting range variables for artificial cells is invalid')
                             return
                         end
-                        fprintf(ofile,sprintf('%s\n\n',str));
-                        
                     end
-                    %                 % now go through the rest
-                    %                 mechs = fields;
-                    %                 mechs = setdiff(mechs,tree{t}.rnames); %delete the Region definitions
-                    %                 mechs = setdiff(mechs,'all'); %delete the Region definitions   % everything remaining should be unused regions..
-                    %                 %CAUTION if regions have been defined which are not in the
-                    %                 %tree
-                    %                 if ~isempty(mechs)
-                    %                     flag=false;
-                    %                     for m = 1:numel(mechs) %loop through all (putative) mechanisms
-                    %                         if isstruct(neuron{n}.mech{t}.(mechs{m}))
-                    %                             continue %workaround to avoid not existent regions, everything else must be a mechanism!
-                    %                         end
-                    %                         if ~flag   %if it's the first time the loop works,write the forsec argument in neuron to go through all sections
-                    %                             str = sprintf('forsec cellList.o(%d).allreg {\n',t-1);
-                    %                             flag = true;
-                    %                         end
-                    %                         str = sprintf('%sinsert %s\n',str,mechs{m});   %neuron: insert this mechanism
-                    %
-                    % %                         if size(neuron{n}.mech{t}.(mechs{m}),2) == 2     %if parameter definition is no mby2 cell array,rearrange
-                    % %                             mechpars = neuron{n}.mech{t}.(mechs{m});
-                    % %                         else
-                    % %                             resh = size(neuron{n}.mech{t}.(mechs{m}),2)/2;
-                    % %                             mechpars = reshape(neuron{n}.mech{t}.(mechs{m}),resh,2)';
-                    % %                         end
-                    %                         if ~isempty(neuron{n}.mech{t}.(mechs{m}))
-                    %                             mechpar = fieldnames(neuron{n}.mech{t}.(mechs{m}));
-                    %                             for p = 1:numel(mechpar)         %loop through all mechnism parameters
-                    %                                 if strfind(mechs{m},'_ion')        %if mechanism is an ion, leave out mechanism suffix
-                    %                                     str = sprintf('%s%s = %g\n',str,mechpar{p},neuron{n}.mech{t}.(mechs{m}).(mechpar{p}));
-                    %                                 else
-                    %                                     str = sprintf('%s%s_%s = %g\n',str,mechpar{p},mechs{m},neuron{n}.mech{t}.(mechs{m}).(mechpar{p}));
-                    %                                 end
-                    %                             end
-                    %                         end
-                    %                     end
-                    %                     fprintf(ofile,sprintf('%s}\n\n',str));      %write the string and close section loop
-                    %                 end
                 end
             end
             if isfield(params,'celsius')
@@ -1664,7 +1701,9 @@ if noutfiles > 0 % if output is expected
                 waitbar(sum(simids>1)/numel(simids),w)
             else
                 errordlg('Waitbar was closed, m2n stopped continuing. If accidently, retry.')
-                out.error = 1;
+                for nn = n:numel(neuron)
+                    out{nn}.error = 1;
+                end
                 return
             end
         end
@@ -1896,7 +1935,7 @@ function minterf = make_nseg(tree,minterf,params,mech)
 %necessary to find nearest segment which will be calculated
 if ischar(params.nseg) && strcmpi(params.nseg,'dlambda')
     dodlambda = 1;
-    pl = PL_tree(tree);     % path length of tree..%%%%not anymore %%%%add zero because neuron_template_tree adds one tiny segment at root
+    pl = Pvec_tree(tree);  % path length of tree..%%%%not anymore %%%%add zero because neuron_template_tree adds one tiny segment at root
     D =  tree.D; %%%not anymore%%%%%add zero because neuron_template_tree adds one tiny segment at root
     freq = 100;
     %     if ~isempty(mech) && all(~isnan(mech))
@@ -1919,6 +1958,9 @@ for sec = 0:max(minterf(:,2))  %go through all sections
     
     secstart = find(minterf(:,2) == sec & minterf(:,3) == 0);
     secend = find(minterf(:,2) == sec & minterf(:,3) == 1);
+%     if minterf(secstart,1)~=0 && (tree.R(minterf(secstart,1)) == 1 || tree.R(minterf(secend,1)) == 1)
+%         'g'
+%     end
     if dodlambda
         secnodestart = minterf(secstart,1);
         if secnodestart == 0  % this means the current section is the tiny section added for neuron... this should have nseg = 1
@@ -1971,10 +2013,13 @@ for sec = 0:max(minterf(:,2))  %go through all sections
         end
         %         fprintf('%g\n',lambda_f)
         nseg = floor((L/(d_lambda*lambda_f)+0.9)/2)*2 + 1;     %!%!%! recheck this in NEURON book
+        
+%         nseg = min(nseg,secend-secstart); %!%!
         %         fprintf('%g\n',(L/(d_lambda*lambda_f)+0.9))
     else
         nseg = params.nseg;
     end
+    
     %     fprintf('%d\n',nseg);
     if isfield(params,'accuracy') && params.accuracy == 1 %triple nseg if accuracy is necessary
         nseg = 3 * nseg;
