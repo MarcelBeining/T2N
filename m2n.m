@@ -249,6 +249,11 @@ thesetrees = cell(numel(neuron),1);
 usestreesof = zeros(numel(neuron),1);
 flag = false;
 bool = cellfun(@(y) isfield(y,'tree'),neuron);
+nempty = cellfun(@isempty,neuron);
+if any(nempty)
+    errordlg(sprintf('The defined simulation #%d is empty, please check\n',find(nempty)))
+    return
+end
 switch sum(bool)
     case 1   % use that treeids defined in that one simulation
         if isnumeric(neuron{bool}.tree)
@@ -277,6 +282,7 @@ switch sum(bool)
         flag = true;
 end
 if flag
+    minterf = [];
     errordlg(sprintf('Error in neuron{%d}.tree, please check\n',n))
     return
 end
@@ -284,36 +290,6 @@ end
 minterf = cell(numel(tree),1);
 for t = 1:numel(tree)
     minterf{t} = load(fullfile(morphfolder,sprintf('%s_minterf.dat',tree{t}.NID)));
-    if ~isfield(tree{thesetrees{n}(t)},'artificial')
-        Ra = 0;
-        cm = 0;
-        for n = 1:numel(neuron)     % just try to find the parameter set with maximum Ra and cm levels and adjust nseg to that
-            x = find(thesetrees{n}==t,1,'first');
-            if ~isempty(x) 
-                if ~isnumeric(neuron{n}.mech)   % means it uses mech from another sim, so ignore it
-                    try
-                        Ra = max(Ra,neuron{n}.mech{x}.all.pas.Ra);
-                        cm = max(cm,neuron{n}.mech{x}.all.pas.cm);
-                    end
-                    
-                    fnames = fieldnames(neuron{n}.mech{x});
-                    for f = 1:numel(fnames)
-                        try
-                            Ra = max(Ra,neuron{n}.mech{x}.(fnames{f}).pas.Ra);
-                            cm = max(cm,neuron{n}.mech{x}.(fnames{f}).pas.cm);
-                        end
-                    end
-                end
-            end
-        end
-        if cm > 0 && Ra > 0
-            mech.all.pas.Ra = Ra;
-            mech.all.pas.cm = cm;
-            minterf{t} = make_nseg(tree{t},minterf{t},params,mech);
-        else
-            minterf{t} = make_nseg(tree{t},minterf{t},params,[]);
-        end
-    end
 end
 
 
@@ -343,6 +319,39 @@ end
 
 %% start writing hoc file
 for n = 1:numel(neuron)
+    for t = 1:numel(tree(thesetrees{n}))
+        if ~isfield(tree{thesetrees{n}(t)},'artificial')
+%             maxRa(t) = 0;
+%             maxcm(t) = 0;
+%             x = find(thesetrees{n}==t,1,'first');
+%             if ~isempty(x)
+%                 if ~isnumeric(neuron{n}.mech)   % means it uses mech from another sim, so ignore it
+%                     try
+%                         maxRa(t) = max(maxRa(t),neuron{n}.mech{x}.all.pas.Ra);
+%                         maxcm(t) = max(maxcm(t),neuron{n}.mech{x}.all.pas.cm);
+%                     end
+%                     
+%                     fnames = fieldnames(neuron{n}.mech{x});
+%                     for f = 1:numel(fnames)
+%                         try
+%                             maxRa(t) = max(maxRa(t),neuron{n}.mech{x}.(fnames{f}).pas.Ra);
+%                             maxcm(t) = max(maxcm(t),neuron{n}.mech{x}.(fnames{f}).pas.cm);
+%                         end
+%                     end
+%                 end
+%             end
+            x = getref(n,neuron,'mech');
+            
+%             if maxcm(t) > 0 && maxRa(t) > 0
+%                 mech.all.pas.Ra = maxRa(t);
+%                 mech.all.pas.cm = maxcm(t);
+%                 minterf{t} = make_nseg(tree{t},minterf{t},params,mech);
+%             else
+                minterf{t} = make_nseg(tree{thesetrees{n}(t)},minterf{thesetrees{n}(t)},params,neuron{x}.mech{thesetrees{n}(t)});
+%             end
+        end
+    end
+    
     if ~isfield(params,'access')
         access = [find(~cellfun(@(y) isfield(y,'artificial'),tree(thesetrees{n})),1,'first'), 1];      % std accessing first non-artificial tree at node 1
     else
@@ -380,7 +389,7 @@ for n = 1:numel(neuron)
     
     fprintf(nfile,'// ***** Initialize Variables *****\n');
     fprintf(nfile,'strdef tmpstr // temporary string object\nobjref f\n');
-    fprintf(nfile,'objref nil,cvode,strf,tvec,cell,cellList,pp,ppList,stim,stimList,con,conList,nilcon,nilconList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList,thissec,thisseg,thisval \n cellList = new List() // comprises all instances of cell templates, also artificial cells\n stimList = new List() // comprises all SEClamp/VClamp/IClamp electrodes introduced into any cell\n ppList = new List() // comprises all Point Processes of any cell\n conList = new List() // comprises all NetCon objects\n recList = new List() //comprises all recording vectors\n rectList = new List() //comprises all time vectors of recordings\n playtList = new List() //comprises all time vectors for play objects\n playList = new List() //comprises all vectors played into an object\n APCList = new List() //comprises all APC objects\n APCrecList = new List()\n APCconList = new List() //comprises all APC recording vectors\n cvode = new CVode() //the Cvode object\n thissec = new Vector() //for reading range variables\n thisseg = new Vector() //for reading range variables\n thisval = new Vector() //for reading range variables\n\n');%[',numel(tree),']\n'  ;
+    fprintf(nfile,'objref nil,cvode,strf,tvec,cell,cellList,pp,ppList,stim,stimList,con,conList,nilcon,nilconList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList,thissec,thisseg,thisval,maxRa,maxcm \n cellList = new List() // comprises all instances of cell templates, also artificial cells\n stimList = new List() // comprises all SEClamp/VClamp/IClamp electrodes introduced into any cell\n ppList = new List() // comprises all Point Processes of any cell\n conList = new List() // comprises all NetCon objects\n recList = new List() //comprises all recording vectors\n rectList = new List() //comprises all time vectors of recordings\n playtList = new List() //comprises all time vectors for play objects\n playList = new List() //comprises all vectors played into an object\n APCList = new List() //comprises all APC objects\n APCrecList = new List()\n APCconList = new List() //comprises all APC recording vectors\n cvode = new CVode() //the Cvode object\n thissec = new Vector() //for reading range variables\n thisseg = new Vector() //for reading range variables\n thisval = new Vector() //for reading range variables\n\n');% maxRa = new Vector() //for reading range variables\n maxcm = new Vector() //for reading range variables\n\n');%[',numel(tree),']\n'  ;
     fprintf(nfile,sprintf('\nchdir("%s") // change directory to main simulation folder \n',nrn_path));
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Define some basic parameters *****\n');
@@ -405,6 +414,10 @@ for n = 1:numel(neuron)
         fprintf(nfile,sprintf('io = tvec.printf(f,"%%%%-20.10g\\\\n")\n') );%"%%%%-20.10g")\n', c ) );    % print the data of the vector into the file
         fprintf(nfile,'io = f.close()\n');
     end
+% %     if maxRa(t) > 0 && maxcm(t) > 0
+%         fprintf(nfile,'maxRa = maxRa.append(%s0)\n',sprintf('%g,',maxRa(thesetrees{n})) );
+%         fprintf(nfile,'maxcm = maxcm.append(%s0)\n',sprintf('%g,',maxcm(thesetrees{n})) );
+% %     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Load standard libraries *****\n');
     if isfield(params,'nrnmech')
@@ -439,20 +452,20 @@ for n = 1:numel(neuron)
     fprintf(nfile,'// ***** Load cell morphologies and create artificial cells *****\n');
     fprintf(nfile,sprintf('io = xopen("%s/%s/init_cells.hoc")\n',nrn_exchfolder,sprintf('sim%d',usestreesof(n)))); % das passt so!
     
-    fprintf(nfile,'make_nseg()\n');
     fprintf(nfile,sprintf('\n\nchdir("%s/%s") // change directory to folder of simulation #%d \n',params.exchfolder,thisfolder,n));
     fprintf(nfile,'\n\n');
     
     x = getref(n,neuron,'mech');
     if ~isnan(x)
-        fprintf(nfile,'// ***** Load mechanisms *****\n');
+        fprintf(nfile,'// ***** Load mechanisms and adjust nseg *****\n');
         if x~=n
             fprintf(nfile,sprintf('io = load_file("%s/%s/init_mech.hoc")\n',nrn_exchfolder,sprintf('sim%d',neuron{n}.mech)) );
         else
             fprintf(nfile,'io = xopen("init_mech.hoc")\n' );
         end
+        fprintf(nfile,'\n\n');
     end
-    fprintf(nfile,'\n\n');
+    
     
     x = getref(n,neuron,'pp');
     if ~isnan(x)
@@ -462,9 +475,8 @@ for n = 1:numel(neuron)
         else
             fprintf(nfile,'io = xopen("init_pp.hoc")\n' );
         end
+        fprintf(nfile,'\n\n');
     end
-    fprintf(nfile,'\n\n');
-    
     
     x = getref(n,neuron,'con');
     if ~isnan(x)
@@ -474,8 +486,9 @@ for n = 1:numel(neuron)
         else
             fprintf(nfile,'io = xopen("init_con.hoc")\n' );
         end
+        fprintf(nfile,'\n\n');
     end
-    fprintf(nfile,'\n\n');
+    
     
     x = getref(n,neuron,'stim');
     if ~isnan(x)
@@ -485,8 +498,9 @@ for n = 1:numel(neuron)
         else
             fprintf(nfile,'io = xopen("init_stim.hoc")\n' );
         end
+        fprintf(nfile,'\n\n');
     end
-    fprintf(nfile,'\n\n');
+    
     
     x = getref(n,neuron,'record');
     x2 = getref(n,neuron,'APCount');
@@ -497,8 +511,9 @@ for n = 1:numel(neuron)
         else  % else write an own file
             fprintf(nfile,'io = xopen("init_rec.hoc")\n' );
         end
+        fprintf(nfile,'\n\n');
     end
-    fprintf(nfile,'\n\n');
+    
     
     x = getref(n,neuron,'play');
     if ~isnan(x)
@@ -598,7 +613,7 @@ for n = 1:numel(neuron)
         fprintf(ofile, 'objref cell\n');
         
         fprintf(ofile,'\n\n');
-        fprintf(ofile,'// ***** Define nseg for all cells *****\n');
+        fprintf(ofile,'// ***** Define nseg for all cells (called in init_mech) *****\n');
         fprintf(ofile, 'proc make_nseg() {\n');
         fprintf(ofile, 'for CELLINDEX = 0, cellList.count -1 {\n');
         fprintf(ofile, 'if (cellList.o(CELLINDEX).is_artificial == 0) {\n');
@@ -621,6 +636,7 @@ for n = 1:numel(neuron)
     end
 %% write init_mech.hoc
     if getref(n,neuron,'mech') == n     %rewrite only if mechanism is not taken from previous sim
+        rangestr = '';
         ofile = fopen(fullfile(exchfolder,thisfolder,'init_mech.hoc') ,'wt');   %open morph hoc file in write modus
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Insert mechanisms *****\n');
@@ -755,10 +771,9 @@ for n = 1:numel(neuron)
                     %                     end
                     if any(strcmpi(fields,'range'))
                         if ~isfield(tree{thesetrees{n}(t)},'artificial')
-                            fprintf(ofile,'\n\n');
-                            fprintf(ofile,'// ***** Set specified range variables *****\n');
                             %                             str = '';
                             [~, ia] = unique(minterf{thesetrees{n}(t)}(:,[2,4]),'rows','stable');  % find real segments in neuron simulation
+                            ia = ia(~isnan(minterf{thesetrees{n}(t)}(ia,4))); % remove start nodes of a segment (cause their value belongs to segment -1)
                             ia(numel(ia)+1) = size(minterf{thesetrees{n}(t)},1)+1;   % add one entry
                             
                             mechs = fieldnames(neuron{n}.mech{t}.range);
@@ -770,7 +785,17 @@ for n = 1:numel(neuron)
                                     if numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == numel(tree{thesetrees{n}(t)}.X)
                                         allvals = zeros(3,0);
                                         for in = 1:numel(ia)-1
-                                            thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{thesetrees{n}(t)}(ia(in),1)+(minterf{thesetrees{n}(t)}(ia(in),3)== 0):minterf{thesetrees{n}(t)}(ia(in+1)-1,1))); % the value is the mean of all tree nodes which are simulated by this segment, if first node is start of section, ignore this one, since it belongs to old region
+%                                             if numel(minterf{thesetrees{n}(t)}(ia(in),1):minterf{thesetrees{n}(t)}(ia(in+1)-1,1))  % check if there are zeros(root node)
+%                                                 ~all(minterf{thesetrees{n}(t)}(ia(in),1):minterf{thesetrees{n}(t)}(ia(in+1)-1,1))  % check if there are zeros(root node)
+%                                                 
+% %                                            
+% %                                             if isempty(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{thesetrees{n}(t)}(ia(in)+(minterf{thesetrees{n}(t)}(ia(in),3)== 0),1):minterf{thesetrees{n}(t)}(ia(in+1)-1,1))) && size(minterf{thesetrees{n}(t)},1) >= ia(in+1)
+%                                                 thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{thesetrees{n}(t)}(ia(in)+(minterf{thesetrees{n}(t)}(ia(in),3)== 0),1):minterf{thesetrees{n}(t)}(ia(in+1),1))); % if segment only consists of two nodes, attribute the range values of last node in segment also to first node (normally concerns only this nasty root node)
+%                                             else
+%                                                 thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{thesetrees{n}(t)}(ia(in)+(minterf{thesetrees{n}(t)}(ia(in),3)== 0),1):minterf{thesetrees{n}(t)}(ia(in+1)-1,1))); % the value is the mean of all tree nodes which are simulated by this segment, if first node is start of section, ignore this one, since it belongs to old region
+%                                             end
+                                                thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{thesetrees{n}(t)}(ia(in),1):minterf{thesetrees{n}(t)}(ia(in+1)-1,1))); % the value is the mean of all tree nodes which are simulated by this segment, if first node is start of section, ignore this one, since it belongs to old region
+
                                             if ~isnan(thisval)
                                                 allvals = cat(2,allvals,[minterf{thesetrees{n}(t)}(ia(in),[2,4]),thisval]');
                                             end
@@ -789,7 +814,8 @@ for n = 1:numel(neuron)
                                         f = fopen(fullfile(exchfolder,thisfolder,valname) ,'Wt');
                                         fprintf(f,'%g\n',allvals(3,:));
                                         fclose(f);
-                                        fprintf(ofile,sprintf('set_range(%d,"%s","%s","%s","%s_%s")\n',t-1,secname,segname,valname,vars{r},mechs{m}));
+%                                         fprintf(ofile,sprintf('set_range(%d,"%s","%s","%s","%s_%s")\n',t-1,secname,segname,valname,vars{r},mechs{m}));
+                                        rangestr = sprintf('%sset_range(%d,"%s","%s","%s","%s_%s")\n',rangestr,t-1,secname,segname,valname,vars{r},mechs{m});  
                                         % %                                         fprintf(ofile,'thissec.resize(0)\nthisseg.resize(0)\nthisval.resize(0)\n');
                                         % %                                         fprintf(ofile,sprintf('f = new File()\nio = f.ropen("%s")\nio = thissec.scanf(f)\nio = f.close()\n',secname));
                                         % %                                         fprintf(ofile,sprintf('f = new File()\nio = f.ropen("%s")\nio = thisseg.scanf(f)\nio = f.close()\n',segname));
@@ -822,6 +848,15 @@ for n = 1:numel(neuron)
                         end
                     end
                 end
+            end
+            fprintf(ofile,'\n\n');
+            fprintf(ofile,'// ***** Now adjust number of segments *****\n');
+            fprintf(ofile,'make_nseg()\n');
+            if ~isempty(rangestr)
+                fprintf(ofile,'\n\n');
+                fprintf(ofile,'// ***** Set specified range variables *****\n');
+                fprintf(ofile,rangestr);
+                fprintf(ofile,'\n\n');
             end
             if isfield(params,'celsius')
                 fprintf(ofile,'\n\nobjref q10\nq10 = new Temperature()\n' ) ;
@@ -1695,6 +1730,7 @@ if noutfiles > 0 % if output is expected
                 for nn = n:numel(neuron)
                     out{nn}.error = 1;
                 end
+                fclose all;
                 return
             end
         end
@@ -1926,15 +1962,10 @@ function minterf = make_nseg(tree,minterf,params,mech)
 %necessary to find nearest segment which will be calculated
 if ischar(params.nseg) && strcmpi(params.nseg,'dlambda')
     dodlambda = 1;
-    pl = Pvec_tree(tree);  % path length of tree..%%%%not anymore %%%%add zero because neuron_template_tree adds one tiny segment at root
-    D =  tree.D; %%%not anymore%%%%%add zero because neuron_template_tree adds one tiny segment at root
+    pl = Pvec_tree(tree);  % path length of tree..
+    D =  tree.D; 
     freq = 100;
-    %     if ~isempty(mech) && all(~isnan(mech))
-    %         Ra = pas(2);
-    %         cm = pas(1);
-    %     elseW
-    %
-    %     end
+
     if isfield(params,'d_lambda')
         d_lambda = params.d_lambda;
     else
@@ -1948,10 +1979,8 @@ end
 for sec = 0:max(minterf(:,2))  %go through all sections
     
     secstart = find(minterf(:,2) == sec & minterf(:,3) == 0);
-    secend = find(minterf(:,2) == sec & minterf(:,3) == 1);
-    %     if minterf(secstart,1)~=0 && (tree.R(minterf(secstart,1)) == 1 || tree.R(minterf(secend,1)) == 1)
-    %         'g'
-    %     end
+    secend = find(minterf(:,2) == sec & minterf(:,3) == 1,1,'last');
+
     if dodlambda
         secnodestart = minterf(secstart,1);
         if secnodestart == 0  % this means the current section is the tiny section added for neuron... this should have nseg = 1
@@ -1961,9 +1990,9 @@ for sec = 0:max(minterf(:,2))  %go through all sections
             flag = false;
         end
         secnodestart2 = minterf(secstart+1,1);
-        if isfield(tree,'rnames') && isfield(mech,tree.rnames{tree.R(secnodestart)}) && isfield(mech.(tree.rnames{tree.R(secnodestart)}),'pas') && all(isfield(mech.(tree.rnames{tree.R(secnodestart)}).pas,{'Ra','cm'}))
-            Ra = mech.(tree.rnames{tree.R(secnodestart)}).pas.Ra;
-            cm = mech.(tree.rnames{tree.R(secnodestart)}).pas.cm;
+        if isfield(tree,'rnames') && isfield(mech,tree.rnames{tree.R(secnodestart2)}) && isfield(mech.(tree.rnames{tree.R(secnodestart2)}),'pas') && all(isfield(mech.(tree.rnames{tree.R(secnodestart2)}).pas,{'Ra','cm'}))
+            Ra = mech.(tree.rnames{tree.R(secnodestart2)}).pas.Ra;
+            cm = mech.(tree.rnames{tree.R(secnodestart2)}).pas.cm;
         elseif isfield(mech,'all') && isfield(mech.all,'pas') && all(isfield(mech.all.pas,{'Ra','cm'}))
             Ra = mech.all.pas.Ra;
             cm = mech.all.pas.cm;
@@ -2005,24 +2034,48 @@ for sec = 0:max(minterf(:,2))  %go through all sections
         %         fprintf('%g\n',lambda_f)
         nseg = floor((L/(d_lambda*lambda_f)+0.9)/2)*2 + 1;     %!%!%! recheck this in NEURON book
         
+%         nseg = floor((ceil(L)/(d_lambda*lambda_f)+0.9)/2)*2 + 1;
+%         if nseg ~= nseg2
+%             'g'
+%         end
         %         nseg = min(nseg,secend-secstart); %!%!
         %         fprintf('%g\n',(L/(d_lambda*lambda_f)+0.9))
     else
         nseg = params.nseg;
     end
+    display(sprintf('nseg = %d, %s, tree %s,L = %d,Ra = %d, cm = %d\n',nseg,tree.rnames{tree.R(minterf(secend))},tree.name,L,Ra,cm))
     
     %     fprintf('%d\n',nseg);
     if isfield(params,'accuracy')
-        if params.accuracy == 2 || (params.accuracy == 1 && (~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'axon')) || ~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'soma'))) ) %triple nseg if accuracy is necessary
+        if params.accuracy == 2 || (params.accuracy == 1 && (~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'axon')) || ~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'soma'))) ) %triple nseg if accuracy is necessary also finds axonh
             nseg = 3 * nseg;
         end
     end
+    
     %     fprintf('%d\n',nseg)
     pos = (2 * (1:nseg) - 1) / (2*nseg);    %calculate positions
-    for in = secstart:secend
-        [~,ind] = min(abs(minterf(in,3) - pos));   %find position to node which is closest to next segment location
-        minterf(in,4) = pos(ind);                % hier evt ausnahme für anfang und ende der section (=0)
+    fac = (secend-secstart+1)/nseg;
+    if fac > 1   % more tree nodes than segments
+        for in = secstart+1:secend  %!%!%! secstart+1 because first segment gets NaN
+            [~,ind] = min(abs(minterf(in,3) - pos));   %find position to node which is closest to next segment location
+            minterf(in,4) = pos(ind);                % hier evt ausnahme für anfang und ende der section (=0)
+        end
+        
+    else     % more segments than tree nodes, so one has to add entries in minterf
+        dupl = 0;
+        for p = 1:numel(pos)
+%             [~,ind] = min(abs(minterf(secstart+1:secend+dupl,3) - pos(p)));   %find position to node which is closest to next segment location %!%!%!
+            ind = find(min(unique(abs(minterf(secstart+1:secend+dupl,3) - pos(p)))) == abs(minterf(secstart+1:secend+dupl,3) - pos(p)),1,'last'); % might be more cpu-consuming but attaches next pos in right order
+            if minterf(secstart+1+ind-1,4) ~= 0
+                minterf = minterf([1:secstart+1+ind-1,secstart+1+ind-1:end],:); %duplicate entry
+                minterf(secstart+1+ind,4) = pos(p);  %overwrite duplicated entry with new value
+                dupl = dupl +1;
+            else
+                minterf(secstart+1+ind-1,4) = pos(p);                % hier evt ausnahme für anfang und ende der section (=0)
+            end
+        end        
     end
+    minterf(secstart,4) = NaN;
 end
 
 end

@@ -209,6 +209,8 @@ switch format
                 char(13), char(10)], 'char');
             fwrite (neuron, ['public alladendreg', ...
                 char(13), char(10)], 'char');
+            fwrite (neuron, ['public allaxonreg', ...
+                char(13), char(10)], 'char');
             for ward = 1 : luR,
                 fwrite (neuron, ['public reg' rnames{ward}, ...
                     char(13), char(10)], 'char');
@@ -303,13 +305,7 @@ switch format
             end
             fwrite (neuron, ['}',                    char(13), char(10)], 'char');
             fwrite (neuron, ['',                     char(13), char(10)], 'char');
-            fwrite (neuron, ['objref allreg', ...
-                char(13), char(10)], 'char');
-            fwrite (neuron, ['objref allregobj', ...
-                char(13), char(10)], 'char');
-            fwrite (neuron, ['objref alladendreg', ...
-                char(13), char(10)], 'char');
-            fwrite (neuron, ['objref sec', ...
+            fwrite (neuron, ['objref allreg, allregobj, alladendreg, allaxonreg, sec', ...
                 char(13), char(10)], 'char');
             for ward = 1 : luR,
                 fwrite (neuron, ['objref reg' rnames{ward}, ...
@@ -323,6 +319,8 @@ switch format
                 char(13), char(10)], 'char');
             fwrite (neuron, ['  alladendreg = new SectionList()', ...
                 char(13), char(10)], 'char');
+            fwrite (neuron, ['  allaxonreg = new SectionList()', ...
+                char(13), char(10)], 'char');
             for ward = 1 : luR,
                 fwrite (neuron, ['  reg' rnames{ward} ' = new SectionList()', ...
                     char(13), char(10)], 'char');
@@ -335,13 +333,12 @@ switch format
                 if  strfind (rnames{ward}, 'adend')
                     fwrite (neuron, ['    alladendreg.append()',   char(13), char(10)], 'char');
                 end
+                if  strfind (rnames{ward}, 'axon')
+                    fwrite (neuron, ['    allaxonreg.append()',   char(13), char(10)], 'char');
+                end
                 fwrite (neuron, ['  }',                               char(13), char(10)], 'char');
             end
-%             fwrite (neuron, ['  forall { sec = new SectionRef()', char(13), char(10)], 'char');
-%             fwrite (neuron, ['    allregobj.append(sec)',   char(13), char(10)], 'char');
-%             fwrite (neuron, ['    allreg.append()',   char(13), char(10)], 'char');
-%             fwrite (neuron, ['}',                   char(13), char(10)], 'char');
-%             
+
             fwrite (neuron, ['}',                   char(13), char(10)], 'char');
             fwrite (neuron, ['proc geom() {',       char(13), char(10)], 'char');
             fwrite (neuron, ['}',                   char(13), char(10)], 'char');
