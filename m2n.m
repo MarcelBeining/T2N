@@ -1,4 +1,4 @@
-function [out, minterf,params,tree] = m2n(tree,params,neuron,options)
+function [out, origminterf,params,tree] = m2n(tree,params,neuron,options)
 % function m2n ("Matlab to Neuron") to generate and execute a .hoc-file in NEURON
 % with the parameters in the vector <params> and <neuron>;
 % The output-file(s) of the NEURON function are read by cn and transferred
@@ -287,9 +287,9 @@ if flag
     return
 end
 %
-minterf = cell(numel(tree),1);
+origminterf = cell(numel(tree),1);
 for t = 1:numel(tree)
-    minterf{t} = load(fullfile(morphfolder,sprintf('%s_minterf.dat',tree{t}.NID)));
+    origminterf{t} = load(fullfile(morphfolder,sprintf('%s_minterf.dat',tree{t}.NID)));
 end
 
 
@@ -319,6 +319,9 @@ end
 
 %% start writing hoc file
 for n = 1:numel(neuron)
+    if strfind(options,'-d')
+        tim = tic;
+    end
     for t = 1:numel(tree(thesetrees{n}))
         if ~isfield(tree{thesetrees{n}(t)},'artificial')
 %             maxRa(t) = 0;
@@ -347,7 +350,7 @@ for n = 1:numel(neuron)
 %                 mech.all.pas.cm = maxcm(t);
 %                 minterf{t} = make_nseg(tree{t},minterf{t},params,mech);
 %             else
-                minterf{t} = make_nseg(tree{thesetrees{n}(t)},minterf{thesetrees{n}(t)},params,neuron{x}.mech{thesetrees{n}(t)});
+                minterf{thesetrees{n}(t)} = make_nseg(tree{thesetrees{n}(t)},origminterf{thesetrees{n}(t)},params,neuron{x}.mech{thesetrees{n}(t)});
 %             end
         end
     end
@@ -377,9 +380,7 @@ for n = 1:numel(neuron)
     end
     
     %% write interface hoc
-    if strfind(options,'-d')
-        tim = tic;
-    end
+
     nfile = fopen(fullfile(exchfolder,thisfolder,interf_file) ,'wt');   %open resulting hoc file in write modus
     
     fprintf(nfile,'// ***** This is a NEURON hoc file automatically created by the Matlab-NEURON interface. *****\n');
@@ -1342,9 +1343,9 @@ for n = 1:numel(neuron)
                 end
                 fprintf(ofile, 'objref APC\n');
                 fprintf(ofile, 'objref APCrec\n');
-%             end
-            fclose(ofile);
+                %             end
         end
+        fclose(ofile);
     elseif exist(fullfile(exchfolder,thisfolder,'init_rec.hoc'),'file')
         delete(fullfile(exchfolder,thisfolder,'init_rec.hoc'));
     end
@@ -1587,7 +1588,7 @@ for n = 1:numel(neuron)
     
     if strfind(options,'-d')
         tim = toc(tim);
-        fprintf(sprintf('HOC writing time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
+        fprintf(sprintf('Sim %d: HOC writing time: %g min %.2f sec\n',n,floor(tim/60),rem(tim,60)))
     end
 end
 
@@ -1846,18 +1847,19 @@ if noutfiles > 0 % if output is expected
                                         %the correct file for this node is searched in the
                                         %temporally loaded files and copied
                                         onlyrecords = cellfun(@(y) strcmpi(y{3},'node'),readfiles);   % don't know any more why that complicated but never change a running system^^
-                                        thisfile = find(cumsum(onlyrecords) == find(cellfun(@(y) n==y{1} & strcmpi(y{5},neuron{x}.record{t}{r,2}) & y{4} == t & y{6} == minterf{thesetrees{n}(t)}(inode,2) & y{7} == minterf{thesetrees{n}(t)}(inode,4) ,readfiles(onlyrecords))),1,'first');
+                                        thisfile = find(cumsum(onlyrecords) == find(cellfun(@(y) n==y{1} & strcmpi(y{5},neuron{x}.record{t}{r,2}) & y{4} == thesetrees{n}(t) & y{6} == minterf{thesetrees{n}(t)}(inode,2) & y{7} == minterf{thesetrees{n}(t)}(inode,4) ,readfiles(onlyrecords))),1,'first');
                                         out{n}.record{t}.(neuron{x}.record{t}{r,2}){neuron{x}.record{t}{r,1}(in)} = readfiles{thisfile}{8};
                                         % alternatively only give pointer and give temp
                                         % files as output, too...
+                                        
                                     end
                                 case 'pp'
                                     for in = 1:numel(neuron{x}.record{t}{r,1})
-                                        thisfile = find(cellfun(@(y) n==y{1} & any(strcmpi(y{3},{'pp','stim'})) & strcmpi(y{5},neuron{x}.record{t}{r,2}) & y{4} == t ,readfiles),1,'first');
+                                        thisfile = find(cellfun(@(y) n==y{1} & any(strcmpi(y{3},{'pp','stim'})) & strcmpi(y{5},neuron{x}.record{t}{r,2}) & y{4} == thesetrees{n}(t) ,readfiles),1,'first');
                                         out{n}.record{t}.(neuron{x}.record{t}{r,2}){neuron{x}.record{t}{r,1}(in)} = readfiles{thisfile}{8};
                                     end
                                 case 'artificial'
-                                    thisfile = find(cellfun(@(y) n==y{1} & strcmpi(y{3},'artificial') & strcmpi(y{5},neuron{x}.record{t}{r,2}) & y{4} == t ,readfiles),1,'first');
+                                    thisfile = find(cellfun(@(y) n==y{1} & strcmpi(y{3},'artificial') & strcmpi(y{5},neuron{x}.record{t}{r,2}) & y{4} == thesetrees{n}(t) ,readfiles),1,'first');
                                     out{n}.record{t}.(neuron{x}.record{t}{r,2}) = readfiles{thisfile}{8};
                             end
                             
@@ -1976,6 +1978,8 @@ else
     dodlambda = 0;
 end
 
+minterf(:,4) = 0;
+
 for sec = 0:max(minterf(:,2))  %go through all sections
     
     secstart = find(minterf(:,2) == sec & minterf(:,3) == 0);
@@ -2043,7 +2047,7 @@ for sec = 0:max(minterf(:,2))  %go through all sections
     else
         nseg = params.nseg;
     end
-    display(sprintf('nseg = %d, %s, tree %s,L = %d,Ra = %d, cm = %d\n',nseg,tree.rnames{tree.R(minterf(secend))},tree.name,L,Ra,cm))
+%     display(sprintf('nseg = %d, %s, tree %s,L = %d,Ra = %d, cm = %d\n',nseg,tree.rnames{tree.R(minterf(secend))},tree.name,L,Ra,cm))
     
     %     fprintf('%d\n',nseg);
     if isfield(params,'accuracy')
