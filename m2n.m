@@ -1774,6 +1774,9 @@ if noutfiles > 0 % if output is expected
     if isempty(strfind(options,'-q'))
         display('NEURON finished... loading data...')
     end
+    if ~isempty(strfind(options,'-w'))
+        close(w)
+    end
     if strfind(options,'-d')
         tim = tic;
     end
@@ -1792,6 +1795,9 @@ if noutfiles > 0 % if output is expected
     end
     
     %% Receive files from Neuron
+    if ~isempty(strfind(options,'-w'))
+        w = waitbar(0,'Loading files, please wait');
+    end
     for f = 1:noutfiles
         if simids(readfiles{f}{1}) == 2    % if there was no error during simulation
             fn = fullfile(exchfolder,sprintf('sim%d',readfiles{f}{1}),readfiles{f}{2});
@@ -1816,6 +1822,19 @@ if noutfiles > 0 % if output is expected
             end
         else
             out{readfiles{f}{1}}.error = 1;
+        end
+        if ~isempty(strfind(options,'-w'))
+            if ishandle(w)
+                waitbar(f/noutfiles*0.5,w);
+            else
+                errordlg('Waitbar was closed, m2n stopped continuing. If accidently, retry.')
+                for nn = n:numel(neuron)
+                    out{nn}.error = 1;
+                end
+                fclose all;
+                return
+            end
+            
         end
     end
     
@@ -1866,15 +1885,29 @@ if noutfiles > 0 % if output is expected
                             
                         end
                     end
+                    if ~isempty(strfind(options,'-w'))
+                        if ishandle(w)
+                            waitbar(0.5+n/numel(neuron)*t/numel(thesetrees{n}),w);
+                        else
+                            errordlg('Waitbar was closed, m2n stopped continuing. If accidently, retry.')
+                            for nn = n:numel(neuron)
+                                out{nn}.error = 1;
+                            end
+                            fclose all;
+                            return
+                        end
+                    end
                 end
             end
         end
+
+    end
+
+    if isempty(strfind(options,'-q'))
+        display('data sucessfully loaded')
     end
     if ~isempty(strfind(options,'-w'))
         close(w)
-    end
-    if isempty(strfind(options,'-q'))
-        display('data sucessfully loaded')
     end
     if strfind(options,'-d')
         tim = toc(tim);
