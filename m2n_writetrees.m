@@ -1,4 +1,10 @@
-function tree = m2n_writetrees(params,tree,options)
+function tree = m2n_writetrees(params,tree,options,savepath)
+% transforms the tree file into hoc code and also saves a interface file
+% for correct node-section assignment
+%
+% options
+% -cl: Cluster mode. Files are written to Server
+% removed -d: Debug mode. Some measures are shown
 
 if nargin < 3
     options = '';
@@ -36,9 +42,7 @@ end
 
 orderchanged = false;
 badchars = 0;
-if strfind(options,'-d')
-    tim = tic;
-end
+
 
 for t=1:numel(tree)     % make neuron templates from trees and save/get minterface file
     artflag = false;
@@ -50,18 +54,21 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
     else
         artflag = true;
     end
+    nonameflag = false;
     if isfield(params,'tname') && ischar(params.tname) && ~isempty(params.tname)
         treename = params.tname;
         tflag = true;
     elseif artflag && ~isfield(tree{t},'name')
         treename = tree{t}.artificial;
         tflag = true;
+        nonameflag = true;
     elseif isfield(tree{t},'name')
         treename = tree{t}.name;
         tflag = false;
     else
         treename = 'Tree';
         tflag = true;
+        nonameflag = true;
     end
     if any(strfind(treename,'%'))
         badchars = badchars +numel(strfind(treename,'%'));
@@ -71,8 +78,9 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         badchars = badchars +numel(strfind(treename,'.'));
         treename(strfind(treename,'.')) = '_';
     end
-    
-    treename = strcat('cell_',treename);
+    if numel(treename) < 5 || ~strcmp(treename(1:5),'cell_')
+        treename = strcat('cell_',treename);
+    end
     if tflag
         treename = sprintf('%s_%d%d',treename,floor(t/10),rem(t,10));
     end
@@ -94,20 +102,26 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
     end
     
     tree{t}.NID = treename;
+    if nonameflag
+        tree{t}.name = treename;
+    end
 end
 
-display('Please resave trees to have the NEURON ID in each tree')
-save_tree(tree);
-
+if nargin < 4
+    display('Please resave trees to have the NEURON ID in each tree')
+    save_tree(tree);
+else
+    save_tree(tree,savepath);
+end
 
 if badchars > 0
     %     warndlg(sprintf('Caution! %d bad chars had to be removed or replaced from the tree names since they cause writing errors! Please be sure to not use "%%" and "." in the names',badchars),'Bad characters removed');
 end
-if strfind(options,'-d')
-    tim = toc(tim);
-    fprintf(sprintf('Tree writing/reading time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
-end
+% if strfind(options,'-d')
+%     tim = toc(tim);
+%     fprintf(sprintf('Tree writing/reading time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
+% end
 
-if orderchanged
+if orderchanged && nargout == 0
     warndlg('Caution, the node order of some trees had to be changed! Sort your trees with "sort_tree" to obtain the correct results','Node order change!')
 end
