@@ -303,6 +303,7 @@ if ~all(cellfun(@(x) isfield(x,'NID'),tree))
         tree = m2n_writetrees(params,tree,options);
     else
         out = m2n_error(out,outoptions);
+        origminterf = [];
         return
     end
 end
@@ -1305,7 +1306,7 @@ for n = 1:numel(neuron)
                                 for in = 1:numel(neuron{x}.record{t}.(recfields{f1})(r).node)
                                     inode(in) = find(minterf{thesetrees{n}(t)}(:,1) == neuron{x}.record{t}.(recfields{f1})(r).node(in),1,'first');    %find the index of the node in minterf
                                 end
-                                realrecs = unique(minterf{thesetrees{n}(t)}(inode,[2,4]),'rows');
+                                [realrecs,~,ic] = unique(minterf{thesetrees{n}(t)}(inode,[2,4]),'rows');
                             end
                             %                         if ischar(neuron{x}.record{t}.(recfields{f1}).record)  % put recording variable into cell if not done yet
                             %                             neuron{x}.record{t}.(recfields{f1}).record = {neuron{x}.record{t}.(recfields{f1}).record};
@@ -1334,9 +1335,10 @@ for n = 1:numel(neuron)
                                         neuron{x}.record{t}.cell(r).id(in) = count;  % reference to find recording in recList
                                         count = count +1;
                                     end
-                                    neuron{x}.record{t}.cell(r).rrecs = realrecs;
+                                    neuron{x}.record{t}.cell(r).rrecs = realrecs; % gives the section and segment to the recordings
+                                    neuron{x}.record{t}.cell(r).irrecs = ic; % gives the the index to realrecs for each node
                                 case 'pp'
-                                    
+                                    delin = [];
                                     %                                 [~,iid] = intersect(neuron{x3}.pp{t}.(recfields{f1}).node,neuron{x}.record{t}.(recfields{f1}).node); % get reference to the node location of the PPs that should be connected
                                     for in =  1:size(realrecs,1)%numel(neuron{x}.record{t}{r,1})  % CAUTION might be wrong
                                         ind = find(neuron{x3}.pp{t}.(recfields{f1}).node == neuron{x}.record{t}.(recfields{f1})(r).node(in));
@@ -1358,10 +1360,16 @@ for n = 1:numel(neuron)
                                             neuron{x}.record{t}.(recfields{f1})(r).id(in) = count;   % reference to find recording in recList
                                             count = count +1;
                                         else
-                                            realrecs(in,:) = [];  % if node does not correspond to some specified pp at that place, delete it
+                                            delin = cat(1,delin,in);
+                                            ic(ic == in) = [];  % if node does not correspond to some specified pp at that place, delete it
+                                            ic(ic >= in) = ic(ic >= in) - 1;
+                                        end
+                                        if ~isempty(delin)
+                                            realrecs(delin,:) = [];  % if node does not correspond to some specified pp at that place, delete it
                                         end
                                     end
                                     neuron{x}.record{t}.(recfields{f1})(r).rrecs = realrecs;
+                                    neuron{x}.record{t}.(recfields{f1})(r).irrecs = ic; % gives the the index to realrecs for each node
                                 case 'artificial'
                                     fprintf(ofile,sprintf('rec = new Vector(%f)\n',(params.tstop-params.tstart)/params.dt+1 ) );    % create new recording vector
                                     fprintf(ofile,sprintf('rec.label("%s of artificial cell %s (cell #%d)")\n', neuron{x}.record{t}.cell(r).record , tree{thesetrees{n}(t)}.artificial, t-1) ); % label the vector for plotting
@@ -1533,7 +1541,7 @@ for n = 1:numel(neuron)
                                     noutfiles = noutfiles +1;
                                     %                     readfiles{noutfiles} = {sprintf('cell%d_node%d_%s.dat',t-1,neuron{x}.record{t}{r,1},neuron{x}.record{t}{r,2} ) , 'record' ,  t , neuron{x}.record{t}{r,2} ,neuron{x}.record{t}{r,1} };
                                     %                                     readfiles{noutfiles} = {n, sprintf('%s.dat',fname) , rectype ,  t , neuron{x}.record{t}.(recfields{f1}).record{r} , neuron{x}.record{t}.(recfields{f1}).rrecs(in,1), neuron{x}.record{t}.(recfields{f1}).rrecs(in,2) };
-                                    readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , 'cell', neuron{x}.record{t}.(recfields{f1})(r).record , neuron{x}.record{t}.(recfields{f1})(r).node(in) };
+                                    readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , 'cell', neuron{x}.record{t}.(recfields{f1})(r).record , neuron{x}.record{t}.(recfields{f1})(r).node(neuron{x}.record{t}.(recfields{f1})(r).irrecs == in) }; %neuron{x}.record{t}.(recfields{f1})(r).node(in) };
                                 end
                             case 'pp'
                                 for in = 1:size(neuron{x}.record{t}.(recfields{f1})(r).rrecs,1)
@@ -1552,7 +1560,7 @@ for n = 1:numel(neuron)
                                     noutfiles = noutfiles +1;
                                     %                     readfiles{noutfiles} = {sprintf('cell%d_node%d_%s.dat',t-1,neuron{x}.record{t}{r,1},neuron{x}.record{t}{r,2} ) , 'record' ,  t , neuron{x}.record{t}{r,2} ,neuron{x}.record{t}{r,1} };
                                     %                                     readfiles{noutfiles} = {n, sprintf('%s.dat',fname) , rectype ,  t , neuron{x}.record{t}.(recfields{f1}).record{r} };
-                                    readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , recfields{f1}, neuron{x}.record{t}.(recfields{f1})(r).record , neuron{x}.record{t}.(recfields{f1})(r).node(in) };
+                                    readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , recfields{f1}, neuron{x}.record{t}.(recfields{f1})(r).record , neuron{x}.record{t}.(recfields{f1})(r).node(neuron{x}.record{t}.(recfields{f1})(r).irrecs == in)};%neuron{x}.record{t}.(recfields{f1})(r).node(in) };
                                 end
                             case 'artificial'
                                 fname = sprintf('cell%d_%s',t-1, neuron{x}.record{t}.(recfields{f1})(r).record );
@@ -1876,6 +1884,7 @@ if noutfiles > 0 % if output is expected
         end
     end
     
+% simids = 2
     %% Receive files from Neuron
     if ~isempty(strfind(options,'-w'))
         w = waitbar(0,'Loading files, please wait');
@@ -1885,9 +1894,9 @@ if noutfiles > 0 % if output is expected
             fn = fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),readfiles{f}{1});
             switch readfiles{f}{4}
                 case 'APCtimes'
-                    out{readfiles{f}{2}}.APCtimes{readfiles{f}{3}}{readfiles{f}{6}} = load(fn,'-ascii');
+                    out{readfiles{f}{2}}.APCtimes{readfiles{f}{3}}(readfiles{f}{6}) = repmat({load(fn,'-ascii')},numel(readfiles{f}{6}),1);
                 otherwise
-                    out{readfiles{f}{2}}.record{readfiles{f}{3}}.(readfiles{f}{4}).(readfiles{f}{5}){readfiles{f}{6}} = load(fn,'-ascii');
+                    out{readfiles{f}{2}}.record{readfiles{f}{3}}.(readfiles{f}{4}).(readfiles{f}{5})(readfiles{f}{6}) = repmat({load(fn,'-ascii')},numel(readfiles{f}{6}),1);
                     if params.cvode
                         if params.use_local_dt  % if yes, dt was different for each cell, so there is more than one time vector
                             if numel(out{readfiles{f}{2}}.t) < readfiles{f}{3} || isempty(out{readfiles{f}{2}}.t{readfiles{f}{3}})
@@ -1916,6 +1925,11 @@ if noutfiles > 0 % if output is expected
             end
             
         end
+    end
+    if ~params.cvode
+       for n = 1:numel(out)
+           out{n}.t = load(fullfile(exchfolder,sprintf('sim%d',n),'tvec.dat'));
+       end
     end
     %
     %     for n = 1:numel(neuron)
