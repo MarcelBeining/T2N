@@ -43,7 +43,7 @@
 % the TREES toolbox: edit, visualize and analyze neuronal trees
 % Copyright (C) 2009  Hermann Cuntz, edited by Marcel Beining
 
-function [tname path minterf,tree] = neuron_template_tree (intree, tname, res, options)
+function [tname, path, minterf,tree] = neuron_template_tree (intree, tname, res, options)
 
 
 % trees : contains the tree structures in the trees package
@@ -60,7 +60,7 @@ end
 
 % defining a name for the neuron-tree
 if (nargin<2)||isempty(tname),
-    [tname path] = uiputfile ({'.hoc', 'export to hoc'}, 'Save as', 'tree.hoc');
+    [tname, path] = uiputfile ({'.hoc', 'export to hoc'}, 'Save as', 'tree.hoc');
     if tname  == 0,
         tname = [];
         return
@@ -94,7 +94,11 @@ else
     else
         tree = intree;
     end
-    
+    if isfield (tree, 'frustum') && (tree.frustum == 1),
+        isfrustum = 1;
+    else
+        isfrustum = 0;
+    end
     tree = root_tree (tree); % add a starting node in root to avoid all starting branch point
     
     if (nargin<3)||isempty(res),
@@ -102,7 +106,7 @@ else
     end
     
     ipar  = ipar_tree (tree); % parent index structure (see "ipar_tree")
-    idpar = ipar (:, 2);      % vector containing index to direct parent
+%     idpar = ipar (:, 2);      % vector containing index to direct parent
     D     = tree.D;           % local diameter values of nodes on tree
     N     = size (D, 1);      % number of nodes in tree
     if isfield (tree, 'R'),
@@ -238,8 +242,8 @@ switch format
                     ie  = find (ward   == find (Rsect == R (e)));
                     ipe = find (ipsect == find (Rsect == R (ip)));
                     fwrite (neuron, ['  connect ', ...
-                        rnames{find(uR == R (e))}  '[' num2str(ie  - 1) '](0),' ...
-                        rnames{find(uR == R (ip))} '[' num2str(ipe - 1) '](1)', ...
+                        rnames{(uR == R (e))}  '[' num2str(ie  - 1) '](0),' ...
+                        rnames{(uR == R (ip))} '[' num2str(ipe - 1) '](1)', ...
                         char(13), char(10)], 'char');
                     countero = countero + 1;
                     if countero  == 250,
@@ -267,19 +271,23 @@ switch format
                 e = sect (ward, 2); % end compartment of section
                 
                 ie = find (ward == find (Rsect == R (e))); % the how manyth section with this region is it?
-                fwrite (neuron, ['  ' rnames{find(uR == R(e))} ...
+                fwrite (neuron, ['  ' rnames{(uR == R(e))} ...
                     '[' num2str(ie - 1) '] {pt3dclear()', char(13), char(10)], 'char');
                 indy = fliplr (ipar (e, 1 : find (ipar (e, :) == s)));
                 seclen = sum(len(indy(2:end)));
                 %             if sum(H1(1:find(uR == R(e))-1))+ie-1 == 17
                 %                 'g'
                 %             end
+                D = tree.D(indy);
+                if ~isfrustum || ~isempty(strfind(rnames{(uR == R (e))},'spine'))
+                    D(1) = D(2);  % a (spine) starting segment needs to have the neck diameter, otherwise wrong surface
+                end
                 for te = 1 : length (indy),
                     fwrite (neuron, ['    pt3dadd(', ...
                         num2str(tree.X (indy (te)),15),', ', ...
                         num2str(tree.Y (indy (te)),15),', ', ...
                         num2str(tree.Z (indy (te)),15),', ', ...
-                        num2str(tree.D (indy (te)),15),')',  char(13), char(10)], 'char');
+                        num2str(D(te),15),')',  char(13), char(10)], 'char');
                     minterf((counteri-1)*249+countero,:) = [indy(te)-1 , sum(H1(1:find(uR == R(e))-1))+ie-1 , round(1e+5*(sum(len(indy(1:te)))-len(indy(1)))/seclen)*1e-5];   %sectionref can be assessed with allregobj.o(minterf(x,2) %!%!
                     %                     minterf((counteri-1)*249+countero,:) = [indy(te) , sprintf('%s[%d]',rnames{find(uR == R(e))},ie - 1) , (te-1)/(length(indy)-1)]; %alternatively sectionref is name of section (cell would be necessary)
                     
@@ -291,7 +299,7 @@ switch format
                         fwrite (neuron, ['}',             char(13), char(10)], 'char');
                         fwrite (neuron, ['proc shape3d_' num2str(counteri) '() {', ...
                             char(13), char(10)], 'char');
-                        fwrite (neuron, ['  ' rnames{find(uR == R(e))} ...
+                        fwrite (neuron, ['  ' rnames{(uR == R(e))} ...
                             '[' num2str(ie - 1) '] {', char(13), char(10)], 'char');
                     end
                 end
