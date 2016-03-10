@@ -7,7 +7,10 @@ if nargin < 2 || isempty(outoptions)
 end
 
 for n = 1:numel(out)
+    if isfield(out{n},'error') && out{n}.error > 0
+    else
         out{n}.error = errorcode;
+    end
 end
 
 if outoptions.nocell  % make output a structure not cell since only one simulation was calculated..

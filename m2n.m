@@ -410,7 +410,7 @@ for n = 1:numel(neuron)
     
     fprintf(nfile,'// ***** Initialize Variables *****\n');
     fprintf(nfile,'strdef tmpstr // temporary string object\nobjref f\n');
-    fprintf(nfile,'objref nil,cvode,strf,tvec,cell,cellList,pp,ppList,stim,stimList,con,conList,nilcon,nilconList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList,thissec,thisseg,thisval,maxRa,maxcm \n cellList = new List() // comprises all instances of cell templates, also artificial cells\n stimList = new List() // comprises all SEClamp/VClamp/IClamp electrodes introduced into any cell\n ppList = new List() // comprises all Point Processes of any cell\n conList = new List() // comprises all NetCon objects\n recList = new List() //comprises all recording vectors\n rectList = new List() //comprises all time vectors of recordings\n playtList = new List() //comprises all time vectors for play objects\n playList = new List() //comprises all vectors played into an object\n APCList = new List() //comprises all APC objects\n APCrecList = new List() //comprises all APC recording vectors\n nilconList = new List() //comprises all NULL object NetCons\n cvode = new CVode() //the Cvode object\n thissec = new Vector() //for reading range variables\n thisseg = new Vector() //for reading range variables\n thisval = new Vector() //for reading range variables\n\n');% maxRa = new Vector() //for reading range variables\n maxcm = new Vector() //for reading range variables\n\n');%[',numel(tree),']\n'  ;
+    fprintf(nfile,'objref nil,cvode,strf,tvec,cell,cellList,pp,ppList,con,conList,nilcon,nilconList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList,thissec,thisseg,thisval,maxRa,maxcm \n cellList = new List() // comprises all instances of cell templates, also artificial cells\n ppList = new List() // comprises all Point Processes of any cell\n conList = new List() // comprises all NetCon objects\n recList = new List() //comprises all recording vectors\n rectList = new List() //comprises all time vectors of recordings\n playtList = new List() //comprises all time vectors for play objects\n playList = new List() //comprises all vectors played into an object\n APCList = new List() //comprises all APC objects\n APCrecList = new List() //comprises all APC recording vectors\n nilconList = new List() //comprises all NULL object NetCons\n cvode = new CVode() //the Cvode object\n thissec = new Vector() //for reading range variables\n thisseg = new Vector() //for reading range variables\n thisval = new Vector() //for reading range variables\n\n');% maxRa = new Vector() //for reading range variables\n maxcm = new Vector() //for reading range variables\n\n');%[',numel(tree),']\n'  ;
     fprintf(nfile,sprintf('\nchdir("%s") // change directory to main simulation folder \n',nrn_path));
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Define some basic parameters *****\n');
@@ -510,18 +510,7 @@ for n = 1:numel(neuron)
         fprintf(nfile,'\n\n');
     end
     
-    
-%     x = getref(n,neuron,'stim');
-%     if ~isnan(x)
-%         fprintf(nfile,'// ***** Place stimulations *****\n');
-%         if x~=n
-%             fprintf(nfile,sprintf('io = load_file("%s/%s/init_stim.hoc")\n',nrn_exchfolder,sprintf('sim%d',neuron{n}.stim)) );
-%         else
-%             fprintf(nfile,'io = xopen("init_stim.hoc")\n' );
-%         end
-%         fprintf(nfile,'\n\n');
-%     end
-    
+        
     
     x = getref(n,neuron,'record');
     x2 = getref(n,neuron,'APCount');
@@ -816,6 +805,11 @@ for n = 1:numel(neuron)
                                             %                                             else
                                             %                                                 thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{thesetrees{n}(t)}(ia(in)+(minterf{thesetrees{n}(t)}(ia(in),3)== 0),1):minterf{thesetrees{n}(t)}(ia(in+1)-1,1))); % the value is the mean of all tree nodes which are simulated by this segment, if first node is start of section, ignore this one, since it belongs to old region
                                             %                                             end
+                                            % this is not truely correct
+                                            % since nanvalues (i.e. the
+                                            % standard values in this sec)
+                                            % might play a role for the
+                                            % mean of that section
                                             thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{thesetrees{n}(t)}(ia(in),1):minterf{thesetrees{n}(t)}(ia(in+1)-1,1))); % the value is the mean of all tree nodes which are simulated by this segment, if first node is start of section, ignore this one, since it belongs to old region
                                             
                                             if ~isnan(thisval)
@@ -910,7 +904,7 @@ for n = 1:numel(neuron)
                             fprintf(ofile,sprintf('{pp = new %s(%f)\n',ppfield{f1},minterf{thesetrees{n}(t)}(inode,3) ) );  % new pp
                             fields = setdiff(fieldnames(neuron{n}.pp{t}.(ppfield{f1})),{'node','id'});
                             
-                            if any(strcmp(ppfield{f1},{'IClamp','SEClamp','VClamp'})) && (any(strcmp(fields,'times')) || (any(strcmp(fields,'dur')) && numel(neuron{n}.pp{t}.(ppfield{f1}).dur) > 3))
+                            if any(strcmp(ppfield{f1},{'IClamp','SEClamp','SEClamp2','VClamp'})) && (any(strcmp(fields,'times')) || (any(strcmp(fields,'dur')) && numel(neuron{n}.pp{t}.(ppfield{f1}).dur) > 3))
                                 if any(strcmp(fields,'times'))
                                     times = sprintf('%f,',neuron{n}.pp{t}.(ppfield{f1}).times);
                                 else   %bugfix since seclamp can only use up to 3 duration specifications
@@ -932,7 +926,7 @@ for n = 1:numel(neuron)
                                     case 'VClamp'
                                         fprintf(ofile,'play.play(&pp.amp[0],playt)\n');
                                         fprintf(ofile,'pp.dur[0] = 1e15\n');
-                                    case 'SEClamp'
+                                    case {'SEClamp','SEClamp2'}
                                         fprintf(ofile,'play.play(&pp.amp1,playt)\n');
                                         fprintf(ofile,'pp.dur1 = 1e15\n');
                                 end
@@ -944,12 +938,12 @@ for n = 1:numel(neuron)
                             end
                             
                             for f2 =1:numel(fields)  % go through all parameter fields and declare them
-                                if any(strcmpi(fields{f2},{'dur','amp'})) && any(strcmp(ppfield{f1},{'SEClamp','VClamp'}))   % for dur and amp, there are multiple values
+                                if any(strcmpi(fields{f2},{'dur','amp'})) && any(strcmp(ppfield{f1},{'SEClamp2','SEClamp','VClamp'}))   % for dur and amp, there are multiple values
                                     for ff = 1:numel(neuron{n}.pp{t}.(ppfield{f1}).(fields{f2}))
                                         switch ppfield{f1}
                                             case 'VClamp'
                                                 fprintf(ofile,sprintf('pp.%s[%d] = %f \n',fields{f2},ff-1,neuron{n}.pp{t}.(ppfield{f1}).(fields{f2})(ff)));
-                                            case 'SEClamp'
+                                            case {'SEClamp','SEClamp2'}
                                                 fprintf(ofile,sprintf('pp.%s%d = %f \n',fields{f2},ff,neuron{n}.pp{t}.(ppfield{f1}).(fields{f2})(ff)) );
                                         end
                                     end
@@ -1102,146 +1096,6 @@ for n = 1:numel(neuron)
     end
     
     
-    %% write init_stim.hoc
-%     if getref(n,neuron,'stim') == n     %rewrite only if sim definition is not taken from previous sim
-%         ofile = fopen(fullfile(exchfolder,thisfolder,'init_stim.hoc') ,'wt');   %open stim hoc file in write modus
-%         fprintf(ofile,'\n\n');
-%         fprintf(ofile,'// ***** Place stimulations *****\n');
-%         if isfield(neuron{n},'stim')
-%             stimnum = zeros(numel(thesetrees{n}),1);
-%             for t = 1:numel(thesetrees{n})
-%                 if numel(neuron{n}.stim) >= t && ~isempty(neuron{n}.stim{t}) && ~isfield(tree{thesetrees{n}(t)},'artificial')   % if a stimulation is defined for this tree
-%                     for s = 1: size(neuron{n}.stim{t},1)
-%                         inode = find(minterf{thesetrees{n}(t)}(:,1) == neuron{n}.stim{t}{s,2},1,'first');    %find the index of the node in minterf
-%                         fprintf(ofile,sprintf('cellList.o(%d).allregobj.o(%d).sec',t-1,minterf{thesetrees{n}(t)}(inode,2) ) );    % corresponding section of node
-%                         switch neuron{n}.stim{t}{s,1}      % if SEClamp and VClamp dur and amp would be handled equally this could be simplified much more =/
-%                             case 'IClamp'
-%                                 fprintf(ofile,sprintf('{stim = new IClamp(%f)\n',minterf{thesetrees{n}(t)}(inode,4) ) );  % new stim
-%                                 fields = fieldnames(neuron{n}.stim{t}{s,3});
-%                                 if any(strcmp(fields,'times'))
-%                                     times = sprintf('%f,',neuron{n}.stim{t}{s,3}.times);
-%                                     times = times(1:end-1);
-%                                     amps = sprintf('%f,',neuron{n}.stim{t}{s,3}.amp);
-%                                     amps = amps(1:end-1);
-%                                     
-%                                     fprintf(ofile,'playt = new Vector()\n');
-%                                     fprintf(ofile,sprintf('playt = playt.append(%s)\n',times));
-%                                     fprintf(ofile,'play = new Vector()\n');
-%                                     fprintf(ofile,sprintf('play = play.append(%s)\n',amps));
-%                                     fprintf(ofile,'play.play(&stim.amp,playt)\n');
-%                                     fprintf(ofile,'stim.dur = 1e15\n');
-%                                     fprintf(ofile,'stim.del = -1e4\n');
-%                                     
-%                                     fprintf(ofile,'io = playtList.append(playt)\n');
-%                                     fprintf(ofile,'io = playList.append(play)\n');
-%                                     fprintf(ofile, 'objref play\n');
-%                                     fprintf(ofile, 'objref playt\n');
-%                                     %                                 fields = setdiff(fields,{'times','amp','dur'});
-%                                 else
-%                                     for f = 1:numel(fields)
-%                                         fprintf(ofile,sprintf('stim.%s = %f \n',fields{f},neuron{n}.stim{t}{s,3}.(fields{f})));
-%                                     end
-%                                 end
-%                                 %                             fprintf(ofile,sprintf('stim.del = %f \nstim.dur = %f \nstim.amp = %f }\n',neuron{n}.stim{t}{s,3:4} ) );    %define stim properties as described in neuron{n}.stim
-%                             case 'VClamp'
-%                                 fprintf(ofile,sprintf('{stim = new VClamp(%f)\n',minterf{thesetrees{n}(t)}(inode,4) ) );  % new stim
-%                                 fields = fieldnames(neuron{n}.stim{t}{s,3});   % get parameter names
-%                                 if any(strcmp(fields,'times'))
-%                                     times = sprintf('%f,',neuron{n}.stim{t}{s,3}.times);
-%                                     times = times(1:end-1);     %delete last comma
-%                                     amps = sprintf('%f,',neuron{n}.stim{t}{s,3}.amp);
-%                                     amps = amps(1:end-1);    %delete last comma
-%                                     
-%                                     fprintf(ofile,'playt = new Vector()\n');
-%                                     fprintf(ofile,sprintf('playt = playt.append(%s)\n',times));
-%                                     fprintf(ofile,'play = new Vector()\n');
-%                                     fprintf(ofile,sprintf('play = play.append(%s)\n',amps));
-%                                     fprintf(ofile,'play.play(&stim.amp[0],playt)\n');
-%                                     fprintf(ofile,'stim.dur[0] = 1e15\n');
-%                                     
-%                                     fprintf(ofile,'io = playtList.append(playt)\n');
-%                                     fprintf(ofile,'io = playList.append(play)\n');
-%                                     fprintf(ofile, 'objref play\n');
-%                                     fprintf(ofile, 'objref playt\n');
-%                                     fields = setdiff(fields,{'times','amp','dur'});
-%                                 end
-%                                 
-%                                 for f = 1:numel(fields)     % loop through all parameters and write them in hoc
-%                                     if any(strcmpi(fields{f},{'dur','amp'}))    % for dur and amp, there are multiple values
-%                                         for ff = 1:numel(neuron{n}.stim{t}{s,3}.(fields{f}))
-%                                             fprintf(ofile,sprintf('stim.%s[%d] = %f \n',fields{f},ff-1,neuron{n}.stim{t}{s,3}.(fields{f})(ff)));
-%                                         end
-%                                     else
-%                                         fprintf(ofile,sprintf('stim.%s = %f \n',fields{f},neuron{n}.stim{t}{s,3}.(fields{f})));
-%                                     end
-%                                 end
-%                                 
-%                             case 'SEClamp'
-%                                 fprintf(ofile,sprintf('{stim = new SEClamp(%f)\n',minterf{thesetrees{n}(t)}(inode,4) ) );  % new stim
-%                                 fields = fieldnames(neuron{n}.stim{t}{s,3});   % get parameter names
-%                                 if any(strcmp(fields,'times')) || (any(strcmp(fields,'dur')) && numel(neuron{n}.stim{t}{s,3}.dur) > 3)
-%                                     if any(strcmp(fields,'times'))
-%                                         times = sprintf('%f,',neuron{n}.stim{t}{s,3}.times);
-%                                     else   %bugfix since seclamp can only use up to 3 duration specifications
-%                                         times = sprintf('%f,',[0 cumsum(neuron{n}.stim{t}{s,3}.dur(1:end-1))]);
-%                                     end
-%                                     times = times(1:end-1);     %delete last comma
-%                                     amps = sprintf('%f,',neuron{n}.stim{t}{s,3}.amp);
-%                                     amps = amps(1:end-1);    %delete last comma
-%                                     
-%                                     fprintf(ofile,'playt = new Vector()\n');
-%                                     fprintf(ofile,sprintf('playt = playt.append(%s)\n',times));
-%                                     fprintf(ofile,'play = new Vector()\n');
-%                                     fprintf(ofile,sprintf('play = play.append(%s)\n',amps));
-%                                     fprintf(ofile,'play.play(&stim.amp1,playt)\n');
-%                                     fprintf(ofile,'stim.dur1 = 1e15\n');
-%                                     
-%                                     fprintf(ofile,'io = playtList.append(playt)\n');
-%                                     fprintf(ofile,'io = playList.append(play)\n');
-%                                     fprintf(ofile, 'objref play\n');
-%                                     fprintf(ofile, 'objref playt\n');
-%                                     fields = setdiff(fields,{'times','amp','dur'});
-%                                 end
-%                                 
-%                                 for f = 1:numel(fields)     % loop through all parameters and write them in hoc
-%                                     if any(strcmpi(fields{f},{'dur','amp'}))    % for dur and amp, there are multiple values
-%                                         for ff = 1:numel(neuron{n}.stim{t}{s,3}.(fields{f}))
-%                                             fprintf(ofile,sprintf('stim.%s%d = %f \n',fields{f},ff,neuron{n}.stim{t}{s,3}.(fields{f})(ff)));
-%                                         end
-%                                     else
-%                                         fprintf(ofile,sprintf('stim.%s = %f \n',fields{f},neuron{n}.stim{t}{s,3}.(fields{f})));
-%                                     end
-%                                 end
-%                             otherwise
-%                                 errordlg(sprintf('Stimulation electrode type %s not know. Please use IClamp,VClamp or SEClamp or define your electrode via neuron.pp',neuron{n}.stim{t}{s,1}))
-%                                 
-%                         end
-%                         fprintf(ofile,'} \n io = stimList.append(stim)\n' );  %append stim to stimList
-%                         stimnum(t) = stimnum(t) +1;
-%                     end
-%                     fprintf(ofile,'\n');
-%                 end
-%                 
-%             end
-%             fprintf(ofile, 'objref stim\n');
-%         end
-%         fclose(ofile);
-%         %     else            % stimnum has to be redefined anyways
-%         %         if exist(fullfile(exchfolder,thisfolder,'init_stim.hoc'),'file')
-%         %             delete(fullfile(exchfolder,thisfolder,'init_stim.hoc'));
-%         %         end
-%         %         x = getref(n,neuron,'stim');
-%         %         if ~isnan(x)
-%         %             stimnum = zeros(numel(thesetrees{n}),1);
-%         %             for t = 1:numel(thesetrees{n})
-%         %                 if numel(neuron{x}.stim) >= t && ~isempty(neuron{x}.stim{t})   && ~isfield(tree{thesetrees{n}(t)},'artificial')    % if stims are defined for this tree
-%         %                     for s = 1:size(neuron{x}.stim{t},1)
-%         %                         stimnum(t) = stimnum(t) +1;
-%         %                     end
-%         %                 end
-%         %             end
-%         %         end
-%     end
     %% write init_rec.hoc
     
     x = getref(n,neuron,'record');
@@ -1637,11 +1491,6 @@ for n = 1:numel(neuron)
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{5});
             m = m + 1;
         end
-%         if getref(n,neuron,'stim') == n
-%             localfilename{m} = fullfile(exchfolder,thisfolder,filenames{6});
-%             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{6});
-%             m = m + 1;
-%         end
         if getref(n,neuron,'record') == n
             localfilename{m} = fullfile(exchfolder,thisfolder,filenames{7});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{7});
@@ -1931,79 +1780,16 @@ if noutfiles > 0 % if output is expected
            out{n}.t = load(fullfile(exchfolder,sprintf('sim%d',n),'tvec.dat'));
        end
     end
-    %
-    %     for n = 1:numel(neuron)
-    %         x = getref(n,neuron,'record');
-    %         if ~isnan(x)
-    %             if simids(n) == 2       % if there was no error during simulation
-    %                 for t = 1:numel(thesetrees{n})
-    %                     if numel(neuron{x}.record) >= t && ~isempty(neuron{x}.record{t})  % if a recording site was defined for  this tree
-    %                         recfields = fieldnames(neuron{x}.record{t});
-    %                         for f1 = 1: numel(recfields) %size(neuron{x}.record{t},1)     %go through all set recordings
-    %                             if isfield(tree{thesetrees{n}(t)},'artificial')
-    %                                 rectype = 'artificial';
-    %                             elseif strcmp(recfields{f1},'cell') %   size(neuron{x}.record{t},2)<3 || isempty(neuron{x}.record{t}{f1,3})       % check if recording should be a parameter in a section, or a point process (divided in pps and electrodes)
-    %                                 rectype = 'cell';
-    %                             else
-    %                                 rectype = 'pp';
-    %                             end
-    %
-    %                             switch rectype
-    %                                 case 'cell'
-    %                                     for in = 1:numel(neuron{x}.record{t}.(recfields{f1}).node)  %go through all nodes in this defined recording
-    %                                         inode = find(minterf{thesetrees{n}(t)}(:,1) == neuron{x}.record{t}{f1,1}(in),1,'first');    %find the index of the node in minterf
-    %                                         %the correct file for this node is searched in the
-    %                                         %temporally loaded files and copied
-    %
-    %                                         onlyrecords = cellfun(@(y) strcmpi(y{3},'node'),readfiles);   % don't know any more why that complicated but never change a running system^^
-    %                                         thisfile = find(cumsum(onlyrecords) == find(cellfun(@(y) n==y{1} & strcmpi(y{5},neuron{x}.record{t}{f1,2}) & y{4} == thesetrees{n}(t) & y{6} == minterf{thesetrees{n}(t)}(inode,2) & y{7} == minterf{thesetrees{n}(t)}(inode,4) ,readfiles(onlyrecords))),1,'first');
-    %                                         out{n}.record{t}.(neuron{x}.record{t}{f1,2}){neuron{x}.record{t}{f1,1}(in)} = readfiles{thisfile}{8};
-    %                                         % alternatively only give pointer and give temp
-    %                                         % files as output, too...
-    %
-    %                                     end
-    %                                 case 'pp'
-    %                                     for in = 1:numel(neuron{x}.record{t}{f1,1})
-    %                                         thisfile = find(cellfun(@(y) n==y{1} & any(strcmpi(y{3},{'pp','stim'})) & strcmpi(y{5},neuron{x}.record{t}{f1,2}) & y{4} == thesetrees{n}(t) ,readfiles),1,'first');
-    %                                         out{n}.record{t}.(neuron{x}.record{t}{f1,2}){neuron{x}.record{t}{f1,1}(in)} = readfiles{thisfile}{8};
-    %                                     end
-    %                                 case 'artificial'
-    %                                     thisfile = find(cellfun(@(y) n==y{1} & strcmpi(y{3},'artificial') & strcmpi(y{5},neuron{x}.record{t}{f1,2}) & y{4} == thesetrees{n}(t) ,readfiles),1,'first');
-    %                                     out{n}.record{t}.(neuron{x}.record{t}{f1,2}) = readfiles{thisfile}{8};
-    %                                     if strcmpi(neuron{x}.record{t}{f1,2},'on')
-    %                                         tmp =   out{n}.record{t}.(neuron{x}.record{t}{f1,2});
-    %                                         out{n}.record{t}.(neuron{x}.record{t}{f1,2}) = false(1,numel(out{n}.t));
-    %                                         [~,~,tmp] = intersect(tmp,out{n}.t);
-    %                                         out{n}.record{t}.(neuron{x}.record{t}{f1,2})(tmp) = true;
-    %                                     end
-    %                             end
-    %
-    %
-    %                         end
-    %                     end
-    %                     if ~isempty(strfind(options,'-w'))
-    %                         if ishandle(w)
-    %                             waitbar(0.5+n/numel(neuron)*t/numel(thesetrees{n}),w);
-    %                         else
-    %                             errordlg('Waitbar was closed, m2n stopped continuing. If accidently, retry.')
-    %                             out = m2n_error(out,outoptions);
-    %                             fclose all;
-    %                             return
-    %                         end
-    %                     end
-    %                 end
-    %             end
-    %         end
-    %
-    %     end
-    
+   
     if isempty(strfind(options,'-q'))
         display('data sucessfully loaded')
     end
     if ~isempty(strfind(options,'-w'))
         close(w)
     end
-    out = m2n_error(out,outoptions,0);
+    if (outoptions.nocell && ~isfield(out,'error')) || ~outoptions.nocell && any(cellfun(@(x) ~isfield(x,'error'),out))
+        out = m2n_error(out,outoptions,0);
+    end
     if strfind(options,'-d')
         tim = toc(tim);
         fprintf(sprintf('Data loading time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
