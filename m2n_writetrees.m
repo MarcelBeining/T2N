@@ -10,6 +10,11 @@ if nargin < 3
     options = '';
 end
 
+sflag = 0;
+if isstruct(tree)
+    tree = {tree};
+    sflag = 1;
+end
 
 if ~isfield(params,'path')
     params.path = regexprep(pwd,'\\','/');
@@ -55,19 +60,19 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         artflag = true;
     end
     nonameflag = false;
-    if isfield(params,'tname') && ischar(params.tname) && ~isempty(params.tname)
+    if ~artflag && isfield(params,'tname') && ischar(params.tname) && ~isempty(params.tname)
         treename = params.tname;
-        tflag = true;
+        countupflag = true;
     elseif artflag && ~isfield(tree{t},'name')
         treename = tree{t}.artificial;
-        tflag = true;
+        countupflag = false;%true; % caution, maybe countup in artificial is necessary for correct assignment of records etc...check
         nonameflag = true;
-    elseif isfield(tree{t},'name')
+    elseif isfield(tree{t},'name') % this is also true if name exist and it is artificial. good becaus
         treename = tree{t}.name;
-        tflag = false;
+        countupflag = false;
     else
         treename = 'Tree';
-        tflag = true;
+        countupflag = true;
         nonameflag = true;
     end
     if any(strfind(treename,'%'))
@@ -78,10 +83,10 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         badchars = badchars +numel(strfind(treename,'.'));
         treename(strfind(treename,'.')) = '_';
     end
-    if numel(treename) < 5 || ~strcmp(treename(1:5),'cell_')
+    if (numel(treename) < 5 || ~strcmp(treename(1:5),'cell_'))
         treename = strcat('cell_',treename);
     end
-    if tflag
+    if countupflag
         treename = sprintf('%s_%d%d',treename,floor(t/10),rem(t,10));
     end
 %     if strfind(options,'-cl')
@@ -107,6 +112,9 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
     end
 end
 
+if sflag
+    tree = tree{1};
+end
 if nargin < 4
     display('Please resave trees to have the NEURON ID in each tree')
     save_tree(tree);

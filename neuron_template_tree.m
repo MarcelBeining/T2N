@@ -167,10 +167,10 @@ switch format
         
         
         if artflag
-            if isfield(tree,'params')
-                fields = fieldnames(tree.params);
-            else fields={};
-            end
+%             if isfield(tree,'params')
+%                 fields = fieldnames(tree.params);
+%             else fields={};
+%             end
             fprintf(neuron, 'public cell\n');
             fprintf(neuron, 'public is_artificial\n');
 %             for f = 1:numel(fields)
@@ -182,9 +182,9 @@ switch format
             
             fprintf(neuron, sprintf('cell = new %s()\n', tree.artificial) );
             
-            for f = 1:numel(fields)
-                fprintf(neuron, sprintf('cell.%s = %g\n',fields{f},tree.params.(fields{f})));
-            end
+%             for f = 1:numel(fields)
+%                 fprintf(neuron, sprintf('cell.%s = %g\n',fields{f},tree.params.(fields{f})));
+%             end
             fprintf(neuron, 'is_artificial = 1}\n');
             
         else
