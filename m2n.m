@@ -476,7 +476,7 @@ for n = 1:numel(neuron)
     if ~isnan(x)
         fprintf(nfile,'// ***** Load mechanisms and adjust nseg *****\n');
         if x~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_mech.hoc")\n',nrn_exchfolder,sprintf('sim%d',neuron{n}.mech)) );
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_mech.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
         else
             fprintf(nfile,'io = xopen("init_mech.hoc")\n' );
         end
@@ -488,7 +488,7 @@ for n = 1:numel(neuron)
     if ~isnan(x)
         fprintf(nfile,'// ***** Place Point Processes *****\n');
         if x~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_pp.hoc")\n',nrn_exchfolder,sprintf('sim%d',neuron{n}.pp)) );
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_pp.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
         else
             fprintf(nfile,'io = xopen("init_pp.hoc")\n' );
         end
@@ -499,7 +499,7 @@ for n = 1:numel(neuron)
     if ~isnan(x)
         fprintf(nfile,'// ***** Define Connections *****\n');
         if x~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_con.hoc")\n',nrn_exchfolder,sprintf('sim%d',neuron{n}.con)) );
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_con.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
         else
             fprintf(nfile,'io = xopen("init_con.hoc")\n' );
         end
@@ -513,7 +513,7 @@ for n = 1:numel(neuron)
     if ~isnan(x) || ~isnan(x2)
         fprintf(nfile,'// ***** Define recording sites *****\n');
         if x~=n && x2~=n && x==x2  % if both reference to the same other sim, use this sim
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_rec.hoc")\n',nrn_exchfolder,sprintf('sim%d',neuron{n}.record)) );
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_rec.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
         else  % else write an own file
             fprintf(nfile,'io = xopen("init_rec.hoc")\n' );
         end
@@ -525,7 +525,7 @@ for n = 1:numel(neuron)
     if ~isnan(x)
         fprintf(nfile,'// ***** Define vector play sites *****\n');
         if x~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_play.hoc")\n',nrn_exchfolder,sprintf('sim%d',neuron{n}.play)) );
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_play.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
         else
             fprintf(nfile,'io = xopen("init_play.hoc")\n' );
         end
