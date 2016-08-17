@@ -48,22 +48,22 @@ end
 orderchanged = false;
 badchars = 0;
 
-
+artflag = false(numel(tree),1);
 for t=1:numel(tree)     % make neuron templates from trees and save/get minterface file
-    artflag = false;
+    artflag(t) = false;
     if ~isfield(tree{t},'artificial')
         [tree{t}, order] = sort_tree(tree{t},'-LO');
         if ~all(order==sort(order))
             orderchanged = true;
         end
     else
-        artflag = true;
+        artflag(t) = true;
     end
     nonameflag = false;
-    if ~artflag && isfield(params,'tname') && ischar(params.tname) && ~isempty(params.tname)
+    if ~artflag(t) && isfield(params,'tname') && ischar(params.tname) && ~isempty(params.tname)
         treename = params.tname;
         countupflag = true;
-    elseif artflag && ~isfield(tree{t},'name')
+    elseif artflag(t) && ~isfield(tree{t},'name')
         treename = tree{t}.artificial;
         countupflag = false;%true; % caution, maybe countup in artificial is necessary for correct assignment of records etc...check
         nonameflag = true;
@@ -115,13 +115,14 @@ end
 if sflag
     tree = tree{1};
 end
-if nargin < 4
-    display('Please resave trees to have the NEURON ID in each tree')
-    save_tree(tree);
-else
-    save_tree(tree,savepath);
+if ~all(artflag)
+    if nargin < 4
+        display('Please resave trees to have the NEURON ID in each tree')
+        save_tree(tree);
+    else
+        save_tree(tree,savepath);
+    end
 end
-
 if badchars > 0
     %     warndlg(sprintf('Caution! %d bad chars had to be removed or replaced from the tree names since they cause writing errors! Please be sure to not use "%%" and "." in the names',badchars),'Bad characters removed');
 end

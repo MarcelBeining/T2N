@@ -1,12 +1,15 @@
 function thisneuron = m2n_as(as,neuron)
 
-fields = {'tree','mech','stim','pp','con','record','play','APCount'};
+fields = {'tree','mech','pp','con','record','play','APCount'};
 
-if nargin < 1 || isempty(neuron)
+if nargin < 2 || isempty(neuron)
     thesefields = fields;
 else
     thesefields = setdiff(fields,fieldnames(neuron));
     thisneuron = neuron;
+end
+if nargin < 1
+    as = 1;
 end
 
 for f = 1:numel(thesefields)
