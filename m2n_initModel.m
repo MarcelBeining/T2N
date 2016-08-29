@@ -1,4 +1,4 @@
-function [tree,params,neuron] = m2n_initModel(params,ostruct)
+function [tree,params,neuron,treename] = m2n_initModel(params,ostruct)
 
 if ~isfield( ostruct,'reducecells')
     ostruct.reducecells = 0;
@@ -28,7 +28,7 @@ elseif ostruct.vmodel == 6
 elseif ostruct.vmodel == 7
     mechoptions = '-a-p-n2-g-8st-sh3-Ca2-TWIK-Kv7-nl';%-sh
 elseif ostruct.vmodel == 8
-    mechoptions = '-a-p-n2-g-8st-sh3-Ca2-TWIK-Kv7-nl';%-sh %same  but not in spinedens
+    mechoptions = '-a-p-n2-g-8st-sh3-Ca2-TWIK-Kv7-nl-zz';%-sh %same  but not in spinedens
     
 else
     mechoptions = '-o-a-p';
@@ -51,7 +51,7 @@ if ~isnan(ostruct.usemorphmodel)
     
     switch ostruct.usemorphmodel
         case 1
-            if ostruct.adjustloads && exist(fullfile2(params.path,'/morphos/mouse_AAVart_old_pruned_axon_loadadjusted.mtr'),'file')
+            if ostruct.adjustloads && ~ostruct.forcecalcload && exist(fullfile2(params.path,'/morphos/mouse_AAVart_old_pruned_axon_loadadjusted.mtr'),'file')
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/mouse_AAVart_old_pruned_axon_loadadjusted.mtr'));
             else
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/mouse_AAVart_old_pruned_axon.mtr'));
@@ -60,7 +60,7 @@ if ~isnan(ostruct.usemorphmodel)
             params.exchfolder = 'm2nexchange_aGCmorphsim';
             
         case 2
-            if ostruct.adjustloads && exist(fullfile2(params.path,'/morphos/mouse_RVart_pruned_axon_loadadjusted.mtr'),'file')
+            if ostruct.adjustloads && ~ostruct.forcecalcload && exist(fullfile2(params.path,'/morphos/mouse_RVart_pruned_axon_loadadjusted.mtr'),'file')
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/mouse_RVart_pruned_axon_loadadjusted.mtr'));
             else
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/mouse_RVart_pruned_axon.mtr'));
@@ -68,7 +68,7 @@ if ~isnan(ostruct.usemorphmodel)
             params.tname = 'mouse_abGC_art';
             params.exchfolder = 'm2nexchange_aGCmorphsim2';
         case 3
-            if ostruct.adjustloads && exist(fullfile2(params.path,sprintf('/morphos/rat_AAVart_old_pruned_axon_loadadjusted%s.mtr',str)),'file')
+            if ostruct.adjustloads && ~ostruct.forcecalcload && exist(fullfile2(params.path,sprintf('/morphos/rat_AAVart_old_pruned_axon_loadadjusted%s.mtr',str)),'file')
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,sprintf('/morphos/rat_AAVart_old_pruned_axon_loadadjusted%s.mtr',str)));
             else
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/rat_AAVart_old_pruned_axon.mtr'));
@@ -76,7 +76,7 @@ if ~isnan(ostruct.usemorphmodel)
             params.tname = 'rat_matGC_art';
             params.exchfolder = 'm2nexchange_aGCmorphsim3';
         case 4
-            if ostruct.adjustloads && exist(fullfile2(params.path,sprintf('/morphos/rat_RVart_pruned_axon_loadadjusted%s.mtr',str)),'file')
+            if ostruct.adjustloads && ~ostruct.forcecalcload && exist(fullfile2(params.path,sprintf('/morphos/rat_RVart_pruned_axon_loadadjusted%s.mtr',str)),'file')
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,sprintf('/morphos/rat_RVart_pruned_axon_loadadjusted%s.mtr',str)));
             else
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/rat_RVart_pruned_axon.mtr'));
@@ -84,7 +84,7 @@ if ~isnan(ostruct.usemorphmodel)
             params.tname = 'rat_abGC_art';
             params.exchfolder = 'm2nexchange_aGCmorphsim4';
         case 5
-            if ostruct.adjustloads && exist(fullfile2(params.path,sprintf('/morphos/Claiborne_male_MLyzed_axon_loadadjusted%s.mtr',str)),'file')
+            if ostruct.adjustloads && ~ostruct.forcecalcload && exist(fullfile2(params.path,sprintf('/morphos/Claiborne_male_MLyzed_axon_loadadjusted%s.mtr',str)),'file')
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,sprintf('/morphos/Claiborne_male_MLyzed_axon_loadadjusted%s.mtr',str)));
             else
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/Claiborne_male_MLyzed_axon.mtr'));
@@ -92,7 +92,7 @@ if ~isnan(ostruct.usemorphmodel)
             params.tname = 'rat_mGC_Claiborne';
             params.exchfolder = 'm2nexchange_aGCmorphsim5';
         case 6
-            if ostruct.adjustloads && exist(fullfile2(params.path,sprintf('/morphos/Beining_AAV_contra_MLyzed_axon_loadadjusted%s.mtr',str)),'file')
+            if ostruct.adjustloads && ~ostruct.forcecalcload && exist(fullfile2(params.path,sprintf('/morphos/Beining_AAV_contra_MLyzed_axon_loadadjusted%s.mtr',str)),'file')
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,sprintf('/morphos/Beining_AAV_contra_MLyzed_axon_loadadjusted%s.mtr',str)));
             else
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/Beining_AAV_contra_MLyzed_axon.mtr'));
@@ -100,7 +100,7 @@ if ~isnan(ostruct.usemorphmodel)
             params.tname = 'rat_mGC_Beining';
             params.exchfolder = 'm2nexchange_aGCmorphsim6';
         case 0
-            if ostruct.adjustloads && exist(fullfile2(params.path,'/morphos/SH_07_MLyzed_new3_soma_loadadjusted.mtr'),'file')
+            if ostruct.adjustloads && ~ostruct.forcecalcload && exist(fullfile2(params.path,'/morphos/SH_07_MLyzed_new3_soma_loadadjusted.mtr'),'file')
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/SH_07_MLyzed_new3_soma_loadadjusted.mtr'));
             else
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/SH_07_MLyzed_new3_soma.mtr'));
@@ -108,7 +108,7 @@ if ~isnan(ostruct.usemorphmodel)
             
             params.tname = 'SH07';
         case 0.5
-            if ostruct.adjustloads && exist(fullfile2(params.path,'/morphos/SH_07_all_repairedandsoma_MLyzed_loadadjusted.mtr'),'file')
+            if ostruct.adjustloads && ~ostruct.forcecalcload && exist(fullfile2(params.path,'/morphos/SH_07_all_repairedandsoma_MLyzed_loadadjusted.mtr'),'file')
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/SH_07_all_repairedandsoma_MLyzed_loadadjusted.mtr'));
             else
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/SH_07_all_repairedandsoma_MLyzed.mtr'));
@@ -117,7 +117,7 @@ if ~isnan(ostruct.usemorphmodel)
             params.tname = 'SH07all';
             %             params.exchfolder = 'm2nexchange_aGC_SH07';
         case 0.6
-            if ostruct.adjustloads && exist(fullfile2(params.path,'/morphos/SH_07_all_repairedandsomaAIS_MLyzed_loadadjusted.mtr'),'file')
+            if ostruct.adjustloads && ~ostruct.forcecalcload && exist(fullfile2(params.path,'/morphos/SH_07_all_repairedandsomaAIS_MLyzed_loadadjusted.mtr'),'file')
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/SH_07_all_repairedandsomaAIS_MLyzed_loadadjusted.mtr'));
             else
                 [tree,treename,treepath]=load_tree(fullfile2(params.path,'/morphos/SH_07_all_repairedandsomaAIS_MLyzed.mtr'));
@@ -234,9 +234,11 @@ if ostruct.adjustloads
 end
 
 if ostruct.reducecells
-    if ostruct.usemorphmodel >= 0.1% || isempty(strfind(params.tname,'SH07'))
-        tree=tree(1:3);
-        neuron.mech = neuron.mech(1:3);
+    if ostruct.usemorphmodel >= 1 && ostruct.usemorphmodel <= 4 || isempty(strfind(params.tname,'SH07'))
+        tree=tree((1:3)+2);
+        neuron.mech = neuron.mech((1:3)+2);
+%         tree=tree(1);
+%         neuron.mech = neuron.mech(1);
     else
         tree=tree(3);
         neuron.mech = neuron.mech(3);
@@ -254,7 +256,7 @@ end
 if ostruct.cAMP ~= 0
     neuron = changeoptions.cAMP(neuron,ostruct.cAMP);
 end
-
+treename = fullfile(treepath,treename);
 cd(origfolder)
 display(sprintf('Model initialized...%s',neuron.experiment))
 

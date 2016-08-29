@@ -937,7 +937,35 @@ for n = 1:numel(neuron)
                         
                         pp = neuron{n}.con(c).target(it).pp;
                         %                         %                         neuron{x}.pp{t_target}.(pp).node
-                        [~,iid] = intersect(neuron{x}.pp{cell_target}.(pp).node,neuron{n}.con(c).target(it).node); % get reference to the node location of the PPs that should be connected
+%                         [~,iid] = intersect(neuron{x}.pp{cell_target}.(pp).node,neuron{n}.con(c).target(it).node); % get reference to the node location of the PPs that should be connected
+%                         intersect unfortunately fails if more than one PP
+%                         is declared at the same node and con wants to
+%                         target both. here comes the workaround
+                        upp = unique(neuron{x}.pp{cell_target}.(pp).node);  % unique pp nodes of the cell
+                        if numel(upp) == 1 % otherwise hist would make as many bins as upp
+                            cpp = 1;
+                        else
+                            cpp =hist(neuron{x}.pp{cell_target}.(pp).node,upp); % number of pps at the same nodes
+                        end
+                        ucon = unique(neuron{n}.con(c).target(it).node); % unique connection nodes declared to the cell
+                        if numel(ucon) == 1  % otherwise hist would make as many bins as ucon
+                            ccon = 1;
+                        else
+                            ccon =hist(neuron{n}.con(c).target(it).node,ucon); % number of connections to the same node
+                        end
+                        iid = [];
+                        for uc = 1:numel(ucon)  % go trough all nodes that should be connected to
+                                if any(ucon(uc) == upp)  % check if the pp exists there
+                                    ind = find(neuron{x}.pp{cell_target}.(pp).node(:) == ucon(uc));  % find all PPs at that node, the (:) is to make it in 1 dim
+                                    iid = cat (1,iid,ind(1:min(cpp(ucon(uc) == upp),ccon(uc))));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
+                                    if cpp(ucon(uc) == upp) < ccon(uc)  % give a warning if more connections were declared than PPs exist at that node
+                                       display(sprintf('Warning cell %d. More connections to same %s declared than %ss at that node',neuron{n}.con(c).target.cell,pp,pp))
+                                    end
+                                else
+                                    display(sprintf('Warning cell %d. PP %s for connection does not exist at node %d',neuron{n}.con(c).target.cell,pp,ucon(uc)))
+                                end
+                        end
+                        
                         for t1 = 1:numel(cell_source)
                             for ii = 1:numel(iid)
                                 newstr{count} = sprintf('%sppList.o(%d)',str{t1},neuron{x}.pp{cell_target}.(pp).id(iid(ii)));
@@ -1339,6 +1367,10 @@ for n = 1:numel(neuron)
                                 %print the whole vector into the hoc file. alternatively i
                                 %could give a file name where the vector lies so it is not
                                 %written each time cn is called...
+                                if strcmp(tree{thesetrees{n}(t)}.artificial,'VecStim') && any(neuron{n}.play{t}.(playfields{f1})(r).times < 0)
+                                   neuron{n}.play{t}.(playfields{f1})(r).times(neuron{n}.play{t}.(playfields{f1})(r).times < 0) = []; 
+                                   display('Warning, VecStim should not receive negative play times. These are deleted now') 
+                                end
                                 f = fopen(fullfile(exchfolder,thisfolder,sprintf('plt_%s_of_art_%s_cell%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play, playfields{f1}, t-1)),'w');
                                 fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).times(1:end-1));
                                 fprintf(f,'%g\n', neuron{n}.play{t}.(playfields{f1})(r).times(end));
@@ -1384,7 +1416,6 @@ for n = 1:numel(neuron)
         delete(fullfile(exchfolder,thisfolder,'init_play.hoc'));
     end
     %% write save_rec.hoc
-    %     if params.changed.rec || params.changed.morph     %rewrite only if something has changed influencing this file
     ofile = fopen(fullfile(exchfolder,thisfolder,'save_rec.hoc') ,'wt');   %open record hoc file in write modus
     fprintf(ofile,'// * Write Recordings to Files *\n');
     %     end
