@@ -1,4 +1,4 @@
-function out = m2n_error(out,outoptions,errorcode)
+function out = t2n_error(out,outoptions,errorcode)
 if nargin < 3 || isempty(errorcode)
     errorcode = 1;
 end

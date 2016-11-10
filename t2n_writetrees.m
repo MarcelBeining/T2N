@@ -1,4 +1,4 @@
-function tree = m2n_writetrees(params,tree,options,savepath)
+function tree = t2n_writetrees(params,tree,options,savepath)
 % transforms the tree file into hoc code and also saves a interface file
 % for correct node-section assignment
 %
@@ -23,6 +23,8 @@ else
 end
 if isfield(params,'morphfolder')
     morphfolder = fullfile(params.path,params.morphfolder);
+% elseif exist(fullfile(params.path,'morphos'),'dir')
+%     morphfolder = fullfile(params.path,'morphos');
 else
     errordlg('Please give morphfolder in params.morphfolder');
     return
@@ -79,6 +81,10 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         badchars = badchars +numel(strfind(treename,'%'));
         treename(strfind(treename,'%')) = [];
     end
+    if any(strfind(treename,'-'))
+        badchars = badchars +numel(strfind(treename,'%'));
+        treename(strfind(treename,'-')) = '_';
+    end
     if any(strfind(treename,'.'))
         badchars = badchars +numel(strfind(treename,'.'));
         treename(strfind(treename,'.')) = '_';
@@ -107,7 +113,7 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
     end
     
     tree{t}.NID = treename;
-    if nonameflag
+    if nonameflag || badchars > 0
         tree{t}.name = treename;
     end
 end
@@ -124,7 +130,7 @@ if ~all(artflag)
     end
 end
 if badchars > 0
-    %     warndlg(sprintf('Caution! %d bad chars had to be removed or replaced from the tree names since they cause writing errors! Please be sure to not use "%%" and "." in the names',badchars),'Bad characters removed');
+        warndlg(sprintf('Caution! %d bad chars had to be removed or replaced from the tree names since they cause writing errors! Please be sure to not use "%%" and "." in the names',badchars),'Bad characters removed');
 end
 % if strfind(options,'-d')
 %     tim = toc(tim);

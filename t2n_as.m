@@ -1,4 +1,4 @@
-function thisneuron = m2n_as(as,neuron)
+function thisneuron = t2n_as(as,neuron)
 
 fields = {'tree','mech','pp','con','record','play','APCount'};
 
