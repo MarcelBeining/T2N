@@ -50,16 +50,18 @@ end
 orderchanged = false;
 badchars = 0;
 
-artflag = false(numel(tree),1);
+artflag = cellfun(@(x) isfield(x,'artificial'),tree);  % get boolean for trees being artificial
+indartflag = find(artflag);   % get indices
+[~,ia] = unique(cellfun(@(x) x.artificial,tree(artflag),'UniformOutput',0));  % find artificial cells that are of the same type
+tree = cat(1,tree(~artflag),tree(indartflag(ia)));  % only write trees that are not artificial and one artificial tree of each type
+
+
 for t=1:numel(tree)     % make neuron templates from trees and save/get minterface file
-    artflag(t) = false;
-    if ~isfield(tree{t},'artificial')
+    if ~artflag(t)
         [tree{t}, order] = sort_tree(tree{t},'-LO');
         if ~all(order==sort(order))
             orderchanged = true;
         end
-    else
-        artflag(t) = true;
     end
     nonameflag = false;
     if ~artflag(t) && isfield(params,'tname') && ischar(params.tname) && ~isempty(params.tname)

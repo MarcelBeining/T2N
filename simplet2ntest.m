@@ -16,13 +16,20 @@ params.v_init = -80;                    % starting voltage of all cells
 params.dt = 0.025;                      % integration time step [ms]
 params.tstop = 300;                     % stop simulation after this (simulation) time [ms]
 params.prerun = -400;                   % add a pre runtime [ms] to let system settle
+params.celsius = 37;
+params.nseg = 'd_lambda';
+params.accuracy = 1;
 
 neuron = [];                    % clear neuron
-neuron.mech{1}.all.pas = struct('g',0.0002,'Ra',200,'e',-80,'cm',1);    % add passive channel to all regions and define membrane capacity [µF/cm²], cytoplasmic resistivity [Ohm cm] and e_leak [mV]
-neuron.mech{1}.soma.hh = struct('gnabar',0.4,'gl',0);                   % add Hodgkin-Huxley Sodium channel only to soma 
+for t = 1:numel(tree)
+    neuron.mech{t}.all.pas = struct('g',0.0001,'Ra',200,'e',-80,'cm',1);    % add passive channel to all regions and define membrane capacity [µF/cm²], cytoplasmic resistivity [Ohm cm] and e_leak [mV]
+    neuron.mech{t}.soma.hh = struct('gnabar',0.4,'gl',0);                   % add Hodgkin-Huxley Sodium channel only to soma
+end
 
 neuron.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[0.2 0]);  % add a current clamp electrode to first node and define stimulation times [ms] and amplitude [nA]
+% neuron.pp{1}.AlphaSyn = struct('node',16,'gmax',0.2,'onset',50);
 neuron.record{1}.cell = struct('node',1,'record','v');                  % record voltage "v" from first node
+neuron.record{1}.IClamp = struct('node',1,'record','i');
 
 tree = t2n_writetrees(params,tree);                                     % transform tree to NEURON morphology
 
@@ -30,9 +37,12 @@ tree = t2n_writetrees(params,tree);                                     % transf
 out = t2n(tree,params,neuron,'-w-q');         % execute t2n
 
 figure; 
+subplot(2,1,1)
 plot(out.t,out.record{1}.cell.v{1})         % plot result (time vs voltage)
 ylabel('Voltage [mV]')
 xlabel('Time [ms]')
+subplot(2,1,2)
+plot(out.t,out.record{1}.IClamp.i{1})         % plot result (time vs voltage)
 
 %% do several simulations with different current input
 %% t2n CAN DO PARALLEL! :-D
@@ -58,7 +68,7 @@ xlabel('Time [ms]')
 
 %% Map voltage during spike onto tree
 
-t = [58 60];
+t = [50 60];
 neuron.record{1}.cell.node = 1:numel(tree{1}.X);  % again use already defined neuron structure but now record from all nodes of the tree
 
 out = t2n(tree,params,neuron,'-w-q');   % execute t2n
