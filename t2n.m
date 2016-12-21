@@ -19,7 +19,7 @@ function [out, origminterf,params,tree] = t2n(tree,params,neuron,options)
 % options:
 %   -w waitbar
 %   -d Debug mode (NEURON is opened and some parameters are set)
-%   -q quiet mode -> suppress output
+%   -q quiet mode -> suppress output and suppress NEURON instance(s) opening
 %   -cl cluster mode -> files are prepared to be executed on a cluster.
 %   -f  force cluster to run neuron directly without qsub
 %                       Automatic run is not executed and output files are only read if copied back
@@ -32,7 +32,7 @@ function [out, origminterf,params,tree] = t2n(tree,params,neuron,options)
 %%%%%%%%%%%%%%%%%%% CONFIGURATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-interf_file = 'neuron_runthis.hoc'; % the file which will be written
+interf_file = 'neuron_runthis.hoc'; % the name of the main hoc file which will be written
 
 if ~isfield(params,'path')
     params.path = regexprep(pwd,'\\','/');
@@ -53,7 +53,7 @@ if strcmpi(params.path(end),'\')
     params.path = params.path(1:end-1);
 end
 
-if ~isempty(strfind(options,'-cl'))
+if ~isempty(strfind(options,'-cl')) % server mode (not fully implemented)
     nrn_path = params.server.clpath;
     if ~isfield(params.server,'walltime') || numel(params.server.walltime) ~=3
         params.server.walltime = [0 30 0];
@@ -62,33 +62,32 @@ if ~isempty(strfind(options,'-cl'))
 else
     nrn_path = params.path;
 end
-if strcmp(nrn_path(end),'/')
+if strcmp(nrn_path(end),'/') % remove "/" from path
     nrn_path = nrn_path(1:end-1);
 end
 
 
 %% initialize basic variables
-noutfiles = 0;
-readfiles = cell(0);
+noutfiles = 0;          % counter for number of output files
+readfiles = cell(0);    % cell array that stores information about output files
 
 %% check other input
 
 if nargin < 2 || isempty(params)
     if debug == 1
-        %% individual params structure for debug
+        %% individual parameters structure for debug
         params.openNeuron = true;
         params.nseg = 'dlambda';
         params.tstop = 200;
         params.dt = 0.025;
         params.accuracy = 0;
         params.prerun = false;
-        
     else
         params = [];
     end
 end
-% create some standard parameter set
-if nargin < 3 || isempty(neuron)
+
+if nargin < 3 || isempty(neuron) % if no neuron structure was given, create standard parameter set
     if debug ~= 1
         warndlg('No input about what to do was given! Standard test (HH + rectangle somatic stimulation) is used')
     end
@@ -99,6 +98,7 @@ if nargin < 3 || isempty(neuron)
     neuron.mech.soma.hh = [];
     neuron.mech.axon.hh = [];
 end
+
 outoptions.nocell = false;
 if isstruct(neuron)         % transform structure neuron to cell neuron
     if numel(neuron) == 1
@@ -110,7 +110,7 @@ if isstruct(neuron)         % transform structure neuron to cell neuron
 end
 out = cell(numel(neuron),1);
 
-% check trees are correctly inside one cell
+% check if trees are there and composed within a cell array
 if nargin < 1 || isempty(tree)
     errordlg('No tree specified in input')
     out = t2n_error(out,outoptions);
@@ -122,23 +122,24 @@ elseif isstruct(tree)
     tree = {tree};
 end
 
+% check for morphology folder
 if isfield(params,'morphfolder')
     morphfolder = fullfile(params.path,params.morphfolder);
 elseif exist(fullfile(nrn_path,'morphos'),'dir')
     morphfolder = fullfile(nrn_path,'morphos');
     params.morphfolder = 'morphos';
 else
-    errordlg('Please give morphfolder in params.morphfolder or create standard morphfolder "morphos"');
+    errordlg('Please give morphology folder in params.morphfolder or create standard morphology folder "morphos"');
     out = t2n_error(out,outoptions);
     return
 end
 morphfolder = regexprep(morphfolder,'\\','/');
 
 if ~isfield(params,'neuronpath')
-    params.neuronpath = 'C:/nrn73w64/bin64/nrniv.exe';  % change neuron path if necessary
+    params.neuronpath = 'C:/nrn73w64/bin64/nrniv.exe';  % default path to neuron exe
 end
 
-if strfind(options,'-cl')
+if strfind(options,'-cl') % server mode, not fully implemented
     if ~isfield(params,'server')
         errordlg('No access data provided for Cluster server. Please specify in params.server')
         out = t2n_error(out,outoptions);
@@ -163,7 +164,7 @@ if strfind(options,'-cl')
         if ~isfield(params.server,'clpath')
             %            params.server.clpath = '~';
             %            warndlg('No Path on the Server specified. Root folder will be used')
-            errordlg('No Path on Server specified')
+            errordlg('No folder on Server specified, please specify under params.server.clpath')
             out = t2n_error(out,outoptions);
             return
         end
@@ -171,7 +172,8 @@ if strfind(options,'-cl')
 end
 
 
-
+% check for exchange folder (folder where files between Matlab and NEURON
+% are exchanged)
 if isfield(params,'exchfolder')
     exchfolder = fullfile(params.path,params.exchfolder);
     if strfind(options,'-cl')
@@ -190,26 +192,33 @@ else
 end
 nrn_exchfolder = regexprep(nrn_exchfolder,'\\','/');
 
+
+% check for several standard parameter and initialize default value if not set
 if ~isfield(params,'cvode')
     params.cvode = false;
 end
 if ~isfield(params,'use_local_dt')
     params.use_local_dt = 0;
 end
-if ~isfield(params,'openNeuron')
+if ~isfield(params,'openNeuron') || isempty(strfind(options,'-q'))
     params.openNeuron = false;
 end
 if ~isfield(params,'nseg') || strcmpi(params.nseg,'d_lambda')
     params.nseg = 'dlambda';
+    display('Number of segments or nseg rule not set in params.nseg. Dlambda rule will be applied')
 end
 if ~isfield(params,'tstart')
     params.tstart = 0;
 end
 if ~isfield(params,'tstop')
     params.tstop = 200;
+    display('Tstop not defined in params.tstop. Default value of 200 ms is applied.')
 end
 if ~isfield(params,'dt')
     params.dt = 0.025;
+    if ~params.cvode
+        display('Time step not defined in params.dt. Default value of 0.025 ms is applied.')
+    end
 end
 if ~isfield(params,'accuracy')
     params.accuracy = 0;
@@ -220,17 +229,19 @@ end
 if ~isfield(params,'q10')
     params.q10 = false;
 end
+if ~isfield(params,'prerun')
+    params.prerun = false;
+end
 
 
-% when using Parallel Simulation Run, always rewrite every hoc file!
-
-
+% Check if NEURON software exists at the given path
 if exist(params.neuronpath,'file') ~= 2
     errordlg(sprintf('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath));
     out = t2n_error(out,outoptions,3);
     return
 end
 
+% check for standard hoc files in the model folder and copy them if not existing
 t2npath = which('t2n.m');  % get folder of t2n for copying files from it
 if ~exist(fullfile(params.path,'lib_genroutines'),'file')
     mkdir(params.path,'lib_genroutines')
@@ -249,13 +260,6 @@ if ~exist(fullfile(params.path,'lib_genroutines/pasroutines.hoc'),'file')
     display('pasroutines.hoc copied to model folder')
 end
 
-if ~isfield(params,'prerun')
-    params.prerun = false;
-end
-
-if strfind(options,'-q')
-    params.openNeuron = 0;
-end
 
 if params.cvode && isnumeric(params.dt)
     warning ('t2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
@@ -372,11 +376,12 @@ end
 spines_flag = false(numel(neuron),1);
 minterf = cell(numel(tree),1);
 for n = 1:numel(neuron)
-    for t = 1:numel(neuron{n}.mech)   % check if any region of any tree has the spines mechanism
-        if ~isempty(neuron{n}.mech{t})
-            fields = fieldnames(neuron{n}.mech{t});
+    x = getref(n,neuron,'mech');
+    for t = 1:numel(neuron{x}.mech)   % check if any region of any tree has the spines mechanism
+        if ~isempty(neuron{x}.mech{t})
+            fields = fieldnames(neuron{x}.mech{t});
             for f = 1:numel(fields)
-                if any(strcmpi(fieldnames(neuron{n}.mech{t}.(fields{f})),'spines'))
+                if any(strcmpi(fieldnames(neuron{x}.mech{t}.(fields{f})),'spines'))
                     spines_flag(n) = true;
                     break
                 end
@@ -399,7 +404,6 @@ for n = 1:numel(neuron)
             minterf{thesetrees{n}(tt)} = make_nseg(tree{thesetrees{n}(tt)},origminterf{thesetrees{n}(tt)},params,neuron{x}.mech{thesetrees{n}(tt)});
         end
     end
-    
     if ~isfield(params,'access')
         access = [find(~cellfun(@(y) isfield(y,'artificial'),tree(thesetrees{n})),1,'first'), 1];      % std accessing first non-artificial tree at node 1
     else
@@ -672,6 +676,7 @@ for n = 1:numel(neuron)
     
     
     %% write init_cells.hoc
+    
     if usestreesof(n) == n  % write only if morphologies are not referenced to other sim init_cell.hoc
         ofile = fopen(fullfile(exchfolder,thisfolder,'init_cells.hoc') ,'wt');   %open morph hoc file in write modus
         fprintf(ofile,'\n\n');
@@ -703,7 +708,9 @@ for n = 1:numel(neuron)
     elseif exist(fullfile(exchfolder,thisfolder,'init_cells.hoc'),'file')
         delete(fullfile(exchfolder,thisfolder,'init_cells.hoc'));
     end
+    
     %% write init_mech.hoc
+    
     if getref(n,neuron,'mech') == n     %rewrite only if mechanism is not taken from previous sim
         rangestr = '';
         ofile = fopen(fullfile(exchfolder,thisfolder,'init_mech.hoc') ,'wt');   %open morph hoc file in write modus
@@ -969,7 +976,9 @@ for n = 1:numel(neuron)
     elseif exist(fullfile(exchfolder,thisfolder,'init_mech.hoc'),'file')
         delete(fullfile(exchfolder,thisfolder,'init_mech.hoc'));
     end
+    
     %% write init_pp.hoc
+    
     if getref(n,neuron,'pp') == n     %rewrite only if PP def is not taken from previous sim
         ofile = fopen(fullfile(exchfolder,thisfolder,'init_pp.hoc') ,'wt');   %open morph hoc file in write modus
         fprintf(ofile,'\n\n');
@@ -1078,7 +1087,9 @@ for n = 1:numel(neuron)
         fclose(ofile);
     end
     
+    
     %% write init_con.hoc
+    
     if getref(n,neuron,'con') == n     %rewrite only if connections are not taken from previous sim
         ofile = fopen(fullfile(exchfolder,thisfolder,'init_con.hoc') ,'wt');   %open morph hoc file in write modus
         fprintf(ofile,'\n\n');
@@ -1116,17 +1127,17 @@ for n = 1:numel(neuron)
                         %                         [~,iid] = intersect(neuron{x}.pp{cell_source}.(pp).node,neuron{n}.con(c).source.node); % get reference to the node location of the PPs that should be connected
                         % that is not working if several pp are defined at
                         % that node. here comes the workaround
-                        if isfield(neuron{n}.con(c).source,'ppi')  % check for an index to a PP subgroup
-                            ppi = neuron{n}.con(c).source.ppi;
+                        if isfield(neuron{n}.con(c).source,'ppg')  % check for an index to a PP subgroup
+                            ppg = neuron{n}.con(c).source.ppg;
                         else
-                            ppi = 1:numel(neuron{x}.pp{cell_source}.(pp));  % else take all PP subgroups
+                            ppg = 1:numel(neuron{x}.pp{cell_source}.(pp));  % else take all PP subgroups
                         end
                         
-                        upp = unique(cat(1,neuron{x}.pp{cell_source}.(pp)(ppi).node));  % unique pp nodes of the cell
+                        upp = unique(cat(1,neuron{x}.pp{cell_source}.(pp)(ppg).node));  % unique pp nodes of the cell
                         if numel(upp) == 1 % otherwise hist would make as many bins as upp
-                            cpp = numel(cat(1,neuron{x}.pp{cell_source}.(pp)(ppi).node));%1;
+                            cpp = numel(cat(1,neuron{x}.pp{cell_source}.(pp)(ppg).node));%1;
                         else
-                            cpp =hist(cat(1,neuron{x}.pp{cell_source}.(pp)(ppi).node),upp); % number of pps at the same nodes
+                            cpp =hist(cat(1,neuron{x}.pp{cell_source}.(pp)(ppg).node),upp); % number of pps at the same nodes
                         end
                         ucon = unique(neuron{n}.con(c).source.node); % unique connection nodes declared to the cell
                         if numel(ucon) == 1  % otherwise hist would make as many bins as ucon
@@ -1134,11 +1145,11 @@ for n = 1:numel(neuron)
                         else
                             ccon =hist(neuron{n}.con(c).source.node,ucon); % number of connections to the same node
                         end
-                        iid = cell(numel(neuron{n}.pp{cell_source}.(pp)(ppi)),1);  % initialize ids to pps
+                        iid = cell(numel(neuron{n}.pp{cell_source}.(pp)(ppg)),1);  % initialize ids to pps
                         for uc = 1:numel(ucon)  % go trough all nodes that should be connected from
                             if any(ucon(uc) == upp)  % check if the pp exists there
                                 for n1 = 1:numel(iid)
-                                    ind = find(neuron{x}.pp{cell_source}.(pp)(ppi(n1)).node == ucon(uc));  % find all PPs at that node
+                                    ind = find(neuron{x}.pp{cell_source}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
                                     if ~isempty(ind)
                                         if cpp(ucon(uc) == upp) == ccon(uc)    % same number of PPs and connections, put them together, should be ok without warning
                                             iid{n1} = cat (1,iid{n1},ind);
@@ -1203,16 +1214,16 @@ for n = 1:numel(neuron)
                         %                         intersect unfortunately fails if more than one PP
                         %                         is declared at the same node and con wants to
                         %                         target both. here comes the workaround
-                        if isfield(neuron{n}.con(c).target(it),'ppi')
-                            ppi = neuron{n}.con(c).target(it).ppi;
+                        if isfield(neuron{n}.con(c).target(it),'ppg')
+                            ppg = neuron{n}.con(c).target(it).ppg;
                         else
-                            ppi = 1:numel(neuron{x}.pp{cell_target}.(pp));
+                            ppg = 1:numel(neuron{x}.pp{cell_target}.(pp));
                         end
-                        upp = unique(cat(1,neuron{x}.pp{cell_target}.(pp)(ppi).node));  % unique pp nodes of the cell
+                        upp = unique(cat(1,neuron{x}.pp{cell_target}.(pp)(ppg).node));  % unique pp nodes of the cell
                         if numel(upp) == 1 % otherwise hist would make as many bins as upp
-                            cpp = numel(cat(1,neuron{x}.pp{cell_target}.(pp)(ppi).node));%1;
+                            cpp = numel(cat(1,neuron{x}.pp{cell_target}.(pp)(ppg).node));%1;
                         else
-                            cpp =hist(cat(1,neuron{x}.pp{cell_target}.(pp)(ppi).node),upp); % number of pps at the same nodes
+                            cpp =hist(cat(1,neuron{x}.pp{cell_target}.(pp)(ppg).node),upp); % number of pps at the same nodes
                         end
                         ucon = unique(neuron{n}.con(c).target(it).node); % unique connection nodes declared to the cell
                         if numel(ucon) == 1  % otherwise hist would make as many bins as ucon
@@ -1220,12 +1231,12 @@ for n = 1:numel(neuron)
                         else
                             ccon =hist(neuron{n}.con(c).target(it).node,ucon); % number of connections to the same node
                         end
-                        iid = cell(numel(neuron{n}.pp{cell_target}.(pp)(ppi)),1);  % initialize ids to pps
+                        iid = cell(numel(neuron{n}.pp{cell_target}.(pp)(ppg)),1);  % initialize ids to pps
                         for uc = 1:numel(ucon)  % go trough all nodes that should be connected to
                             if any(ucon(uc) == upp)  % check if the pp exists there
 %                                 
                                 for n1 = 1:numel(iid)
-                                    ind = find(neuron{x}.pp{cell_target}.(pp)(ppi(n1)).node == ucon(uc));  % find all PPs at that node
+                                    ind = find(neuron{x}.pp{cell_target}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
                                     if ~isempty(ind)
                                         if cpp(ucon(uc) == upp) < ccon(uc)  % less PPs exist than connections to node
                                             if numel(ind) == 1
@@ -1240,8 +1251,12 @@ for n = 1:numel(neuron)
                                                 return
                                             end
                                         elseif cpp(ucon(uc) == upp) > ccon(uc)  % more PPs exist than connections to node
-                                            iid{n1} = cat (1,iid{n1},ind(1:min(cpp(ucon(uc) == upp),ccon(uc))));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
-                                            display(sprintf('Warning cell %d, node %d. Less connections to same %s declared than %ss at that node. Connections target now only he first %d %ss.',cell_target,ucon(uc),pp,pp,min(cpp(ucon(uc) == upp),ccon(uc)),pp)) % give a warning if more connections were declared than PPs exist at that node
+                                            if isfield(neuron{n}.con(c).target(it),'ipp')
+                                                iid{n1} = cat (1,iid{n1},ind(neuron{n}.con(c).target(it).ipp));
+                                            else
+                                                iid{n1} = cat (1,iid{n1},ind(1:min(cpp(ucon(uc) == upp),ccon(uc))));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
+                                                display(sprintf('Warning cell %d, node %d. Less connections to same %s declared than %ss at that node. Connections target now only the first %d %ss.',cell_target,ucon(uc),pp,pp,min(cpp(ucon(uc) == upp),ccon(uc)),pp)) % give a warning if more connections were declared than PPs exist at that node
+                                            end
                                         else   % same number of PPs and connections, put them together, should be ok without warning
                                             iid{n1} = cat (1,iid{n1},ind);
                                         end
@@ -1254,12 +1269,12 @@ for n = 1:numel(neuron)
                             end
                         end
                         if numel(unique(cat(1,iid{:}))) ~= numel(cat(1,iid{:}))
-                           display(sprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(x).target(y).ppi = z" to connect only to the zth group of PP %s.',neuron{n}.con(c).target.cell,c,pp,pp,pp))
+                           display(sprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(x).target(y).ppg = z" to connect only to the zth group of PP %s.',neuron{n}.con(c).target.cell,c,pp,pp,pp))
                         end
                         for t1 = 1:numel(cell_source)
                             for n1 = 1:numel(iid)
                                 for ii = 1:numel(iid{n1})
-                                    newstr{count} = sprintf('%sppList.o(%d)',str{t1},neuron{x}.pp{cell_target}.(pp)(ppi(n1)).id(iid{n1}(ii)));
+                                    newstr{count} = sprintf('%sppList.o(%d)',str{t1},neuron{x}.pp{cell_target}.(pp)(ppg(n1)).id(iid{n1}(ii)));
                                     count = count +1;
                                 end
                             end
@@ -1727,7 +1742,9 @@ for n = 1:numel(neuron)
     elseif exist(fullfile(exchfolder,thisfolder,'init_play.hoc'),'file')
         delete(fullfile(exchfolder,thisfolder,'init_play.hoc'));
     end
+    
     %% write save_rec.hoc
+    
     ofile = fopen(fullfile(exchfolder,thisfolder,'save_rec.hoc') ,'wt');   %open record hoc file in write modus
     fprintf(ofile,'// * Write Recordings to Files *\n');
     %     end
@@ -1910,6 +1927,7 @@ for n = 1:numel(neuron)
         tim = toc(tim);
         fprintf(sprintf('Sim %d: HOC writing time: %g min %.2f sec\n',n,floor(tim/60),rem(tim,60)))
     end
+    
 end
 
 %% Execute NEURON
@@ -2233,8 +2251,12 @@ function minterf = make_nseg(tree,minterf,params,mech)
 %necessary to find nearest segment which will be calculated
 dodlambda = 0;
 doeach = 0;
+
 if ischar(params.nseg)
-    pl = Pvec_tree(tree);  % path length of tree..
+%     pl = Pvec_tree(tree);  % path length of tree..
+    len = len_tree(tree);
+    idpar = idpar_tree(tree);
+    
     if strcmpi(params.nseg,'dlambda')
         dodlambda = 1;
         
@@ -2257,10 +2279,8 @@ end
 minterf(:,4) = 0;
 
 for sec = 0:max(minterf(:,2))  %go through all sections
-    
     secstart = find(minterf(:,2) == sec & minterf(:,3) == 0);
     secend = find(minterf(:,2) == sec & minterf(:,3) == 1,1,'last');
-    
     if dodlambda || doeach
         secnodestart = minterf(secstart,1);
         if secnodestart == 0  % this means the current section is the tiny section added for neuron... this should have nseg = 1
@@ -2290,22 +2310,25 @@ for sec = 0:max(minterf(:,2))  %go through all sections
                 cm = 1;
             end
         end
-        
+
         if flag
             L = 0.0001;   % this is the length according to root_tree
         else
-            L =  pl(secnodeend) - pl(secnodestart); %length of section
+%             L =  pl(secnodeend) - pl(secnodestart); %length of section
+            L = sum(len(secnodestart2:secnodeend)); %length of section
         end
         if dodlambda
-            lambda_f = 0;
-            %from here same calculation as in fixnseg
-            for in = secnodestart2:secnodeend
-                if in == secnodestart2   % if lastnode was a branching node it is not in a row with next node.account for that
-                    lambda_f = lambda_f + (pl(in)-pl(secnodestart))/sqrt(D(secnodestart)+D(in));
-                else
-                    lambda_f = lambda_f + (pl(in)-pl(in-1))/sqrt(D(in-1)+D(in));
-                end
-            end
+%             lambda_f = 0;
+%             %from here same calculation as in fixnseg
+%             for in = secnodestart2:secnodeend
+%                 if in == secnodestart2   % if lastnode was a branching node it is not in a row with next node.account for that
+%                     lambda_f = lambda_f + (pl(in)-pl(secnodestart))/sqrt(D(secnodestart)+D(in));
+%                 else
+%                     lambda_f = lambda_f + (pl(in)-pl(in-1))/sqrt(D(in-1)+D(in));
+%                 end
+%             end
+            lambda_f = sum(len(secnodestart2:secnodeend)./sqrt(D(idpar(secnodestart2:secnodeend)) + D(secnodestart2:secnodeend)));
+            
             lambda_f = lambda_f * sqrt(2) * 1e-5*sqrt(4*pi*freq*Ra*cm);
             
             if lambda_f == 0
@@ -2321,7 +2344,6 @@ for sec = 0:max(minterf(:,2))  %go through all sections
     else
         nseg = params.nseg;
     end
-    
     %     fprintf('%d\n',nseg);
     if isfield(params,'accuracy')
         if params.accuracy == 2 || (params.accuracy == 1 && (~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'axon')) || ~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'soma'))) ) %triple nseg if accuracy is necessary also finds axonh
@@ -2333,11 +2355,15 @@ for sec = 0:max(minterf(:,2))  %go through all sections
     pos = (2 * (1:nseg) - 1) / (2*nseg);    %calculate positions
     fac = (secend-secstart+1)/nseg;
     if fac > 1   % more tree nodes than segments
-        for in = secstart+1:secend  %!%!%! secstart+1 because first segment gets NaN
-            [~,ind] = min(abs(minterf(in,3) - pos));   %find position to node which is closest to next segment location
-            minterf(in,4) = pos(ind);                % hier evt ausnahme für anfang und ende der section (=0)
-        end
-        
+%         if numel(pos) < 10
+%             for in = secstart+1:secend  %!%!%! secstart+1 because first segment gets NaN
+%                 [~,ind] = min(abs(minterf(in,3) - pos));   %find position to node which is closest to next segment location
+%                 minterf(in,4) = pos(ind);                % hier evt ausnahme für anfang und ende der section (=0)
+%             end
+%         else
+            [~,ind] = min(abs(repmat(minterf(secstart+1:secend,3),1,numel(pos)) - repmat(pos,secend-secstart,1)),[],2);  %find position to node which is closest to next segment location
+            minterf(secstart+1:secend,4) = pos(ind);
+%         end
     else     % more segments than tree nodes, so one has to add entries in minterf
         dupl = 0;
         for p = 1:numel(pos)
