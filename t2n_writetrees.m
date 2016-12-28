@@ -15,7 +15,9 @@ if isstruct(tree)
     tree = {tree};
     sflag = 1;
 end
-
+if size(tree,1) ~= numel(tree)  % check for correct 1st dimension 
+    tree = tree';
+end
 if ~isfield(params,'path')
     params.path = regexprep(pwd,'\\','/');
 else

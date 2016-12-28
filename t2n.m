@@ -236,9 +236,13 @@ end
 
 % Check if NEURON software exists at the given path
 if exist(params.neuronpath,'file') ~= 2
-    errordlg(sprintf('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath));
-    out = t2n_error(out,outoptions,3);
-    return
+    if isempty(strfind(params.neuronpath,'.exe') && exist(fullfile(params.neuronpath,'nrniv.exe'),'file') == 2) % path only points to folder, not to exe
+        params.neuronpath = fullfile(params.neuronpath,'nrniv.exe');
+    else
+        errordlg(sprintf('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath));
+        out = t2n_error(out,outoptions,3);
+        return
+    end
 end
 
 % check for standard hoc files in the model folder and copy them if not existing
@@ -2435,4 +2439,25 @@ else
     n = NaN;
 end
 
+end
+
+
+function out = t2n_error(out,outoptions,errorcode)
+if nargin < 3 || isempty(errorcode)
+    errorcode = 1;
+end
+if nargin < 2 || isempty(outoptions)
+    outoptions.nocell = 0;
+end
+
+for n = 1:numel(out)
+    if isfield(out{n},'error') && out{n}.error > 0
+    else
+        out{n}.error = errorcode;
+    end
+end
+
+if outoptions.nocell  % make output a structure not cell since only one simulation was calculated..
+   out = out{1}; 
+end
 end
