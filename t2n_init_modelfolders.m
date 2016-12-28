@@ -1,8 +1,18 @@
-folder = uigetdir(pwd,'Please give a folder where the model structure should be initialized');
+function t2n_init_modelfolders(folder)
+
+if nargin < 1
+    folder = uigetdir(pwd,'Please give a folder where the model structure should be initialized');
+end
+if ~ischar(folder)
+    errordlg('Input was no string')
+    return
+end
+if ~exist(folder,'file')
+    mkdir(folder)
+end
 % cd(folder)
 
 mkdir(folder,'lib_mech')
-mkdir(folder,'lib_genroutines')
 mkdir(folder,'lib_custom')
 mkdir(folder,'morphos')
 

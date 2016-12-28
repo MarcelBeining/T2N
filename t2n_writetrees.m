@@ -1,14 +1,16 @@
-function tree = t2n_writetrees(params,tree,options,savepath)
+function tree = t2n_writetrees(params,tree,savepath,options)
 % transforms the tree file into hoc code and also saves a interface file
 % for correct node-section assignment
 %
 % options
-% -cl: Cluster mode. Files are written to Server
-% removed -d: Debug mode. Some measures are shown
+% -d: Debug mode. The duration of writing hocs is shown
+% -w: Waitbar showing the progress
+% %deactived for the moment: -cl: Cluster mode. Files are written to Server
 
-if nargin < 3
+if nargin < 4
     options = '';
 end
+
 
 sflag = 0;
 if isstruct(tree)
@@ -27,8 +29,10 @@ if isfield(params,'morphfolder')
     morphfolder = fullfile(params.path,params.morphfolder);
 % elseif exist(fullfile(params.path,'morphos'),'dir')
 %     morphfolder = fullfile(params.path,'morphos');
+elseif exist(fullfile(params.path,'morphos'),'dir')
+    morphfolder = fullfile(params.path,'morphos');
 else
-    errordlg('Please give morphfolder in params.morphfolder');
+    errordlg('Please give morphology folder in "params.morphfolder" or create the standard folder "morphos" using "t2n_init_modelfolders"!');
     return
 end
 
@@ -57,7 +61,10 @@ indartflag = find(artflag);   % get indices
 [~,ia] = unique(cellfun(@(x) x.artificial,tree(artflag),'UniformOutput',0));  % find artificial cells that are of the same type
 tree = cat(1,tree(~artflag),tree(indartflag(ia)));  % only write trees that are not artificial and one artificial tree of each type
 
-
+tim = tic;
+if ~isempty(strfind(options,'-w'))
+    w = waitbar(0,'Trees are transformed to hoc, please wait...');
+end
 for t=1:numel(tree)     % make neuron templates from trees and save/get minterface file
     if ~artflag(t)
         [tree{t}, order] = sort_tree(tree{t},'-LO');
@@ -108,6 +115,7 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
     
     oname = treename;
     neuron_template_tree (tree{t}, fullfile(morphfolder,sprintf('%s.hoc',treename)), [], '-m');
+    
     if strfind(options,'-cl')   %transfer files to server
         params.server.connect = sftpfrommatlab(params.server.connect,fullfile(morphfolder,sprintf('%s.hoc',oname)),sprintf('%s/%s.hoc',nrn_morphfolder,oname));
         pause(0.1)
@@ -120,26 +128,32 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
     if nonameflag || badchars > 0
         tree{t}.name = treename;
     end
+    if ~isempty(strfind(options,'-w'))
+        waitbar(t/numel(tree),w);
+    end
 end
 
 if sflag
     tree = tree{1};
 end
 if ~all(artflag)
-    if nargin < 4
+    if nargin < 3
         display('Please resave trees to have the NEURON ID in each tree')
         save_tree(tree);
     else
         save_tree(tree,savepath);
     end
 end
+if ~isempty(strfind(options,'-w'))
+    close(w)
+end
 if badchars > 0
         warndlg(sprintf('Caution! %d bad chars had to be removed or replaced from the tree names since they cause writing errors! Please be sure to not use "%%" and "." in the names',badchars),'Bad characters removed');
 end
-% if strfind(options,'-d')
-%     tim = toc(tim);
-%     fprintf(sprintf('Tree writing/reading time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
-% end
+if strfind(options,'-d')
+    tim = toc(tim);
+    fprintf(sprintf('Tree hoc writing time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
+end
 
 if orderchanged && nargout == 0
     warndlg('Caution, the node order of some trees had to be changed! Sort your trees with "sort_tree" to obtain the correct results','Node order change!')

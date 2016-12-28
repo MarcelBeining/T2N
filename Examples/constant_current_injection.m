@@ -1,7 +1,8 @@
-% Kannst Du mal ein bisschen Beispielcode schicken, z.B. für das folgende Szenario:
-% sample_tree mit HH in den nodes mit BO<2 und Synapsen in allen terminalen. 
-% Dazu Strominjektion von t = 1sec-2sec und Messung von Vm überall und APs an der Wurzel zwischen t = 0sec-3sec.
-% <>
+% This an example code for the following scenario:
+% equip the TREES sample_tree with the HH mechanism in nodes that have a branch order < 2.
+% further equip the tree with synapses in all dendritic terminals and inject a current there from
+% t = 1sec-2sec. Measure voltage everywhere. 
+
 params = [];
 neuron = [];
 params.tstop = 3000;
@@ -36,7 +37,7 @@ for t = 1:numel(tree)
    
    neuron.mech{t}.all.pas = struct('g',g_pas,'e',e_pas,'cm',1);
    neuron.mech{t}.BOst2.hh = struct(); % struct('gnabar',gnabar_hh,'gkbar',gkbar_hh); % wenn du hh nicht mit standardparameter willst ersetze = struct(); mit dem auskommentierten
-%    neuron.pp{t}.AlpaSynapse = struct('node',termind);  % this would have been the code for inserting real synapses but I guess you meant constant    current injection, so Iclamp is easier.
+%    neuron.pp{t}.AlpaSynapse = struct('node',termind);  % this would have been the code for inserting real synapses but for a constant current injection, Iclamp is easier.
    neuron.pp{t}.IClamp = struct('node',termind,'del',1000,'dur',1000,'amp',amp);  % add current injection to terminal nodes
    
    neuron.record{t}.cell = struct('node',1:numel(tree{t}.X),'record','v');
@@ -44,7 +45,7 @@ end
 
 
 %% rewrite tree hocs if necessary ( if morphology changed)
-tree = t2n_writetrees(params,tree,[],fullfile(params.morphfolder,treename));
+tree = t2n_writetrees(params,tree,fullfile(params.morphfolder,treename));
 
 
 %% run simulation and plot stuff

@@ -361,7 +361,7 @@ if ~all(cellfun(@(x) isfield(x,'NID'),tree)) || ~all(cellfun(@(x) exist(fullfile
             ind(~ind) = ~cellfun(@(x) exist(fullfile(morphfolder,strcat(x.NID,'.hoc')),'file'),tree(~ind));
         end
         
-        tree(ind) = t2n_writetrees(params,tree(ind),options);
+        tree(ind) = t2n_writetrees(params,tree(ind),'',options);
     else
         out = t2n_error(out,outoptions);
         origminterf = [];
