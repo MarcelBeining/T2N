@@ -2208,7 +2208,7 @@ if ischar(params.nseg)
             d_lambda = 0.1;
         end
     elseif ~isempty(strfind(params.nseg,'ach')) % check for "each"
-        each = cell2mat(textscan(params.nseg,'%*s %d')); % get number
+        each = double(cell2mat(textscan(params.nseg,'%*s %d'))); % get number
         doeach = 1;
     end
     
