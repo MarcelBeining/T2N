@@ -634,7 +634,11 @@ for n = 1:numel(neuron)
             if isfield( tree{thesetrees{n}(tt)},'params')
                 fields = fieldnames( tree{thesetrees{n}(tt)}.params);
                 for f = 1:numel(fields)
-                    fprintf(ofile, sprintf('cell.cell.%s = %g\n',fields{f}, tree{thesetrees{n}(tt)}.params.(fields{f})));
+                    if ischar(tree{thesetrees{n}(tt)}.params.(fields{f})) && regexpi(tree{thesetrees{n}(tt)}.params.(fields{f}),'^(.*)$')  % check if this is a class/value pair, then use the () instead of =
+                        fprintf(ofile, sprintf('cell.cell.%s%s\n',fields{f}, tree{thesetrees{n}(tt)}.params.(fields{f})));
+                    else
+                        fprintf(ofile, sprintf('cell.cell.%s = %g\n',fields{f}, tree{thesetrees{n}(tt)}.params.(fields{f})));
+                    end
                 end
             end
             
@@ -996,7 +1000,11 @@ for n = 1:numel(neuron)
                                     else
                                         if numel(neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})) > 1
                                             if numel(neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})) == numel(node)
-                                                fprintf(ofile,sprintf('pp.%s = %f \n', fields{f2},neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})(in)) );
+                                                if iscell(neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})(in)) && ischar(neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2}){in}) && regexpi(neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2}){in},'^(.*)$')  % check if this is a class/value pair, then use the () instead of =
+                                                    fprintf(ofile,sprintf('pp.%s%s \n', fields{f2},neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2}){in} ));
+                                                else
+                                                    fprintf(ofile,sprintf('pp.%s = %f \n', fields{f2},neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})(in)) );
+                                                end
                                             else
                                                 errordlg(sprintf('Caution: "%s" vector of PP "%s" has wrong size!\n It has to be equal 1 or equal the number of nodes where the PP is inserted,',fields{f2},ppfield{f1}))
                                                 out = t2n_error(out,outoptions);
@@ -1006,7 +1014,11 @@ for n = 1:numel(neuron)
                                                 return
                                             end
                                         else
-                                            fprintf(ofile,sprintf('pp.%s = %f \n', fields{f2},neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})) );
+                                            if ischar(neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})) && regexpi(neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2}),'^(.*)$')  % check if this is a class/value pair, then use the () instead of =
+                                                fprintf(ofile,sprintf('pp.%s%s \n', fields{f2},neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2}) ));
+                                            else
+                                                fprintf(ofile,sprintf('pp.%s = %f \n', fields{f2},neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})) );
+                                            end
                                         end
                                     end
                                 end
