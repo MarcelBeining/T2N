@@ -24,15 +24,15 @@ if ~exist(fullfile(folder,'lib_genroutines'),'file')
     display('non-existent folder lib_genroutines created')
 end
 if ~exist(fullfile(folder,'lib_genroutines/fixnseg.hoc'),'file')
-    copyfile(fullfile(t2npath(1:end-6),'fixnseg.hoc'),fullfile(folder,'lib_genroutines/fixnseg.hoc'))
+    copyfile(fullfile(t2npath(1:end-6),'templates_neuron','fixnseg.hoc'),fullfile(folder,'lib_genroutines/fixnseg.hoc'))
     display('fixnseg.hoc copied to model folder')
 end
 if ~exist(fullfile(folder,'lib_genroutines/genroutines.hoc'),'file')
-    copyfile(fullfile(t2npath(1:end-6),'genroutines.hoc'),fullfile(folder,'lib_genroutines/genroutines.hoc'))
+    copyfile(fullfile(t2npath(1:end-6),'templates_neuron','genroutines.hoc'),fullfile(folder,'lib_genroutines/genroutines.hoc'))
     display('genroutines.hoc copied to model folder')
 end
 if ~exist(fullfile(folder,'lib_genroutines/pasroutines.hoc'),'file')
-    copyfile(fullfile(t2npath(1:end-6),'pasroutines.hoc'),fullfile(folder,'lib_genroutines/pasroutines.hoc'))
+    copyfile(fullfile(t2npath(1:end-6),'templates_neuron','pasroutines.hoc'),fullfile(folder,'lib_genroutines/pasroutines.hoc'))
     display('pasroutines.hoc copied to model folder')
 end
 

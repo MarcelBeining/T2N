@@ -57,7 +57,7 @@ if ~isempty(strfind(options,'-cl')) % server mode (not fully implemented)
     nrn_path = params.server.clpath;
     if ~isfield(params.server,'walltime') || numel(params.server.walltime) ~=3
         params.server.walltime = [0 30 0];
-        warndlg('Server walltime not specified correctly (1 by 3 vector in params.server.walltime). Walltime set to 30 minutes');
+        warning('Server walltime not specified correctly (1 by 3 vector in params.server.walltime). Walltime set to 30 minutes');
     end
 else
     nrn_path = params.path;
@@ -89,7 +89,7 @@ end
 
 if nargin < 3 || isempty(neuron) % if no neuron structure was given, create standard parameter set
     if debug ~= 1
-        warndlg('No input about what to do was given! Standard test (HH + rectangle somatic stimulation) is used')
+        warning('No input about what to do was given! Standard test (HH + rectangle somatic stimulation) is used')
     end
     neuron.pp{1}.IClamp = struct('node', 1, 'del',100,'dur',50,'amp',0.05);
     neuron.record{1}.cell = struct('node',1 ,'record', 'v');
@@ -112,9 +112,7 @@ out = cell(numel(neuron),1);
 
 % check if trees are there and composed within a cell array
 if nargin < 1 || isempty(tree)
-    errordlg('No tree specified in input')
-    out = t2n_error(out,outoptions);
-    return
+    error('No tree specified in input')
 end
 if iscell(tree) && iscell(tree{1})
     tree = tree{1};
@@ -129,9 +127,8 @@ elseif exist(fullfile(nrn_path,'morphos'),'dir')
     morphfolder = fullfile(nrn_path,'morphos');
     params.morphfolder = 'morphos';
 else
-    errordlg('Please give morphology folder in params.morphfolder or create standard morphology folder "morphos"');
-    out = t2n_error(out,outoptions);
-    return
+    error('Please give morphology folder in params.morphfolder or create standard morphology folder "morphos"');
+%     return
 end
 morphfolder = regexprep(morphfolder,'\\','/');
 
@@ -141,9 +138,8 @@ end
 
 if strfind(options,'-cl') % server mode, not fully implemented
     if ~isfield(params,'server')
-        errordlg('No access data provided for Cluster server. Please specify in params.server')
-        out = t2n_error(out,outoptions);
-        return
+        error('No access data provided for Cluster server. Please specify in params.server')
+%         return
     else
         if isfield(params.server,'connect')
             
@@ -154,19 +150,17 @@ if strfind(options,'-cl') % server mode, not fully implemented
                 try
                     sshfrommatlabinstall(1)
                 catch
-                    errordlg('Could not find the ganymed ssh zip file')
-                    out = t2n_error(out,outoptions);
-                    return
+                    error('Could not find the ganymed ssh zip file')
+%                     return
                 end
             end
             params.server.connect = sshfrommatlab(params.server.user,params.server.host,params.server.pw);
         end
         if ~isfield(params.server,'clpath')
             %            params.server.clpath = '~';
-            %            warndlg('No Path on the Server specified. Root folder will be used')
-            errordlg('No folder on Server specified, please specify under params.server.clpath')
-            out = t2n_error(out,outoptions);
-            return
+            %            warning('No Path on the Server specified. Root folder will be used')
+            error('No folder on Server specified, please specify under params.server.clpath')
+%             return
         end
     end
 end
@@ -240,7 +234,6 @@ if exist(params.neuronpath,'file') ~= 2
         params.neuronpath = fullfile(params.neuronpath,'nrniv.exe');
     else
         error('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath);
-%         out = t2n_error(out,outoptions,3);
 %         return
     end
 end
@@ -300,9 +293,7 @@ if ~all(cellfun(@(x) isfield(x,'NID'),tree)) || ~all(cellfun(@(x) exist(fullfile
         
         tree(ind) = t2n_writetrees(params,tree(ind),'',options);
     else
-        out = t2n_error(out,outoptions);
-        origminterf = [];
-        return
+        error('T2N aborted');
     end
 end
 origminterf = cell(numel(tree),1);
@@ -699,12 +690,12 @@ for n = 1:numel(neuron)
                                     if strcmpi(mechpar{p},'cm') || strcmpi(mechpar{p},'Ra') || (~isempty(strfind(mechs{m},'_ion')) &&  (numel(mechpar{p}) <= strfind(mechs{m},'_ion') || (numel(mechpar{p}) > strfind(mechs{m},'_ion') && ~strcmp(mechpar{p}(strfind(mechs{m},'_ion')+1),'0'))))       %if mechanism is an ion or passive cm/Ra, leave out mechansim suffix
                                         if ~isempty(strfind(mechs{m},'_ion')) && strcmpi(mechpar{p},'style')
                                             if numel(neuron{n}.mech{t}.all.(mechs{m}).(mechpar{p})) ~= 5
-                                                errordlg(sprintf('Error! Style specification of ion "%s" should be 5 numbers (see NEURON or t2n documentation)',mechs{m}))
-                                                out = t2n_error(out,outoptions);
                                                 for nn = 1:numel(neuron)
                                                     delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                 end
-                                                return
+                                                error(sprintf('Error! Style specification of ion "%s" should be 5 numbers (see NEURON or t2n documentation)',mechs{m}))
+
+%                                                 return
                                             end
                                             strion_all{tt} = sprintf('%sion_style("%s",%d,%d,%d,%d,%d)\n',strion_all{tt},mechs{m},neuron{n}.mech{t}.all.(mechs{m}).(mechpar{p}));   %neuron: define values
                                             flag_strion_all(tt) = true;
@@ -747,12 +738,12 @@ for n = 1:numel(neuron)
                                             if strcmpi(mechpar{p},'cm') || strcmpi(mechpar{p},'Ra') || (~isempty(strfind(mechs{m},'_ion')) &&  (numel(mechpar{p}) <= strfind(mechs{m},'_ion') || (numel(mechpar{p}) > strfind(mechs{m},'_ion') && ~strcmp(mechpar{p}(strfind(mechs{m},'_ion')+1),'0'))))       %if mechanism is an ion or passive cm/Ra, leave out mechansim suffix
                                                 if ~isempty(strfind(mechs{m},'_ion')) && strcmpi(mechpar{p},'style')
                                                     if numel(neuron{n}.mech{t}.all.(mechs{m}).(mechpar{p})) ~= 5
-                                                        errordlg(sprintf('Error! Style specification of ion "%s" should be 5 numbers (see NEURON or t2n documentation)',mechs{m}))
-                                                        out = t2n_error(out,outoptions);
                                                         for nn = 1:numel(neuron)
                                                             delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                         end
-                                                        return
+                                                        error(sprintf('Error! Style specification of ion "%s" should be 5 numbers (see NEURON or t2n documentation)',mechs{m}))
+
+%                                                         return
                                                     end
                                                     strion_reg{tt}{r} = sprintf('%sion_style("%s",%d,%d,%d,%d,%d)\n',strion_reg{tt}{r},mechs{m},neuron{n}.mech{t}.(regs{r}).(mechs{m}).(mechpar{p}));   %neuron: define values
                                                     flag_strion_reg{tt}(r) = true;
@@ -764,12 +755,11 @@ for n = 1:numel(neuron)
                                                 if numel(neuron{n}.mech{t}.(regs{r}).(mechs{m}).(mechpar{p})) == 1
                                                     str = sprintf('%s%s_%s = %g\n',str,mechpar{p},mechs{m},neuron{n}.mech{t}.(regs{r}).(mechs{m}).(mechpar{p}));   %neuron: define values
                                                 else
-                                                    errordlg(sprintf('Parameter %s of mechanism %s in region %s has more than one value, please check.',mechpar{p},mechs{m},regs{r}))
-                                                    out = t2n_error(out,outoptions);
                                                     for nn = 1:numel(neuron)
                                                         delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                     end
-                                                    return
+                                                    error(sprintf('Parameter %s of mechanism %s in region %s has more than one value, please check.',mechpar{p},mechs{m},regs{r}))
+%                                                     return
                                                 end
                                             end
                                         end
@@ -821,23 +811,20 @@ for n = 1:numel(neuron)
                                             rangestr = sprintf('%sset_range(%d,"%s","%s","%s","%s_%s")\n',rangestr,tt-1,secname,segname,valname,vars{r},mechs{m});
                                         end
                                     else
-                                        errordlg('Range variable definition should be a vector with same number of elements as tree has nodes')
-                                        out = t2n_error(out,outoptions);
                                         for nn = 1:numel(neuron)
                                             delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                         end
-                                        return
+                                        error('Range variable definition should be a vector with same number of elements as tree has nodes')
+%                                         return
                                     end
                                 end
                             end
                             
                         else
-                            errordlg('Setting range variables for artificial cells is invalid')
-                            out = t2n_error(out,outoptions);
                             for nn = 1:numel(neuron)
                                 delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                             end
-                            return
+                            error('Setting range variables for artificial cells is invalid')
                         end
                     end
                 end
@@ -872,7 +859,7 @@ for n = 1:numel(neuron)
                 fprintf(ofile, 'forsec cellList.o(CELLINDEX).allreg {\n');
                 fprintf(ofile, sprintf('nseg = %f\n}\n}\n}\n\n',round(params.nseg)) );
                 if rem(round(params.nseg),2) == 0
-                    warndlg('nseg is not odd! Please reconsider nseg');
+                    warning('nseg is not odd! Please reconsider nseg');
                 end
             elseif isfield(params,'nseg') && strcmpi(params.nseg,'dlambda')
                 fprintf(ofile, 'geom_nseg()\n}\n}\n\n');
@@ -882,7 +869,7 @@ for n = 1:numel(neuron)
                 fprintf(ofile, sprintf('n = L/%d\nnseg = n+1\n}\n}\n}\n\n',each) );
             else
                 fprintf(ofile, '// No nseg specified!!!\n}\n}\n\n');
-                warndlg('nseg has not been specified in params.nseg (correctly?)!')
+                warning('nseg has not been specified in params.nseg (correctly?)!')
             end
             
             if any(cellfun(@any,flag_strnseg_reg)) || any(flag_strnseg_all)
@@ -1006,12 +993,10 @@ for n = 1:numel(neuron)
                                                     fprintf(ofile,sprintf('pp.%s = %f \n', fields{f2},neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})(in)) );
                                                 end
                                             else
-                                                errordlg(sprintf('Caution: "%s" vector of PP "%s" has wrong size!\n It has to be equal 1 or equal the number of nodes where the PP is inserted,',fields{f2},ppfield{f1}))
-                                                out = t2n_error(out,outoptions);
                                                 for nn = 1:numel(neuron)
                                                     delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                 end
-                                                return
+                                                error(sprintf('Caution: "%s" vector of PP "%s" has wrong size!\n It has to be equal 1 or equal the number of nodes where the PP is inserted,',fields{f2},ppfield{f1}))
                                             end
                                         else
                                             if ischar(neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2})) && regexpi(neuron{n}.pp{t}.(ppfield{f1})(n1).(fields{f2}),'^(.*)$')  % check if this is a class/value pair, then use the () instead of =
@@ -1064,12 +1049,10 @@ for n = 1:numel(neuron)
                     end
                 else
                     if numel(cell_source) > 1
-                        errordlg(sprintf('Error in connection %d of neuron instance %d! You must define a single cell ID if the source of a NetCon is a PointProcess or a section!',c,n))
-                        out = t2n_error(out,outoptions);
                         for nn = 1:numel(neuron)
                             delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                         end
-                        return
+                        error(sprintf('Error in connection %d of neuron instance %d! You must define a single cell ID if the source of a NetCon is a PointProcess or a section!',c,n))
                     end
                     if any(strcmp(sourcefields,'pp'))  % point process is the source
                         x = getref(n,neuron,'pp');
@@ -1104,12 +1087,10 @@ for n = 1:numel(neuron)
                                         if cpp(ucon(uc) == upp) == ccon(uc)    % same number of PPs and connections, put them together, should be ok without warning
                                             iid{n1} = cat (1,iid{n1},ind);
                                         else
-                                            errordlg(sprintf('Error cell %d. %d connections are declared to start from from %d %ss at node %d. Making a connection from PP at a node where multiple of these PPs exist is not allowed. Probably you messed something up',cell_source,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc))) % give a warning if more connections were declared than PPs exist at that node
-                                            out = t2n_error(out,outoptions);
                                             for nn = 1:numel(neuron)
                                                 delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                             end
-                                            return
+                                            error(sprintf('Error cell %d. %d connections are declared to start from from %d %ss at node %d. Making a connection from PP at a node where multiple of these PPs exist is not allowed. Probably you messed something up',cell_source,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc))) % give a warning if more connections were declared than PPs exist at that node
                                         end
                                     end
                                 end
@@ -1193,12 +1174,10 @@ for n = 1:numel(neuron)
                                                 iid{n1} = cat (1,iid{n1},repmat(ind,ccon(uc),1));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
                                                 display(sprintf('Warning cell %d. More connections to same %s declared than %ss at that node. All connections target now that %s.',cell_target,pp,pp,pp)) % give a warning if more connections were declared than PPs exist at that node
                                             else
-                                                errordlg(sprintf('Error cell %d. %d connections are declared to %d %ss at node %d. Probably you messed something up',cell_target,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc))) % give a warning if more connections were declared than PPs exist at that node
-                                                out = t2n_error(out,outoptions);
                                                 for nn = 1:numel(neuron)
                                                     delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                 end
-                                                return
+                                                error(sprintf('Error cell %d. %d connections are declared to %d %ss at node %d. Probably you messed something up',cell_target,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc))) % give a warning if more connections were declared than PPs exist at that node
                                             end
                                         elseif cpp(ucon(uc) == upp) > ccon(uc)  % more PPs exist than connections to node
                                             if isfield(neuron{n}.con(c).target(it),'ipp')
@@ -1231,7 +1210,7 @@ for n = 1:numel(neuron)
                         end
                         
                     else   % nothing...
-                        warndlg('No target specified as connection')
+                        warning('No target specified as connection')
                         for t1 = 1:numel(cell_source)
                             newstr{count} = sprintf('%snil',str{t1});
                             count = count + 1;
@@ -1323,7 +1302,7 @@ for n = 1:numel(neuron)
                                         end
                                         if ~isempty(str)
                                             neuron{x}.record{t}.cell(r).node(ignorethese) = [];                     % delete the recording nodes which should be ignored
-                                            warndlg(sprintf('Region(s) "%s" of tree %d do not contain mechanism "%s" for recording. Recording in this region is ignored',str(1:end-1),t,strs{end}))
+                                            warning(sprintf('Region(s) "%s" of tree %d do not contain mechanism "%s" for recording. Recording in this region is ignored',str(1:end-1),t,strs{end}))
                                         end
                                     end
                                 end
@@ -1335,7 +1314,7 @@ for n = 1:numel(neuron)
                                     inode(in) = find(minterf{thesetrees{n}(tt)}(:,1) == neuron{x}.record{t}.(recfields{f1})(r).node(in),1,'first');    %find the index of the node in minterf
                                 end
                                 [realrecs,~,ic] = unique(minterf{thesetrees{n}(tt)}(inode,[2,4]),'rows');
-                                % put warndlg here !
+                                % put warning here !
                             end
                             
                             switch rectype
@@ -1523,7 +1502,7 @@ for n = 1:numel(neuron)
                                     end
                                     if ~isempty(str)
                                         neuron{x}.play{t}.cell(r).node(ignorethese) = [];                     % delete the playing nodes which should be ignored
-                                        warndlg(sprintf('Region(s) "%s" of tree %d do not contain mechanism "%s" for playing. Playing in this region is ignored',str(1:end-1),t,strs{end}))
+                                        warning(sprintf('Region(s) "%s" of tree %d do not contain mechanism "%s" for playing. Playing in this region is ignored',str(1:end-1),t,strs{end}))
                                     end
                                 end
                             end
@@ -1535,7 +1514,7 @@ for n = 1:numel(neuron)
                                 inode(in) = find(minterf{thesetrees{n}(tt)}(:,1) == neuron{x}.play{t}.(playfields{f1})(r).node(in),1,'first');    %find the index of the node in minterf
                             end
                             [realplays,~,ic] = unique(minterf{thesetrees{n}(tt)}(inode,[2,4]),'rows');
-                            % put warndlg here !
+                            % put warning here !
                         end
                         
                         switch playtype
@@ -1591,12 +1570,10 @@ for n = 1:numel(neuron)
                                                 fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).times(in,1:end-1));
                                                 fprintf(f,'%g\n', neuron{n}.play{t}.(playfields{f1})(r).times(in,end));
                                             else
-                                                errordlg('Times vector of play feature has wrong size')
-                                                out = t2n_error(out,outoptions);
                                                 for nn = 1:numel(neuron)
                                                     delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                 end
-                                                return
+                                                error('Times vector of play feature has wrong size')
                                             end
                                         else
                                             fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).times(1:end-1));
@@ -1669,7 +1646,7 @@ for n = 1:numel(neuron)
                                     fprintf(ofile,'play.scanf(f)\n');     % file is read into play vector
                                     fprintf(ofile,'io = f.close()\n');   %file is closed
                                     fprintf(ofile,sprintf('play.label("%s of artificial cell %s (cell #%d)")\n', neuron{x}.play{t}.cell(r).play , tree{thesetrees{n}(tt)}.artificial, tt-1) ); % label the vector for plotting                                    fprintf(ofile,sprintf('io = play.play(&ppList.o(%d).%s,playt)\n',neuron{x3}.pp{t}.(playfields{f1})(r).id(ind), neuron{x}.play{t}.(playfields{f1})(r).play ) ); % play the parameter x at site y as specified in neuron{x}.play
-                                    warndlg('not tested yet play')
+                                    warning('not tested yet play')
                                     fprintf(ofile,sprintf('io = cellList.o(%d).cell.play(&,playt)\n',tt-1, neuron{x}.play{t}.(playfields{f1})(r).play ) ); % play the parameter x at site y as specified in neuron{x}.play
                                     fprintf(ofile,'io = playList.append(play)\n\n' );  %append playing vector to playList
                                 else
@@ -1882,14 +1859,12 @@ end
 
 %% Execute NEURON
 if ~isempty(strfind(options,'-cl'))
-    warndlg('Multi-Thread and server execution not yet implemented')
-    out = t2n_error(out,outoptions);
-    return
+    error('Multi-Thread and server execution not yet implemented')
 else
     num_cores = feature('numCores');
     if isfield(params,'numCores')
         if num_cores < params.numCores
-           warndlg(sprintf('%d cores have been assigned to T2N, however only %d physical cores where detected. Defining more cores might slow down PC and simulations',params.numCores,num_cores)) 
+           warning(sprintf('%d cores have been assigned to T2N, however only %d physical cores where detected. Defining more cores might slow down PC and simulations',params.numCores,num_cores)) 
         end
         num_cores = params.numCores;
         
@@ -1990,11 +1965,8 @@ if noutfiles > 0 % if output is expected
                 if strcmp(answer,'Close')
                     system('taskkill /F /IM nrniv.exe');
                 end
-                %                 errordlg('Waitbar was closed, t2n stopped continuing. Only finished data is returned. If accidently, retry.')
                 simids(simids<2) = 4;
-                %                 out = t2n_error(out,outoptions);
                 fclose all;
-                
             end
         end
     end
@@ -2006,7 +1978,7 @@ if noutfiles > 0 % if output is expected
             [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('ls %s/%s/readyflag',nrn_exchfolder,sprintf('sim%d',s(ss))));
             if isempty(answer)    % then there was an error during executing NEURON
                 if strfind(options,'-f')
-                    errordlg(sprintf('There was an error during NEURON simulation:\n %s.',strcat(oanswer{:})))
+                    error(sprintf('There was an error during NEURON simulation:\n %s.',strcat(oanswer{:})))
                 else
                     [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('ls *e%d*',jobid(s(ss))));
                     if ~isempty(answer)
@@ -2015,7 +1987,7 @@ if noutfiles > 0 % if output is expected
                         %                 f = fopen(fullfile(exchfolder,answer{1}));
                         %                 errfile = textscan(f,'%s','Delimiter','\n');
                         %                 errstr =
-                        errordlg(sprintf('There was an error during NEURON simulation. Please refer to cluster output file "%s".',answer{1}))
+                        error(sprintf('There was an error during NEURON simulation. Please refer to cluster output file "%s".',answer{1}))
                     end
                 end
                 r = find(simids==0,1,'first');  % find next not runned simid
@@ -2095,8 +2067,6 @@ if noutfiles > 0 % if output is expected
                 if strcmp(answer,'Close')
                     system('taskkill /F /IM nrniv.exe');
                 end
-                %                 errordlg('Waitbar was closed during data loading. If accidently, retry.')
-                out = t2n_error(out,outoptions);
                 fclose all;
                 for n = 1:numel(neuron)
                     delete(fullfile(exchfolder,sprintf('sim%d',n),'iamrunning'));   % delete the running mark
@@ -2118,9 +2088,6 @@ if noutfiles > 0 % if output is expected
     end
     if ~isempty(strfind(options,'-w'))
         close(w)
-    end
-    if (outoptions.nocell && ~isfield(out,'error')) || ~outoptions.nocell && any(cellfun(@(x) ~isfield(x,'error'),out))
-        out = t2n_error(out,outoptions,0);
     end
     if strfind(options,'-d')
         tim = toc(tim);
@@ -2260,9 +2227,9 @@ for sec = 0:max(minterf(:,2))  %go through all sections
             else
                 %NEURON standard values for Ra and cm
                 if isfield(tree,'rnames')
-                    warndlg(sprintf('Ra or cm of region %s in tree %s not specified',tree.rnames{tree.R(secnodestart)},tree.name),'Ra or cm not specified','replace')
+                    warning(sprintf('Ra or cm of region %s in tree %s not specified',tree.rnames{tree.R(secnodestart)},tree.name),'Ra or cm not specified','replace')
                 else
-                    warndlg('Cannot find passive parameters for nseg calculation! If this is desired, you should define a fixed nseg value','No passive paramers found','replace')
+                    warning('Cannot find passive parameters for nseg calculation! If this is desired, you should define a fixed nseg value','No passive paramers found','replace')
                 end
                 Ra = 35.4;
                 cm = 1;
@@ -2393,25 +2360,4 @@ else
     n = NaN;
 end
 
-end
-
-
-function out = t2n_error(out,outoptions,errorcode)
-if nargin < 3 || isempty(errorcode)
-    errorcode = 1;
-end
-if nargin < 2 || isempty(outoptions)
-    outoptions.nocell = 0;
-end
-
-for n = 1:numel(out)
-    if isfield(out{n},'error') && out{n}.error > 0
-    else
-        out{n}.error = errorcode;
-    end
-end
-
-if outoptions.nocell  % make output a structure not cell since only one simulation was calculated..
-   out = out{1}; 
-end
 end
