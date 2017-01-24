@@ -200,7 +200,7 @@ end
 if ~isfield(params,'use_local_dt')
     params.use_local_dt = 0;
 end
-if ~isfield(params,'openNeuron') || isempty(strfind(options,'-q'))
+if ~isfield(params,'openNeuron') || ~isempty(strfind(options,'-q'))
     params.openNeuron = false;
 end
 if ~isfield(params,'nseg') || strcmpi(params.nseg,'d_lambda')
@@ -239,9 +239,9 @@ if exist(params.neuronpath,'file') ~= 2
     if isempty(strfind(params.neuronpath,'.exe') && exist(fullfile(params.neuronpath,'nrniv.exe'),'file') == 2) % path only points to folder, not to exe
         params.neuronpath = fullfile(params.neuronpath,'nrniv.exe');
     else
-        errordlg(sprintf('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath));
-        out = t2n_error(out,outoptions,3);
-        return
+        error('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath);
+%         out = t2n_error(out,outoptions,3);
+%         return
     end
 end
 
@@ -1887,6 +1887,14 @@ if ~isempty(strfind(options,'-cl'))
     return
 else
     num_cores = feature('numCores');
+    if isfield(params,'numCores')
+        if num_cores < params.numCores
+           warndlg(sprintf('%d cores have been assigned to T2N, however only %d physical cores where detected. Defining more cores might slow down PC and simulations',params.numCores,num_cores)) 
+        end
+        num_cores = params.numCores;
+        
+    end
+    
 end
 simids = zeros(numel(neuron),1); % 0 = not run, 1 = running, 2 = finished, 3 = error
 jobid = simids;
