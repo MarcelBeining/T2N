@@ -1,38 +1,31 @@
 function [out, origminterf,params,tree] = t2n(tree,params,neuron,options)
-% function t2n ("Matlab to Neuron") to generate and execute a .hoc-file in NEURON
-% with the parameters in the vector <params> and <neuron>;
-% The output-file(s) of the NEURON function are read by cn and transferred
+% function t2n ("Trees toolbox to Neuron") to generate and execute a NEURON
+% simulation with the morphologies in tree, and parameters in the structure 
+% params and neuron
+% The output-file(s) of the NEURON function are read and transferred
 % into the output variable out
-% Second and third argument are optional; use {} to leave out the second
-% argument.
-% 'readyflag' is reserved for checking if neuron has finished
-% openNeuron [0]: option to open the command window of NEURON (set to '1';
-% useful for debugging)
-% don't use 'load_file("nrngui.hoc")' in the NEURON-procedure if you don't
-% want the NEURON-menue to
-% open (and to get the focus --> extremely anyoing...);
-%
-% neuron.connect =
-% neuron.play =  {node , 'param', {tvec},{vec},continbool};
-% neuron.APCount= {node, thresh};
 %
 % options:
 %   -w waitbar
 %   -d Debug mode (NEURON is opened and some parameters are set)
 %   -q quiet mode -> suppress output and suppress NEURON instance(s) opening
+%   -m let T2N recompile the nrnmech.dll. Useful if a mod file was modified. 
+%      For safety of compiled dlls, this option does not work when an explicit 
+%      name of a dll was given via params.nrnmech!
 %   -cl cluster mode -> files are prepared to be executed on a cluster.
-%   -f  force cluster to run neuron directly without qsub
-%                       Automatic run is not executed and output files are only read if copied back
 %
-% This code is based on an idea of Johannes Kasper, a former group-member
+% This code originated from an idea of Johannes Kasper, a former group-member
 % in the Lab of Hermann Cuntz, Frankfurt.
 %
 % Copyright by marcel.beining@gmail.com, June 2015
 
 %%%%%%%%%%%%%%%%%%% CONFIGURATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 interf_file = 'neuron_runthis.hoc'; % the name of the main hoc file which will be written
+
+%% check options and paths
+
+t2npath = fileparts(which('t2n.m'));
 
 if ~isfield(params,'path')
     params.path = regexprep(pwd,'\\','/');
@@ -239,21 +232,20 @@ if exist(params.neuronpath,'file') ~= 2
 end
 
 % check for standard hoc files in the model folder and copy them if not existing
-t2npath = which('t2n.m');  % get folder of t2n for copying files from it
 if ~exist(fullfile(params.path,'lib_genroutines'),'file')
     mkdir(params.path,'lib_genroutines')
     display('non-existent folder lib_genroutines created')
 end
 if ~exist(fullfile(params.path,'lib_genroutines/fixnseg.hoc'),'file')
-    copyfile(fullfile(t2npath(1:end-6),'fixnseg.hoc'),fullfile(params.path,'lib_genroutines/fixnseg.hoc'))
+    copyfile(fullfile(t2npath,'fixnseg.hoc'),fullfile(params.path,'lib_genroutines/fixnseg.hoc'))
     display('fixnseg.hoc copied to model folder')
 end
 if ~exist(fullfile(params.path,'lib_genroutines/genroutines.hoc'),'file')
-    copyfile(fullfile(t2npath(1:end-6),'genroutines.hoc'),fullfile(params.path,'lib_genroutines/genroutines.hoc'))
+    copyfile(fullfile(t2npath,'genroutines.hoc'),fullfile(params.path,'lib_genroutines/genroutines.hoc'))
     display('genroutines.hoc copied to model folder')
 end
 if ~exist(fullfile(params.path,'lib_genroutines/pasroutines.hoc'),'file')
-    copyfile(fullfile(t2npath(1:end-6),'pasroutines.hoc'),fullfile(params.path,'lib_genroutines/pasroutines.hoc'))
+    copyfile(fullfile(t2npath,'pasroutines.hoc'),fullfile(params.path,'lib_genroutines/pasroutines.hoc'))
     display('pasroutines.hoc copied to model folder')
 end
 
@@ -359,8 +351,7 @@ for n = 1:numel(neuron)
                     end
                 end
             otherwise
-                out.error = 1;
-                return
+                error('T2N aborted')
         end
     else
         ofile = fopen(fullfile(exchfolder,thisfolder,'iamrunning') ,'wt');   %open morph hoc file in write modus
@@ -421,14 +412,32 @@ for n = 1:numel(neuron)
     if isfield(params,'nrnmech')
         if iscell(params.nrnmech)
             for c = 1:numel(params.nrnmech)
+                if ~exist(fullfile(params.path,'lib_mech',params.nrnmech{c}),'file')
+                    error('File %s is not existent in folder lib_mech',params.nrnmech{c})
+                end
                 fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',params.nrnmech{c}));
             end
         else
+            if ~exist(fullfile(params.path,'lib_mech',params.nrnmech),'file')
+                error('File %s is not existent in folder lib_mech',params.nrnmech)
+            end
             fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',params.nrnmech));
         end
     else
+        if ~exist(fullfile(params.path,'lib_mech','nrnmech.dll'),'file') || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
+            nrn_installfolder = regexprep(fileparts(fileparts(params.neuronpath)),'\\','/');
+            tstr = sprintf('cd "%s" && %s/mingw/bin/sh "%s/mknrndll.sh" %s',[nrn_path,'/lib_mech'],nrn_installfolder, regexprep(t2npath,'\\','/'), ['/',regexprep(nrn_installfolder,':','')]);
+            [~,cmdout] = system(tstr);
+            if isempty(strfind(cmdout,'nrnmech.dll was built successfully'))
+                error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually')
+            else
+                display('nrnmech.dll compiled from mod files in folder lib_mech') 
+            end
+            rename_nrnmech()  % delete the o and c files
+        end
         fprintf(nfile,'nrn_load_dll("lib_mech/nrnmech.dll")\n');
     end
+    
     if params.openNeuron
         fprintf(nfile,'io = load_file("nrngui.hoc")\n');     % load the NEURON GUI
     else
@@ -940,7 +949,7 @@ for n = 1:numel(neuron)
                                 fprintf(ofile,sprintf('{pp = new %s(%f)\n',ppfield{f1},minterf{thesetrees{n}(tt)}(inode,3) ) );  % new pp
                                 fields = setdiff(fieldnames(neuron{n}.pp{t}.(ppfield{f1})(n1)),{'node','id'});
                                 
-                                if any(strcmp(ppfield{f1},{'IClamp','SEClamp','SEClamp2','VClamp'})) && (any(strcmp(fields,'times')) || (any(strcmp(fields,'dur')) && numel(neuron{n}.pp{t}.(ppfield{f1})(n1).dur) > 3))
+                                if any(strcmp(ppfield{f1},{'IClamp','SEClamp','SEClamp2','VClamp'})) && (any(strcmp(fields,'times')) || (any(strcmp(fields,'dur')) && (numel(neuron{n}.pp{t}.(ppfield{f1})(n1).dur) > 3 || neuron{n}.pp{t}.(ppfield{f1})(n1).del == 0)))  % check if field "times" exists or multiple durations are given or del is zero (last point can introduce a bug when cvode is active)
                                     if any(strcmp(fields,'times'))
                                         times = sprintf('%f,',neuron{n}.pp{t}.(ppfield{f1})(n1).times);
                                     else   %bugfix since seclamp can only use up to 3 duration specifications
@@ -966,7 +975,7 @@ for n = 1:numel(neuron)
                                             fprintf(ofile,'play.play(&pp.amp1,playt)\n');
                                             fprintf(ofile,'pp.dur1 = 1e15\n');
                                     end
-                                    fields = setdiff(fields,{'times','amp','dur'});
+                                    fields = setdiff(fields,{'times','amp','dur','del'});
                                     fprintf(ofile,'io = playtList.append(playt)\n');
                                     fprintf(ofile,'io = playList.append(play)\n');
                                     fprintf(ofile, 'objref play\n');
@@ -1828,7 +1837,6 @@ for n = 1:numel(neuron)
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{9});
             m = m + 1;
         end
-        if isempty(strfind(options,'-f'))
             %create job
             ofile = fopen(fullfile(exchfolder,thisfolder,'start_nrn.job') ,'wt');
             
@@ -1846,7 +1854,6 @@ for n = 1:numel(neuron)
             fclose(ofile);
             localfilename{m} = fullfile(exchfolder,'start_nrn.job');
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,'start_nrn.job');
-        end
         params.server.connect = sftpfrommatlab(params.server.connect,localfilename,remotefilename);
     end
     
@@ -1895,7 +1902,6 @@ if noutfiles > 0 % if output is expected
     timm = tic;
     while ~all(simids>1)
         if ~isempty(strfind(options,'-cl'))
-            if isempty(strfind(options,'-f'))
                 pause(0.8);
                 for s = find(simids==1)
                     pause(0.2);
@@ -1923,11 +1929,6 @@ if noutfiles > 0 % if output is expected
                     end
                     %             [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('ls %s/readyflag',nrn_exchfolder));
                 end
-            else
-                % with direct mpirun matlab waits for command to be finished so there is no need
-                % for while loop..
-                oanswer = answer;
-            end
         else
             s = find(simids==1);
             for ss = 1:numel(s)
@@ -1977,18 +1978,14 @@ if noutfiles > 0 % if output is expected
         for ss = 1:numel(s)
             [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('ls %s/%s/readyflag',nrn_exchfolder,sprintf('sim%d',s(ss))));
             if isempty(answer)    % then there was an error during executing NEURON
-                if strfind(options,'-f')
-                    error(sprintf('There was an error during NEURON simulation:\n %s.',strcat(oanswer{:})))
-                else
-                    [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('ls *e%d*',jobid(s(ss))));
-                    if ~isempty(answer)
-                        % was planned to directly show error but...
-                        %                 scptomatlab(params.server.connect,exchfolder,answer{1})
-                        %                 f = fopen(fullfile(exchfolder,answer{1}));
-                        %                 errfile = textscan(f,'%s','Delimiter','\n');
-                        %                 errstr =
-                        error(sprintf('There was an error during NEURON simulation. Please refer to cluster output file "%s".',answer{1}))
-                    end
+                [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('ls *e%d*',jobid(s(ss))));
+                if ~isempty(answer)
+                    % was planned to directly show error but...
+                    %                 scptomatlab(params.server.connect,exchfolder,answer{1})
+                    %                 f = fopen(fullfile(exchfolder,answer{1}));
+                    %                 errfile = textscan(f,'%s','Delimiter','\n');
+                    %                 errstr =
+                    error(sprintf('There was an error during NEURON simulation. Please refer to cluster output file "%s".',answer{1}))
                 end
                 r = find(simids==0,1,'first');  % find next not runned simid
                 [jobid(r),tim] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,params,options);          % start new simulation
@@ -2093,8 +2090,11 @@ if noutfiles > 0 % if output is expected
         tim = toc(tim);
         fprintf(sprintf('Data loading time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
     end
+    
 end
-
+if outoptions.nocell
+    out = out{1};
+end
 for n = 1:numel(neuron)
     delete(fullfile(exchfolder,sprintf('sim%d',n),'iamrunning'));   % delete the running mark
 end
@@ -2120,15 +2120,8 @@ end
 fname = regexprep(fullfile(exchfolder,sprintf('sim%d',simid),interf_file),'\\','/');
 
 if ~isempty(strfind(options,'-cl'))
-    if strfind(options,'-f')
-        %             [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('nrngui -nobanner -nogui %s/%s/%s \n',nrn_exchfolder,sprintf('sim%d',simid),interf_file));  %!%!%!%!
-        [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('mpirun -np 5 nrngui -nobanner -nogui -mpi %s/%s \n',nrn_exchfolder,interf_file));
-    else
-        %             [params.server.connect,answer] = shfrommatlabissue(params.server.connect,sprintf('qsub %s/%s',nrn_exchfolder,'start_nrn.job'));
-        %             fprintf(sprintf('Answer server after submitting: %s\n',answer{1}))
-        [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('qsub %s/%s/%s',nrn_exchfolder,sprintf('sim%d',simid),'start_nrn.job'));
+       [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('qsub %s/%s/%s',nrn_exchfolder,sprintf('sim%d',simid),'start_nrn.job'));
         fprintf(sprintf('Answer server after submitting: %s\nExtracing Job Id and wait..\n',answer{1}))
-    end
 else
     oldpwd = '';
     if ~strcmpi(pwd,params.path)
@@ -2153,7 +2146,7 @@ end
 
 
 if ~isempty(strfind(options,'-cl'))
-    if numel(answer) == 1 && isempty(strfind(options,'-f'))
+    if numel(answer) == 1
         str = regexp(answer{1},'[0-9]*','match');
         ncount = cellfun(@numel,str);
         [~, ind] = max(ncount);
