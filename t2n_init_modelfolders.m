@@ -19,20 +19,21 @@ mkdir(folder,'morphos')
 
 % check for standard hoc files in the model folder and copy them if not existing
 t2npath = fileparts(which('t2n.m'));  % get folder of t2n for copying files from it
+addpath(genpath(fullfile(t2npath,'src')))  % add src files to Matlab search path
 if ~exist(fullfile(folder,'lib_genroutines'),'file')
     mkdir(folder,'lib_genroutines')
     display('non-existent folder lib_genroutines created')
 end
 if ~exist(fullfile(folder,'lib_genroutines/fixnseg.hoc'),'file')
-    copyfile(fullfile(t2npath,'templates_neuron','fixnseg.hoc'),fullfile(folder,'lib_genroutines/fixnseg.hoc'))
+    copyfile(fullfile(t2npath,'src','fixnseg.hoc'),fullfile(folder,'lib_genroutines/fixnseg.hoc'))
     display('fixnseg.hoc copied to model folder')
 end
 if ~exist(fullfile(folder,'lib_genroutines/genroutines.hoc'),'file')
-    copyfile(fullfile(t2npath,'templates_neuron','genroutines.hoc'),fullfile(folder,'lib_genroutines/genroutines.hoc'))
+    copyfile(fullfile(t2npath,'src','genroutines.hoc'),fullfile(folder,'lib_genroutines/genroutines.hoc'))
     display('genroutines.hoc copied to model folder')
 end
 if ~exist(fullfile(folder,'lib_genroutines/pasroutines.hoc'),'file')
-    copyfile(fullfile(t2npath,'templates_neuron','pasroutines.hoc'),fullfile(folder,'lib_genroutines/pasroutines.hoc'))
+    copyfile(fullfile(t2npath,'src','pasroutines.hoc'),fullfile(folder,'lib_genroutines/pasroutines.hoc'))
     display('pasroutines.hoc copied to model folder')
 end
 

@@ -47,10 +47,27 @@ if strcmpi(params.path(end),'\')
 end
 
 if ~isempty(strfind(options,'-cl')) % server mode (not fully implemented)
-    nrn_path = params.server.clpath;
+    nrn_path = params.server.modelfolder;
     if ~isfield(params.server,'walltime') || numel(params.server.walltime) ~=3
-        params.server.walltime = [0 30 0];
-        warning('Server walltime not specified correctly (1 by 3 vector in params.server.walltime). Walltime set to 30 minutes');
+        params.server.walltime = [5 0 0];
+        warning('Server walltime not specified correctly (1 by 3 vector in params.server.walltime). Walltime set to 5 hours');
+    end
+    if ~isfield(params.server,'memory') || numel(params.server.memory) ~=1
+        params.server.memory = 1;
+        warning('Max memory per node not specified correctly (1 scalar [GB] in params.server.memory). Max memory set to 1GB');
+    end
+    params.server.softwalltime = sum(params.server.walltime .* [3600,60,1])-30; %subtract 30 sec
+    params.server.softwalltime = floor([params.server.softwalltime/3600,rem(params.server.softwalltime,3600)/60,rem(params.server.softwalltime,60)]);
+    params.server.envstr = '';
+    params.server.qfold = '';
+    if isfield(params.server,'env') && isstruct(params.server.env)
+        envnames = fieldnames(params.server.env);
+        for v = 1:numel(envnames)
+            params.server.envstr = [params.server.envstr,'setenv ',envnames{v},' ',params.server.env.(envnames{v}),'; '];
+        end
+        if isfield(params.server.env,'SGE_ROOT') && isfield(params.server.env,'SGE_ARCH')
+            params.server.qfold = sprintf('%s/bin/%s/',params.server.env.SGE_ROOT,params.server.env.SGE_ARCH);
+        end
     end
 else
     nrn_path = params.path;
@@ -137,8 +154,11 @@ if strfind(options,'-cl') % server mode, not fully implemented
         if isfield(params.server,'connect')
             
         else
-            if exist('ganymed-ssh2-build250/ganymed-ssh2-build250.jar','file')
-                javaaddpath(which('ganymed-ssh2-build250/ganymed-ssh2-build250.jar'));
+            if  exist('sshj-master/sshj-0.0.0-no.git.jar','file')% exist('ganymed-ssh2-build250/ganymed-ssh2-build250.jar','file')
+                sshjfolder = fileparts(which('sshj-master/sshj-0.0.0-no.git.jar'));
+                javaaddpath(fullfile(sshjfolder,'sshj-0.0.0-no.git.jar'));%javaaddpath(which('ganymed-ssh2-build250/ganymed-ssh2-build250.jar'));
+                javaaddpath(fullfile(sshjfolder,'bcprov-ext-jdk15on-156.jar'));
+                javaaddpath(fullfile(sshjfolder,'slf4j-1.7.23'));
             else
                 try
                     sshfrommatlabinstall(1)
@@ -149,10 +169,10 @@ if strfind(options,'-cl') % server mode, not fully implemented
             end
             params.server.connect = sshfrommatlab(params.server.user,params.server.host,params.server.pw);
         end
-        if ~isfield(params.server,'clpath')
-            %            params.server.clpath = '~';
+        if ~isfield(params.server,'modelfolder')
+            %            params.server.modelfolder = '~';
             %            warning('No Path on the Server specified. Root folder will be used')
-            error('No folder on Server specified, please specify under params.server.clpath')
+            error('No folder on Server specified, please specify under params.server.modelfolder')
 %             return
         end
     end
@@ -164,14 +184,14 @@ end
 if isfield(params,'exchfolder')
     exchfolder = fullfile(params.path,params.exchfolder);
     if strfind(options,'-cl')
-        nrn_exchfolder = fullfile(params.server.clpath,params.exchfolder);
+        nrn_exchfolder = fullfile(params.server.modelfolder,params.exchfolder);
     else
         nrn_exchfolder = exchfolder;
     end
 else
     exchfolder = fullfile(params.path,'t2n_exchange');
     if strfind(options,'-cl')
-        nrn_exchfolder = fullfile(params.server.clpath,'t2n_exchange');
+        nrn_exchfolder = fullfile(params.server.modelfolder,'t2n_exchange');
     else
         nrn_exchfolder = exchfolder;
     end
@@ -222,7 +242,12 @@ end
 
 
 % Check if NEURON software exists at the given path
-if exist(params.neuronpath,'file') ~= 2
+if ~isempty(strfind(options,'-cl'))
+    [~, outp] = sshfrommatlabissue(params.server.connect,'module avail');
+    params.server.neuron = regexpi(outp.StdErr,'neuron/\d{1,2}\.\d{1,2}\s','match');  % available modules are reported to errorStream..dunno why
+%     params.server.envstr = [params.server.envstr, sprintf('module load %s; ',outp{1})];  % load first found neuron version
+    display(params.server.neuron{1})
+elseif exist(params.neuronpath,'file') ~= 2
     if isempty(strfind(params.neuronpath,'.exe') && exist(fullfile(params.neuronpath,'nrniv.exe'),'file') == 2) % path only points to folder, not to exe
         params.neuronpath = fullfile(params.neuronpath,'nrniv.exe');
     else
@@ -259,8 +284,9 @@ if exist(exchfolder,'dir') == 0
     mkdir(exchfolder);
 end
 if strfind(options,'-cl')
-    [params.server.connect] = sshfrommatlabissue(params.server.connect,sprintf('rm -rf %s',nrn_exchfolder));
-    [params.server.connect] = sshfrommatlabissue(params.server.connect,sprintf('mkdir %s',nrn_exchfolder));
+    [params.server.connect,outp] = sshfrommatlabissue(params.server.connect,sprintf('mkdir %s',params.server.modelfolder));  % check if mainfolder exists
+    [params.server.connect,outp] = sshfrommatlabissue(params.server.connect,sprintf('rm -rf %s',nrn_exchfolder));
+    [params.server.connect,outp] = sshfrommatlabissue(params.server.connect,sprintf('mkdir %s',nrn_exchfolder));
 end
 
 
@@ -368,7 +394,7 @@ for n = 1:numel(neuron)
         delete(fullfile(exchfolder,thisfolder,'NeuronLogFile.txt'))
     end
     if ~isempty(strfind(options,'-cl'))
-        [params.server.connect] = sshfrommatlabissue(params.server.connect,sprintf('mkdir %s/%s',nrn_exchfolder,thisfolder));
+        [params.server.connect,outp] = sshfrommatlabissue(params.server.connect,sprintf('mkdir %s/%s',nrn_exchfolder,thisfolder));
     end
     
     %% write interface hoc
@@ -1798,7 +1824,7 @@ for n = 1:numel(neuron)
     fclose(ofile);
     
     
-    if strfind(options,'-cl') %transfer files to server
+    if ~isempty(strfind(options,'-cl')) %transfer files to server
         filenames = {interf_file,'init_cells.hoc','init_mech.hoc','init_pp.hoc','init_con.hoc','init_rec.hoc','save_rec.hoc','init_play.hoc'}; %'init_pas.hoc','init_stim.hoc'
         m = 1;
         localfilename{m} = fullfile(exchfolder,thisfolder,filenames{1});
@@ -1825,36 +1851,44 @@ for n = 1:numel(neuron)
             m = m + 1;
         end
         if getref(n,neuron,'record') == n
+            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{6});
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{6});
+            m = m + 1;
             localfilename{m} = fullfile(exchfolder,thisfolder,filenames{7});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{7});
             m = m + 1;
+        end
+        if getref(n,neuron,'play') == n
             localfilename{m} = fullfile(exchfolder,thisfolder,filenames{8});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{8});
             m = m + 1;
         end
-        if getref(n,neuron,'play') == n
-            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{9});
-            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{9});
-            m = m + 1;
-        end
             %create job
-            ofile = fopen(fullfile(exchfolder,thisfolder,'start_nrn.job') ,'wt');
-            
+            ofile = fopen(fullfile(exchfolder,thisfolder,'start_nrn.pbs') ,'wt');
             fprintf(ofile,'#!/bin/bash\n');
-            fprintf(ofile,'# write standard output to file\n');
-            fprintf(ofile,sprintf('#PBS -o simstart_%s.oe\n',regexprep(datestr(now),{' ','\-','\:'},'_')));
-            fprintf(ofile,'# calculate for 30 minutes on 5 core, max. 512 MB of RAM per process\n');
-            fprintf(ofile,sprintf('#PBS -l walltime=%s,nodes=5,pmem=512m\n',sprintf('%02d:%02d:%02d',params.server.walltime)));
+            fprintf(ofile,'# set job variables\n');
+            fprintf(ofile,'#$ -j n\n');
+            fprintf(ofile,'#$ -S /bin/bash\n');
+            fprintf(ofile,'#$ -pe openmp 1\n');
+            fprintf(ofile,sprintf('#$ -l h_rt=%02d:%02d:%02d\n',params.server.walltime));
+            fprintf(ofile,sprintf('#$ -l h_rt=%02d:%02d:%02d\n',params.server.softwalltime));
+            fprintf(ofile,sprintf('#$ -l h_vmem=%02dG\n',params.server.memory));
+            fprintf(ofile,sprintf('#$ -N nrn_%s\n',thisfolder));  % name of job
+%             fprintf(ofile,sprintf('#$ -o %s/%s/%s',nrn_exchfolder,thisfolder,'std.out'));
+%             fprintf(ofile,sprintf('#$ -e %s/%s/%s',nrn_exchfolder,thisfolder,'err.out'));
             fprintf(ofile,'# load needed modules \n');
-            fprintf(ofile,'module load openmpi/gcc/64/1.3.3\n');
-            fprintf(ofile,'# change to path with your executale\n');
-            %     fprintf(ofile,sprintf('cd %s\n',nrn_exchfolder));
-            fprintf(ofile,'# start your program with mpirun with 5 processes\n');
-            fprintf(ofile,sprintf('mpirun -np 5 nrngui -nobanner -nogui -mpi %s//%s \n',nrn_exchfolder,interf_file));
+            fprintf(ofile,sprintf('module load %s \n ',params.server.neuron{1})); % load first found neuron version
+%             fprintf(ofile,'module load openmpi/gcc/64/1.3.3\n');
+%             fprintf(ofile,'# change to path with your executable\n');
+                
+            fprintf(ofile,'# start program\n');
+            fprintf(ofile,sprintf('$NRNHOME/x86_64/nrniv -nobanner -nogui "%s/%s/%s" > "%s/%s/NeuronLogFile.txt" 2> "%s/%s/ErrorLogFile.txt" \n',nrn_exchfolder,thisfolder,interf_file,nrn_exchfolder,thisfolder,nrn_exchfolder,thisfolder));
+
             fclose(ofile);
-            localfilename{m} = fullfile(exchfolder,'start_nrn.job');
-            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,'start_nrn.job');
-        params.server.connect = sftpfrommatlab(params.server.connect,localfilename,remotefilename);
+            localfilename{m} = fullfile(exchfolder,thisfolder,'start_nrn.pbs');
+            remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,'start_nrn.pbs');
+%         params.server.connect = sftpfrommatlab(params.server.connect,localfilename,remotefilename);
+        sftpfrommatlab(params.server.user,params.server.host,params.server.pw,localfilename,remotefilename);
     end
     
     if strfind(options,'-d')
@@ -1866,18 +1900,18 @@ end
 
 %% Execute NEURON
 if ~isempty(strfind(options,'-cl'))
-    error('Multi-Thread and server execution not yet implemented')
+    num_cores = 500;  % use evt qstat -f?
 else
     num_cores = feature('numCores');
-    if isfield(params,'numCores')
-        if num_cores < params.numCores
-           warning(sprintf('%d cores have been assigned to T2N, however only %d physical cores where detected. Defining more cores might slow down PC and simulations',params.numCores,num_cores)) 
-        end
-        num_cores = params.numCores;
-        
+end
+if isfield(params,'numCores')
+    if num_cores < params.numCores
+        warning(sprintf('%d cores have been assigned to T2N, however only %d physical cores where detected. Defining more cores might slow down PC and simulations',params.numCores,num_cores))
     end
+    num_cores = params.numCores;
     
 end
+    
 simids = zeros(numel(neuron),1); % 0 = not run, 1 = running, 2 = finished, 3 = error
 jobid = simids;
 flag = logical(jobid);
@@ -1903,18 +1937,19 @@ if noutfiles > 0 % if output is expected
     while ~all(simids>1)
         if ~isempty(strfind(options,'-cl'))
                 pause(0.8);
+                [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('%s qstat -u %s',params.server.envstr,params.server.user));
                 for s = find(simids==1)
-                    pause(0.2);
-                    [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('qstat %d',jobid(s)));
+%                     pause(0.2);
                     
-                    if ~isempty(answer{1})      %job not finished yet
-                        answer = textscan(answer{3},'%*[^QR]%s%*[^QR]');
-                        if strcmpi(answer{1},'R')
+                    if ~isempty(regexp(answer.StdOut,jobid(s),'ONCE'))      %job not finished yet
+                        regexp(answer.StdOut,jobid(s))
+                        answer = textscan(answer.StdOut,'%*[^QR]%s%*[^QR]');
+                        if strcmpi(answer.StdOut,'R')
                             if ~flag(s)
-                                display(sprintf('Simulation %d is calculated on cluster',s))
+                                display(sprintf('Simulation %d is still running on cluster',s))
                                 if strfind(options,'-d')
                                     tim = toc(tim);
-                                    fprintf(sprintf('Cluster queue wait time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
+                                    display(sprintf('Cluster queue wait time: %g min %.2f sec',floor(tim/60),rem(tim,60)))
                                     tim = tic;  %reset timer to acount for queue wait time
                                     flag(s) = true;
                                 end
@@ -1977,15 +2012,11 @@ if noutfiles > 0 % if output is expected
         timm = tic;
         for ss = 1:numel(s)
             [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('ls %s/%s/readyflag',nrn_exchfolder,sprintf('sim%d',s(ss))));
-            if isempty(answer)    % then there was an error during executing NEURON
-                [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('ls *e%d*',jobid(s(ss))));
-                if ~isempty(answer)
-                    % was planned to directly show error but...
-                    %                 scptomatlab(params.server.connect,exchfolder,answer{1})
-                    %                 f = fopen(fullfile(exchfolder,answer{1}));
-                    %                 errfile = textscan(f,'%s','Delimiter','\n');
-                    %                 errstr =
-                    error(sprintf('There was an error during NEURON simulation. Please refer to cluster output file "%s".',answer{1}))
+            if isempty(answer.StdOut)    % then there was an error during executing NEURON
+                [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('cat %s/%s/ErrorLogFile.txt',nrn_exchfolder,sprintf('sim%d',s(ss))));
+%                 bash-4.2$ cat wait.out | tail
+                if ~isempty(answer.StdOut)
+                    error('There was an error during NEURON simulation:\n%s\n',answer.StdOut)
                 end
                 r = find(simids==0,1,'first');  % find next not runned simid
                 [jobid(r),tim] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,params,options);          % start new simulation
@@ -2105,11 +2136,8 @@ end
 
 function [jobid,tim] = exec_neuron(simid,exchfolder,nrn_exchfolder,interf_file,params,options)
 %% Execute NEURON
-if strfind(options,'-d')
-    tim = tic;
-else
-    tim=[];
-end
+tim = tic;
+
 % switch params.openNeuron
 %     case 1
 %         opsign = '&';%sprintf(' > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt" &',exchfolder,simid,exchfolder,simid); % execute the program in foreground and hand control to NEURON
@@ -2120,8 +2148,9 @@ end
 fname = regexprep(fullfile(exchfolder,sprintf('sim%d',simid),interf_file),'\\','/');
 
 if ~isempty(strfind(options,'-cl'))
-       [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('qsub %s/%s/%s',nrn_exchfolder,sprintf('sim%d',simid),'start_nrn.job'));
-        fprintf(sprintf('Answer server after submitting: %s\nExtracing Job Id and wait..\n',answer{1}))
+       [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('%s%sqsub -p 0 %s/%s/%s',params.server.envstr,params.server.qfold,nrn_exchfolder,sprintf('sim%d',simid),'start_nrn.pbs'));
+%        [params.server.connect,answer] = sshfrommatlabissue(params.server.connect,sprintf('%s/%s/%s',nrn_exchfolder,sprintf('sim%d',simid),'start_nrn.job'));
+        fprintf(sprintf('Answer server after submitting:\n%s\n%s\nExtracing Job Id and wait..\n',answer.StdOut,answer.StdErr))
 else
     oldpwd = '';
     if ~strcmpi(pwd,params.path)
@@ -2146,11 +2175,11 @@ end
 
 
 if ~isempty(strfind(options,'-cl'))
-    if numel(answer) == 1
-        str = regexp(answer{1},'[0-9]*','match');
-        ncount = cellfun(@numel,str);
-        [~, ind] = max(ncount);
-        jobid = str2double(str{ind});
+    if ~isempty(answer.StdOut)
+        str = regexp(answer.StdOut,'Your job [0-9]*','match','ONCE');
+%         ncount = cellfun(@numel,str);
+%         [~, ind] = max(ncount);
+        jobid = str2double(str(10:end));%{ind}
         % there might be error if many jobs are run, because answer might not
         % be 1
     else

@@ -1,0 +1,109 @@
+proc init() {
+	realtime = 0
+
+	dtsav = dt						// Save desired dt value to reset after temporarily changing dt
+	secondordersav = secondorder	// Save desired secondorder value to reset after temporarily changing secondorder
+
+	finitialize(v_init)	// Call finitialize (since we are replacing the default init proc that calls this)
+						// finitialize will Call the INITIAL block for all mechanisms and point processes inserted in the sections
+						//	and set the initial voltage to v_init for all sections
+
+	if (prerun>0) {
+		t = - prerun -100			// Set the start time for (pre) simulation; -500 to prepare network in advance of start at 0
+		dt= 10				// Set dt to large value
+		secondorder = 0		// Set secondorder to 0 to set the default fully implicit backward euler for numerical integration (see NEURON ref)
+		
+		temp= cvode.active()
+		if (temp!=0) {cvode.active(0)}	// If cvode is on, turn off temporarily to do large fixed step
+		
+		// Now, do a large pre run to set the network 'settle' and all components to reach steady state
+		while(t<-10) { fadvance() 
+		}
+		
+		if (temp!=0) {cvode.active(1)}	// If cvode was on and then turned off, turn it back on now
+		dt = dtsav						// Reset dt to specified value
+		t = tstart-dt						// Start time of the simulation (-dt to account for recording vectors at time 0)
+		frecord_init()				// places the correct values into the recording vectors
+		secondorder = secondordersav	// Reset secondorder to specified value
+		
+		if (cvode.active()){
+			cvode.re_init()				// If cvode is active, initialize the integrator
+		} else {
+			fcurrent()					// If cvode is not active, make all assigned variables (currents, conductances, etc) consistent with the values of the states
+		}
+	}
+}
+
+proc run() {
+	running_ = 1
+	continuerun(tstop)
+}
+
+
+proc totalarea() { local sum
+  finitialize()
+  sum = 0
+//  forall for (x,0) sum += area(x)
+  forsec $o1.allreg for (x,0) sum += area(x)
+  print "total surface area = ", sum, " um2"
+}
+
+
+
+proc set_range() {
+	f = new File()
+	io = f.ropen($s2)
+	io = thissec.scanf(f)
+	io = f.close()
+	f = new File()
+	io = f.ropen($s3)
+	io = thisseg.scanf(f)
+	io = f.close()
+	f = new File()
+	io = f.ropen($s4)
+	io = thisval.scanf(f)
+	
+	io = f.close()
+	if (thissec.size()==thisseg.size() && thissec.size() == thisval.size()) {
+		for c = 0, thissec.size()-1 {
+			io = sprint(tmpstr,"%s(thisseg.x(c)) = thisval.x(c)",$s5)
+			cellList.o($1).allregobj.o(thissec.x(c)).sec     io = execute(tmpstr)
+			//print $1, thissec.x(c), thisseg.x(c), thisval.x(c)
+		}
+		thissec.resize(0)
+		thisseg.resize(0)
+		thisval.resize(0)
+	}else {execerror("Error, thisseg, thissec and thisval do not have same size! please check!!")}
+}
+
+/*
+proc set_range() {local i
+	f = new File()
+	io = f.ropen($s2)
+	io = thissec.scanf(f)
+	io = f.close()
+	f = new File()
+	io = f.ropen($s3)
+	io = thisseg.scanf(f)
+	io = f.close()
+	f = new File()
+	io = f.ropen($s4)
+	io = thisval.scanf(f)
+	
+	io = f.close()
+	
+	depp = thissec.size() / (numarg()-4) // depp = step...neuron didnt want that ^^
+		for i = 5,numarg() {
+			thisstart = (i-5) * depp
+	
+			for c = thisstart, thisstart+depp-1 {
+				io = sprint(tmpstr,"%s(thisseg.x(c)) = thisval.x(c)",$si)
+				cellList.o($1).allregobj.o(thissec.x(c)).sec     io = execute(tmpstr)
+				//print numarg(),$1, $si, thissec.x(c), thisseg.x(c), thisval.x(c), thisstart+(i-4)*depp-1
+			}
+	}
+	thissec.resize(0)
+	thisseg.resize(0)
+	thisval.resize(0)
+}
+*/
