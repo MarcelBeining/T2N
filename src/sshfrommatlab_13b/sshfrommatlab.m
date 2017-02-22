@@ -1,12 +1,12 @@
-function channel  =  sshfrommatlab(userName,hostName,password)
+function channel  =  sshfrommatlab(parameters)
 %SSHFROMMATLAB connects Matlab to a remote computer via a secure shell
 %
-% CONN  =  SSHFROMMATLAB(USERNAME,HOSTNAME,PASSWORD)
+% CONN  =  SSHFROMMATLAB(parameters.user,parameters.host,parameters.pw)
 %
 % Inputs:
-%   USERNAME is the user name required for the remote machine
-%   HOSTNAME is the name of the remote machine
-%   PASSWORD is the password for the account USERNAME@HOSTNAME
+%   parameters.user is the user name required for the remote machine
+%   parameters.host is the name of the remote machine
+%   parameters.pw is the password for the account parameters.user@parameters.host
 %
 % Outputs:
 %   CONN is a Java ch.ethz.ssh2.Connection object
@@ -24,10 +24,10 @@ function channel  =  sshfrommatlab(userName,hostName,password)
 %  Invocation checks
 %
 usesshlib = 2;
-if(nargin  ~=  3)
-    error('Error: SSHFROMMATLAB requires 3 input arguments...');
+if(nargin  ~=  1) || ~isstruct(parameters)
+    error('Error: SSHFROMMATLAB requires 1 struct as input argument...');
 end
-if(~ischar(userName)  || ~ischar(hostName)  ||  ~ischar(password))
+if(~ischar(parameters.user)  || ~ischar(parameters.host)  ||  (isfield(parameters,'pw') && ~ischar(parameters.pw)) || (isfield(parameters,'key') && ~ischar(parameters.key)) )
     error...
         (['Error: SSHFROMMATLAB requires all input ',...
         'arguments to be strings...']);
@@ -40,12 +40,12 @@ switch usesshlib
         try
             import ch.ethz.ssh2.*;
             try
-                channel  =  Connection(hostName);
+                channel  =  Connection(parameters.host);
                 channel.connect();
             catch
                 error(['Error: SSHFROMMATLAB could not connect to the'...
                     ' remote machine %s ...'],...
-                    hostName);
+                    parameters.host);
             end
         catch
             error('Error: SSHFROMMATLAB could not find the SSH2 java package');
@@ -53,7 +53,7 @@ switch usesshlib
         %
         %  Check the authentication for login...
         %
-        isAuthenticated = channel.authenticateWithPassword(userName,password);
+        isAuthenticated = channel.authenticateWithparameters.pw(parameters.user,parameters.pw);
         if(~isAuthenticated)
             error...
                 (['Error: SSHFROMMATLAB could not authenticate the',...
@@ -64,7 +64,10 @@ switch usesshlib
             import net.schmizz.sshj.*;
             import net.schmizz.keepalive.*;%KeepAliveProvider;
             import java.io.File;
-            
+            import net.schmizz.sshj.transport.verification.OpenSSHKnownHosts;
+%             import net.schmizz.sshj.transport.verification.ConsoleKnownHostsVerifier;
+            import net.schmizz.sshj.userauth.keyprovider.*;
+
             %             import net.i2p.*;
             %             import net.schmizz.sshj.DefaultConfig;
             %             import net.schmizz.sshj.SSHClient;
@@ -79,22 +82,37 @@ switch usesshlib
                 %                 channel.addHostKeyVerifier(transport.verification.ConsoleKnownHostsVerifier(khFile, java.lang.System.console()));
                 %                 channel.loadKnownHosts
                 channel.addHostKeyVerifier(transport.verification.PromiscuousVerifier);
-                
-                %                 channel.authPublickey('mbeining')
-                %                 channel.loadKnownHosts;
-                channel.connect(hostName)
+%         if ~isfield(parameters,'known_hosts')
+%             parameters.known_hosts = char(java.io.File(OpenSSHKnownHosts.detectSSHDir(), 'known_hosts'));
+%             display(sprintf('No location of "known_hosts" given. Found "%s", which will be used now.',parameters.known_hosts))
+%         end
+%         channel.loadKnownHosts(java.io.File(parameters.known_hosts))
+%         channel.connect(parameters.host)
+                channel.connect(parameters.host)
             catch
                 error(['Error: SSHFROMMATLAB could not connect to the'...
                     ' remote machine %s ...'],...
-                    hostName);
+                    parameters.host);
             end
         catch
             error('Error: SSHFROMMATLAB could not find the SSH2 java package');
         end
         %
         %  Check the authentication for login...
-        
-        channel.authPassword(userName,password);
+
+        %         //ssh.authPublickey(datastore.getLoginId(), privateKey.getAbsolutePath());
+%          privateKey =  File(parameters.key);
+%          keys = channel.loadKeys(privateKey.getPath());
+
+  KeyProvider keys = client.loadKeys(privateKey, publicKey, null);
+
+         keys = channel.loadKeys(java.lang.String(parameters.key));
+        channel.authPublickey(java.lang.String(parameters.user));
+        channel.authPublickey(java.lang.String(parameters.user), keys);
+channel.authPublickey(java.lang.String(parameters.user), File(parameters.key));
+
+%         channel.authPublickey(parameters.user,keyFile)
+        channel.authPassword(parameters.user,parameters.pw);
         if ~(channel.isAuthenticated)
             error...
                 (['Error: SSHFROMMATLAB could not authenticate the',...

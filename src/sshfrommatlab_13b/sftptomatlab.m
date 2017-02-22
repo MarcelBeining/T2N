@@ -1,8 +1,8 @@
-function sftpfrommatlab(userName,hostName,password,localfilename,remotefilename)
-%sftpfrommatlab connects Matlab to a remote computer and uploads
+function sftptomatlab(userName,hostName,password,remotefilename,localfilename)
+%sftptomatlab connects Matlab to a remote computer and uploads
 %a file using the SFTP protocol
 %
-% STATUS  =  SFTPROMMATLAB(USERNAME,HOSTNAME,PASSWORD,LOCALFILENAME,REMOTEFILENAME)
+% STATUS  =  SFTTOMATLAB(USERNAME,HOSTNAME,PASSWORD,LOCALFILENAME,REMOTEFILENAME)
 %
 % Inputs:
 %   USERNAME is the user name required for the remote machine
@@ -38,13 +38,18 @@ if (~ischar(userName)  || ~ischar(hostName)  ||  ~ischar(password) || (~ischar(l
         'arguments to be strings or cell arrays (file names)...']);
 end
 
-if ~iscell(localfilename)
-    localfilename = {localfilename};
-end
-if ~iscell(remotefilename)
-    remotefilename = {remotefilename};
-end
 
+if ~iscell(remotefilename)
+        remotefilename = {remotefilename};
+end
+if ~iscell(localfilename)
+        localfilename = {localfilename};
+end
+if numel(remotefilename) > numel(localfilename)
+    display('Folder given as localfilename, remote files are downloaded to there.')
+    localfilename = regexprep(localfilename,'\\','/');
+    localfilename = cellfun(@(x) regexprep(x,fileparts(x),localfilename),remotefilename,'UniformOutput',0);
+end
 %Set up the connection with the remote server
 
 try
