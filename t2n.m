@@ -1008,7 +1008,7 @@ for n = 1:numel(neuron)
                                 fprintf(ofile,sprintf('{pp = new %s(%f)\n',ppfield{f1},minterf{thesetrees{n}(tt)}(inode,3) ) );  % new pp
                                 fields = setdiff(fieldnames(neuron{n}.pp{t}.(ppfield{f1})(n1)),{'node','id'});
                                 
-                                if any(strcmp(ppfield{f1},{'IClamp','SEClamp','SEClamp2','VClamp'})) && (any(strcmp(fields,'times')) || (any(strcmp(fields,'dur')) && (numel(neuron{n}.pp{t}.(ppfield{f1})(n1).dur) > 3 || neuron{n}.pp{t}.(ppfield{f1})(n1).del == 0)))  % check if field "times" exists or multiple durations are given or del is zero (last point can introduce a bug when cvode is active)
+                                if any(strcmp(ppfield{f1},{'IClamp','SEClamp','SEClamp2','VClamp'})) && (any(strcmp(fields,'times')) || (any(strcmp(fields,'dur')) && (numel(neuron{n}.pp{t}.(ppfield{f1})(n1).dur) > 3 || (isfield(neuron{n}.pp{t}.(ppfield{f1})(n1),'del') && neuron{n}.pp{t}.(ppfield{f1})(n1).del == 0))))  % check if field "times" exists or multiple durations are given or del is zero (last point can introduce a bug when cvode is active)
                                     if any(strcmp(fields,'times'))
                                         times = sprintf('%f,',neuron{n}.pp{t}.(ppfield{f1})(n1).times);
                                     else   %bugfix since seclamp can only use up to 3 duration specifications
