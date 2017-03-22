@@ -2096,7 +2096,7 @@ if noutfiles > 0 % if output is expected
         if simids(readfiles{f}{2}) == 2    % if there was no error during simulation
             fn = fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),readfiles{f}{1});
             if numel(readfiles{f}{6}) > 1
-                sprintf('Recording of %s in %s has %d redundant values since nodes are in same segment.\n',readfiles{f}{5},numel(readfiles{f}{6}),readfiles{f}{4})
+                warning('Recording of %s in %s has %d redundant values since nodes are in same segment.\n',readfiles{f}{5},readfiles{f}{4},numel(readfiles{f}{6}))
             end
             switch readfiles{f}{4}
                 case 'APCtimes'
