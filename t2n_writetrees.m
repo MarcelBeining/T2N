@@ -114,7 +114,7 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
 %     end
     
     oname = treename;
-    neuron_template_tree (tree{t}, fullfile(morphfolder,sprintf('%s.hoc',treename)), [], '-m');
+    neuron_template_tree (tree{t}, fullfile(morphfolder,sprintf('%s.hoc',treename)), '-m');
     
     if strfind(options,'-cl')   %transfer files to server
         params.server.connect = sftpfrommatlab(params.server.connect,fullfile(morphfolder,sprintf('%s.hoc',oname)),sprintf('%s/%s.hoc',nrn_morphfolder,oname));
