@@ -8,28 +8,20 @@ steps = -120;
 if ~isfield(ostruct,'subtract_hv')
     ostruct.subtract_hv = 0;
 end
-if ~isfield(ostruct,'extract_kir')
-    ostruct.extract_kir = 0;
-end
 if ~isfield(ostruct,'show')
     ostruct.show = 1:2;
 end
 
-load(loadingfile,'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','params','vstepsModel','tree','LJP')
+load(loadingfile,'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','params','vstepsModel','tree')
 if any(ostruct.show==1)
-    [exp_vclamp,vsteps,rate] = load_ephys(ostruct.dataset,'VClamp',ostruct.extract_kir);
+    [exp_vclamp,vsteps,rate] = load_ephys(ostruct.dataset,'VClamp');
     vsteps = vsteps - params.LJP;
 end
-% vsteps = (-130:5:-40);
-% indhvexp = (vsteps == holding_voltage);
 
 fig(1) = figure; hold all
 fig(2) = figure;hold all
-% exp_vclamp = exp_vclamp_mature;
 thiscurr = currVec;
-% delind = delind_mature;
 if ostruct.subtract_hv
-%     basel = mean(exp_vclamp(94*rate+1:104*rate+1,setdiff(1:size(exp_vclamp,2),delind),:),1);
     if any(ostruct.show==1)
         basel = mean(exp_vclamp(0*rate+1:104*rate+1,:,:),1);
         exp_vclamp = exp_vclamp(:,:,:) - repmat(basel,size(exp_vclamp,1),1,1); % subtract current at baseline holding voltage (as Mongiat did)
@@ -40,23 +32,11 @@ if ostruct.subtract_hv
         end
     end
 end
-% if params.realv
-%     x = vstepsKirreal;
-%     vstepsMongiat = vsteps - params.LJP;
-%     str =  ' (corrected!)';
-% else
-%     vstepsModel = vstepsKir;
-%     vstepsMongiat = vsteps;
-    str =  '';%' (uncorrected!)';
-% end
+
+str =  '';
 figure(fig(1))
 if any(ostruct.show == 1)
     for f = 1:size(exp_vclamp,2)
-%         if options.subtract_hv
-%            mhv =  mean(exp_vclamp(:,f,indhvexp));
-%         else
-%             mhv = 0;
-%         end
         for s = 1:size(exp_vclamp,3)
             subplot(floor(sqrt(size(exp_vclamp,3))),ceil(sqrt(size(exp_vclamp,3))),s)
             hold all
@@ -82,12 +62,7 @@ if any(ostruct.show == 1)
 end
 
 if any(ostruct.show == 2)
-    for f = 1:numel(tree)%size(curr,1)
-%         if options.subtract_hv
-%             mhv =  mean(thiscurr{f,indhvmod}(2,:));
-%         else
-%             mhv = 0;
-%         end
+    for f = 1:numel(tree)
         for s = 1:size(thiscurr,2)
             if any(ostruct.show == 1)
                 subplot(floor(sqrt(size(exp_vclamp,3))),ceil(sqrt(size(exp_vclamp,3))),find(vstepsModel(s)==vsteps))

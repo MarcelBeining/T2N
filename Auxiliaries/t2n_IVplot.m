@@ -6,23 +6,21 @@ end
 if ~isfield(ostruct,'single')
     ostruct.single = 0;
 end
-if ~isfield(ostruct,'bablock')
-    ostruct.bablock = 0;
-end
 if ~isfield(ostruct,'subtract_hv')
     ostruct.subtract_hv = 0;
-end
-if ~isfield(ostruct,'extract_kir')
-    ostruct.extract_kir = 0;
 end
 
 load(loadingfile,'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','params','vstepsModel','tree','LJP')
 
 if any(ostruct.show == 1) && ostruct.dataset ~= 0
-    [exp_vclamp,vsteps,rate] = load_ephys(ostruct.dataset,'VClamp',ostruct.extract_kir);
+    [exp_vclamp,vsteps,rate] = load_ephys(ostruct.dataset,'VClamp');
     
     
     tvec = 1/rate:1/rate:size(exp_vclamp,1)/rate;
+    Rin2 = zeros(numel(tree),1);
+    cap2 = Rin2;
+    Rin = Rin2;
+    cap = Rin2;
     for t = 1:size(exp_vclamp,2)
         d = exp_vclamp(:,t,vsteps==-80+10);
         is = mean(d(tvec>190&tvec<204));
@@ -43,14 +41,14 @@ if any(ostruct.show == 1) && ostruct.dataset ~= 0
         y = y(x<=x(1)+50);  % voltage step length of original capacitance measurement was only 50 ms hence cut vector thereafter
         x = x(x<=x(1)+50);
         cap(t) = trapz(x,y)/(-10); % calculate capacitance as integral (charge) divided by amplitude of voltage step
-        
     end
 end
 amp = [-10,10];
+capm = zeros(2,numel(tree));
 for a = 1:2
     for t = 1:numel(tree)
         ind = find(vstepsModel+params.LJP == -80+amp(a));
-        I0 = mean(currVec{t,ind}(2,currVec{t,ind}(1,:)<104));
+%         I0 = mean(currVec{t,ind}(2,currVec{t,ind}(1,:)<104));
         if ~any(currVec{t,ind}(1,:)>190 & currVec{t,ind}(1,:)<204)
             is(t) = mean(currVec{t,ind}(2,currVec{t,ind}(1,:)>175 & currVec{t,ind}(1,:)<204));
         else
@@ -81,12 +79,8 @@ fprintf('\nMean capacitance in Model(@-90mV-LJP) is %g +- %g pF (s.e.m. -10mV)',
 fprintf('\nMean capacitance in Model(@-70mV-LJP) is %g +- %g pF (s.e.m. +10mV)\n',mean(capm(2,:)),std(capm(2,:))/sqrt(numel(capm(2,:))))
 
 if any(ostruct.show == 1) && ostruct.dataset ~= 0
-    vstepsreal = vsteps - LJP;
-    
-    indhvexp = (vstepsreal == holding_voltage);
+    vstepsreal = vsteps - params.LJP;
 end
-indhvmod = (vstepsModel == holding_voltage);
-
 
 if isfield(ostruct,'handles') && ~isempty(ostruct.handles) && ishandle(ostruct.handles(1))
     fig(1) = ostruct.handles(1);
@@ -111,10 +105,10 @@ if ostruct.subtract_hv
 end
 
 
-Kirind_model = vstepsModel+LJP <= -110;
-otherind_model = vstepsModel+LJP >= -70 & vstepsModel+LJP <= -50;
+Kirind_model = vstepsModel+params.LJP <= -110;
+otherind_model = vstepsModel+params.LJP >= -70 & vstepsModel+params.LJP <= -50;
 
-Restind_model = vstepsModel+LJP >= -100 & vstepsModel+LJP <= -70;
+Restind_model = vstepsModel+params.LJP >= -100 & vstepsModel+params.LJP <= -70;
 
 
 gKirModel = zeros(size(steadyStateCurrVec,2),1);
@@ -128,11 +122,11 @@ if any(ostruct.show == 1) && ostruct.dataset ~= 0
     end
 end
 for t =1:size(steadyStateCurrVec,2)
-    tmp = polyfit(vstepsModel(Kirind_model)+LJP,steadyStateCurrVec(Kirind_model,t)',1) - polyfit(vstepsModel(otherind_model)+LJP,steadyStateCurrVec(otherind_model,t)',1) ;
+    tmp = polyfit(vstepsModel(Kirind_model)+params.LJP,steadyStateCurrVec(Kirind_model,t)',1) - polyfit(vstepsModel(otherind_model)+params.LJP,steadyStateCurrVec(otherind_model,t)',1) ;
     gKirModel(t) = tmp(1);
 end
 
-tmp = polyfit(vstepsModel(Restind_model)+LJP,steadyStateCurrVec(Restind_model,t)',1);
+tmp = polyfit(vstepsModel(Restind_model)+params.LJP,steadyStateCurrVec(Restind_model,t)',1);
 fprintf('g at rest: %.3g nS\n',tmp(1))
 
 if any(ostruct.show==1) && ostruct.dataset ~= 0
@@ -140,6 +134,7 @@ if any(ostruct.show==1) && ostruct.dataset ~= 0
     mIV = mean(meas_curr,1);
     if ostruct.single
         plot(vstepsreal,meas_curr,'Color','k')
+        vrest = zeros(size(meas_curr,1),1);
         for n = 1:size(meas_curr,1)
             vrest(n) = interp1(meas_curr(n,:),vstepsreal,0) ;
         end
@@ -203,92 +198,94 @@ ylabel('Measured Current [pA]')
 
 
 %% add paper data
-vstepsreal = vstepsModel;
-mIV = mean(steadyStateCurrVec,2);
-
-Brenner05 = [-80,-20,600,10]; %HV, pA step, MOhm, stdevMOhm
-Mongiat09 = [-70-12.1,-10,224,7]; %HV, mV step, MOhm, stdevMOhm  LJP corrected
-SH07 = [-80,-3,308,26]; %HV, pA step, MOhm, stdevMOhm
-
-Mongiat09y = [-70-12.1,-10,519,30]; %HV, mV step, MOhm, stdevMOhm  LJP corrected
-Piatti11y21 = [-70-12.1,-10,636,94]; %HV, mV step, MOhm, stdevMOhm  LJP corrected   % 21 dpi , LJP unknown
-Piatti11y28 = [-70-12.1,-10,667,67]; %HV, mV step, MOhm, stdevMOhm  LJP corrected  %28 dpi , LJP unknown
-Yang15y22a = [-70-12.1,-10,990,470]; %HV, mV step, MOhm, stdevMOhm  LJP corrected   % 22 dpi Ascl , LJP unknown
-Yang15y22b = [-70-12.1,-10,1040,640]; %HV, mV step, MOhm, stdevMOhm  LJP corrected   % 22 dpi Glast, LJP unknown
-Yang15y25a = [-70-12.1,-10,840,400]; %HV, mV step, MOhm, stdevMOhm  LJP corrected   % 25 dpi Ascl , LJP unknown
-Yang15y25b = [-70-12.1,-10,790,450]; %HV, mV step, MOhm, stdevMOhm  LJP corrected   % 25 dpi Glast, LJP unknown
-Yang15y28a = [-70-12.1,-10,560,200]; %HV, mV step, MOhm, stdevMOhm  LJP corrected   % 28 dpi Ascl , LJP unknown
-Yang15y28b = [-70-12.1,-10,660,250]; %HV, mV step, MOhm, stdevMOhm  LJP corrected   % 28 dpi Glast, LJP unknown
-
-
-SH04 = [-80,-5,232,78]; % lila %HV, mV step, MOhm, stdevMOhm  RAT!!!
-Staley92a = [-85,-15,107,NaN]; % rot %HV, mV step, MOhm, stdevMOhm  LJP corrected  % rat!
-Staley92b = [-85,+15,228,14.2]; %rot %HV, mV step, MOhm, stdevMOhm  LJP corrected % rat!
-MA14 = [-62,-50,230,15]; %orange %HV, pA step, MOhm, stdevMOhm  LJP corrected % rat!
-Mehranfard = [-70,-50,295.6,11.5]; %grün
-
-Brunner14yRAT21 = [-80,-10,378,20]; %HV, pA step, MOhm, stdevMOhm   % 21 dpi
-Brunner14yRAT28 = [-80,-10,358,13]; %HV, pA step, MOhm, stdevMOhm   % 26 dpi
-
-col = colorme({'red','yellow','dim green','violett','cyan','pink'});
-if isfield(ostruct,'savename')
-    FigureResizer(ostruct.figureheight,ostruct.figurewidth)   % has to come before arrows to avoid distortions
-end
-if ~ostruct.newborn && ~ostruct.bablock
-    if ostruct.usemorph <= 3  % mouse morphologies
-        a=arrow([Brenner05(1),0+interp1(vstepsreal,mIV,Brenner05(1))],[Brenner05(1) + Brenner05(3) * Brenner05(2)/1000,Brenner05(2)+interp1(vstepsreal,mIV,Brenner05(1))]);
-        set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        a=arrow([Mongiat09(1), interp1(vstepsreal,mIV,Mongiat09(1))],[Mongiat09(1) + Mongiat09(2), Mongiat09(2)/Mongiat09(3)*1000+interp1(vstepsreal,mIV,Mongiat09(1))]);
-        set(a,'FaceColor',col{2},'EdgeColor',col{2},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        a=arrow([SH07(1),interp1(vstepsreal,mIV,SH07(1))],[SH07(1) + SH07(3) * SH07(2)/1000,SH07(2)+interp1(vstepsreal,mIV,SH07(1))]);
-        set(a,'FaceColor',col{3},'EdgeColor',col{3},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-    else                            % rat model
-        a=arrow([Staley92a(1),interp1(vstepsreal,mIV,Staley92a(1))],[Staley92a(1) + Staley92a(2),Staley92a(2)/Staley92a(3)*1000+interp1(vstepsreal,mIV,Staley92a(1))]);
-        set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        a=arrow([Staley92b(1),interp1(vstepsreal,mIV,Staley92b(1))],[Staley92b(1) + Staley92b(2),Staley92b(2)/Staley92b(3)*1000+interp1(vstepsreal,mIV,Staley92b(1))]);
-        set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        a=arrow([MA14(1),interp1(vstepsreal,mIV,MA14(1))],[MA14(1) + MA14(3) * MA14(2)/1000 , MA14(2)+interp1(vstepsreal,mIV,MA14(1))]);
-        set(a,'FaceColor',col{2},'EdgeColor',col{2},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        a=arrow([Mehranfard(1),interp1(vstepsreal,mIV,Mehranfard(1))],[Mehranfard(1) + Mehranfard(3) * Mehranfard(2)/1000 , Mehranfard(2)+interp1(vstepsreal,mIV,Mehranfard(1))]);
-        set(a,'FaceColor',col{3},'EdgeColor',col{3},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        a=arrow([SH04(1), interp1(vstepsreal,mIV,SH04(1))],[SH04(1) + SH04(2), SH04(2)/SH04(3)*1000+interp1(vstepsreal,mIV,SH04(1))]);
-        set(a,'FaceColor',col{4},'EdgeColor',col{4},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+if any(ostruct.show == 1)
+    vstepsreal = vstepsModel;
+    mIV = mean(steadyStateCurrVec,2);
+    
+    Brenner05 = [-80,-20,600,10]; %HV, pA step, MOhm, stdevMOhm
+    Mongiat09 = [-70-12.1,-10,224,7]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected
+    SH07 = [-80,-3,308,26]; %HV, pA step, MOhm, stdevMOhm
+    
+    Mongiat09y = [-70-12.1,-10,519,30]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected
+%     Piatti11y21 = [-70-12.1,-10,636,94]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected   % 21 dpi , params.LJP unknown
+    Piatti11y28 = [-70-12.1,-10,667,67]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected  %28 dpi , params.LJP unknown
+%     Yang15y22a = [-70-12.1,-10,990,470]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected   % 22 dpi Ascl , params.LJP unknown
+%     Yang15y22b = [-70-12.1,-10,1040,640]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected   % 22 dpi Glast, params.LJP unknown
+%     Yang15y25a = [-70-12.1,-10,840,400]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected   % 25 dpi Ascl , params.LJP unknown
+%     Yang15y25b = [-70-12.1,-10,790,450]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected   % 25 dpi Glast, params.LJP unknown
+    Yang15y28a = [-70-12.1,-10,560,200]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected   % 28 dpi Ascl , params.LJP unknown
+    Yang15y28b = [-70-12.1,-10,660,250]; %HV, mV step, MOhm, stdevMOhm  params.LJP corrected   % 28 dpi Glast, params.LJP unknown
+    
+    
+    SH04 = [-80,-5,232,78]; % lila %HV, mV step, MOhm, stdevMOhm  RAT!!!
+    Staley92a = [-85,-15,107,NaN]; % rot %HV, mV step, MOhm, stdevMOhm  params.LJP corrected  % rat!
+    Staley92b = [-85,+15,228,14.2]; %rot %HV, mV step, MOhm, stdevMOhm  params.LJP corrected % rat!
+    MA14 = [-62,-50,230,15]; %orange %HV, pA step, MOhm, stdevMOhm  params.LJP corrected % rat!
+    Mehranfard = [-70,-50,295.6,11.5]; %grün
+    
+    Brunner14yRAT21 = [-80,-10,378,20]; %HV, pA step, MOhm, stdevMOhm   % 21 dpi
+    Brunner14yRAT28 = [-80,-10,358,13]; %HV, pA step, MOhm, stdevMOhm   % 26 dpi
+    
+    col = colorme({'red','yellow','dim green','violett','cyan','pink'});
+    if isfield(ostruct,'savename')
+        FigureResizer(ostruct.figureheight,ostruct.figurewidth)   % has to come before arrows to avoid distortions
     end
-elseif ostruct.newborn && ~ ostruct.bablock
-    if ostruct.usemorph <= 3  % mouse morphologies
-        a=arrow([Mongiat09y(1), interp1(vstepsreal,mIV,Mongiat09y(1))],[Mongiat09y(1) + Mongiat09y(2), Mongiat09y(2)/Mongiat09y(3)*1000+interp1(vstepsreal,mIV,Mongiat09y(1))]);
-        set(a,'FaceColor',col{2},'EdgeColor',col{2},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        
-        %         a=arrow([Piatti11y21(1), interp1(vstepsreal,mIV,Piatti11y21(1))],[Piatti11y21(1) + Piatti11y21(2), Piatti11y21(2)/Piatti11y21(3)*1000+interp1(vstepsreal,mIV,Piatti11y21(1))]);
-        %         set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        
-        a=arrow([Piatti11y28(1), interp1(vstepsreal,mIV,Piatti11y28(1))],[Piatti11y28(1) + Piatti11y28(2), Piatti11y28(2)/Piatti11y28(3)*1000+interp1(vstepsreal,mIV,Piatti11y28(1))]);
-        set(a,'FaceColor',col{3},'EdgeColor',col{3},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        %
-        %         a=arrow([Yang15y22a(1), interp1(vstepsreal,mIV,Yang15y22a(1))],[Yang15y22a(1) + Yang15y22a(2), Yang15y22a(2)/Yang15y22a(3)*1000+interp1(vstepsreal,mIV,Yang15y22a(1))]);
-        %         set(a,'FaceColor',col{4},'EdgeColor',col{4},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        %
-        %         a=arrow([Yang15y22b(1), interp1(vstepsreal,mIV,Yang15y22b(1))],[Yang15y22b(1) + Yang15y22b(2), Yang15y22b(2)/Yang15y22b(3)*1000+interp1(vstepsreal,mIV,Yang15y22b(1))]);
-        %         set(a,'FaceColor',col{4},'EdgeColor',col{4},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        %
-        %         a=arrow([Yang15y25a(1), interp1(vstepsreal,mIV,Yang15y25a(1))],[Yang15y25a(1) + Yang15y25a(2), Yang15y25a(2)/Yang15y25a(3)*1000+interp1(vstepsreal,mIV,Yang15y25a(1))]);
-        %         set(a,'FaceColor',col{5},'EdgeColor',col{5},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        %
-        %         a=arrow([Yang15y25b(1), interp1(vstepsreal,mIV,Yang15y25b(1))],[Yang15y25b(1) + Yang15y25b(2), Yang15y25b(2)/Yang15y25b(3)*1000+interp1(vstepsreal,mIV,Yang15y25b(1))]);
-        %         set(a,'FaceColor',col{5},'EdgeColor',col{5},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        %
-        a=arrow([Yang15y28a(1), interp1(vstepsreal,mIV,Yang15y28a(1))],[Yang15y28a(1) + Yang15y28a(2), Yang15y28a(2)/Yang15y28a(3)*1000+interp1(vstepsreal,mIV,Yang15y28a(1))]);
-        set(a,'FaceColor',col{6},'EdgeColor',col{6},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        
-        a=arrow([Yang15y28b(1), interp1(vstepsreal,mIV,Yang15y28b(1))],[Yang15y28b(1) + Yang15y28b(2), Yang15y28b(2)/Yang15y28b(3)*1000+interp1(vstepsreal,mIV,Yang15y28b(1))]);
-        set(a,'FaceColor',col{6},'EdgeColor',col{6},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        
-    else
-        a=arrow([Brunner14yRAT21(1),0+interp1(vstepsreal,mIV,Brunner14yRAT21(1))],[Brunner14yRAT21(1) + Brunner14yRAT21(3) * Brunner14yRAT21(2)/1000,Brunner14yRAT21(2)+interp1(vstepsreal,mIV,Brunner14yRAT21(1))]);
-        set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
-        
-        a=arrow([Brunner14yRAT28(1),0+interp1(vstepsreal,mIV,Brunner14yRAT28(1))],[Brunner14yRAT28(1) + Brunner14yRAT28(3) * Brunner14yRAT28(2)/1000,Brunner14yRAT28(2)+interp1(vstepsreal,mIV,Brunner14yRAT28(1))]);
-        set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+    if ~ostruct.newborn
+        if ostruct.usemorph <= 3  % mouse morphologies
+            a=arrow([Brenner05(1),0+interp1(vstepsreal,mIV,Brenner05(1))],[Brenner05(1) + Brenner05(3) * Brenner05(2)/1000,Brenner05(2)+interp1(vstepsreal,mIV,Brenner05(1))]);
+            set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            a=arrow([Mongiat09(1), interp1(vstepsreal,mIV,Mongiat09(1))],[Mongiat09(1) + Mongiat09(2), Mongiat09(2)/Mongiat09(3)*1000+interp1(vstepsreal,mIV,Mongiat09(1))]);
+            set(a,'FaceColor',col{2},'EdgeColor',col{2},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            a=arrow([SH07(1),interp1(vstepsreal,mIV,SH07(1))],[SH07(1) + SH07(3) * SH07(2)/1000,SH07(2)+interp1(vstepsreal,mIV,SH07(1))]);
+            set(a,'FaceColor',col{3},'EdgeColor',col{3},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+        else                            % rat model
+            a=arrow([Staley92a(1),interp1(vstepsreal,mIV,Staley92a(1))],[Staley92a(1) + Staley92a(2),Staley92a(2)/Staley92a(3)*1000+interp1(vstepsreal,mIV,Staley92a(1))]);
+            set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            a=arrow([Staley92b(1),interp1(vstepsreal,mIV,Staley92b(1))],[Staley92b(1) + Staley92b(2),Staley92b(2)/Staley92b(3)*1000+interp1(vstepsreal,mIV,Staley92b(1))]);
+            set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            a=arrow([MA14(1),interp1(vstepsreal,mIV,MA14(1))],[MA14(1) + MA14(3) * MA14(2)/1000 , MA14(2)+interp1(vstepsreal,mIV,MA14(1))]);
+            set(a,'FaceColor',col{2},'EdgeColor',col{2},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            a=arrow([Mehranfard(1),interp1(vstepsreal,mIV,Mehranfard(1))],[Mehranfard(1) + Mehranfard(3) * Mehranfard(2)/1000 , Mehranfard(2)+interp1(vstepsreal,mIV,Mehranfard(1))]);
+            set(a,'FaceColor',col{3},'EdgeColor',col{3},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            a=arrow([SH04(1), interp1(vstepsreal,mIV,SH04(1))],[SH04(1) + SH04(2), SH04(2)/SH04(3)*1000+interp1(vstepsreal,mIV,SH04(1))]);
+            set(a,'FaceColor',col{4},'EdgeColor',col{4},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+        end
+    elseif ostruct.newborn
+        if ostruct.usemorph <= 3  % mouse morphologies
+            a=arrow([Mongiat09y(1), interp1(vstepsreal,mIV,Mongiat09y(1))],[Mongiat09y(1) + Mongiat09y(2), Mongiat09y(2)/Mongiat09y(3)*1000+interp1(vstepsreal,mIV,Mongiat09y(1))]);
+            set(a,'FaceColor',col{2},'EdgeColor',col{2},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            
+            %         a=arrow([Piatti11y21(1), interp1(vstepsreal,mIV,Piatti11y21(1))],[Piatti11y21(1) + Piatti11y21(2), Piatti11y21(2)/Piatti11y21(3)*1000+interp1(vstepsreal,mIV,Piatti11y21(1))]);
+            %         set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            
+            a=arrow([Piatti11y28(1), interp1(vstepsreal,mIV,Piatti11y28(1))],[Piatti11y28(1) + Piatti11y28(2), Piatti11y28(2)/Piatti11y28(3)*1000+interp1(vstepsreal,mIV,Piatti11y28(1))]);
+            set(a,'FaceColor',col{3},'EdgeColor',col{3},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            %
+            %         a=arrow([Yang15y22a(1), interp1(vstepsreal,mIV,Yang15y22a(1))],[Yang15y22a(1) + Yang15y22a(2), Yang15y22a(2)/Yang15y22a(3)*1000+interp1(vstepsreal,mIV,Yang15y22a(1))]);
+            %         set(a,'FaceColor',col{4},'EdgeColor',col{4},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            %
+            %         a=arrow([Yang15y22b(1), interp1(vstepsreal,mIV,Yang15y22b(1))],[Yang15y22b(1) + Yang15y22b(2), Yang15y22b(2)/Yang15y22b(3)*1000+interp1(vstepsreal,mIV,Yang15y22b(1))]);
+            %         set(a,'FaceColor',col{4},'EdgeColor',col{4},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            %
+            %         a=arrow([Yang15y25a(1), interp1(vstepsreal,mIV,Yang15y25a(1))],[Yang15y25a(1) + Yang15y25a(2), Yang15y25a(2)/Yang15y25a(3)*1000+interp1(vstepsreal,mIV,Yang15y25a(1))]);
+            %         set(a,'FaceColor',col{5},'EdgeColor',col{5},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            %
+            %         a=arrow([Yang15y25b(1), interp1(vstepsreal,mIV,Yang15y25b(1))],[Yang15y25b(1) + Yang15y25b(2), Yang15y25b(2)/Yang15y25b(3)*1000+interp1(vstepsreal,mIV,Yang15y25b(1))]);
+            %         set(a,'FaceColor',col{5},'EdgeColor',col{5},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            %
+            a=arrow([Yang15y28a(1), interp1(vstepsreal,mIV,Yang15y28a(1))],[Yang15y28a(1) + Yang15y28a(2), Yang15y28a(2)/Yang15y28a(3)*1000+interp1(vstepsreal,mIV,Yang15y28a(1))]);
+            set(a,'FaceColor',col{6},'EdgeColor',col{6},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            
+            a=arrow([Yang15y28b(1), interp1(vstepsreal,mIV,Yang15y28b(1))],[Yang15y28b(1) + Yang15y28b(2), Yang15y28b(2)/Yang15y28b(3)*1000+interp1(vstepsreal,mIV,Yang15y28b(1))]);
+            set(a,'FaceColor',col{6},'EdgeColor',col{6},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            
+        else
+            a=arrow([Brunner14yRAT21(1),0+interp1(vstepsreal,mIV,Brunner14yRAT21(1))],[Brunner14yRAT21(1) + Brunner14yRAT21(3) * Brunner14yRAT21(2)/1000,Brunner14yRAT21(2)+interp1(vstepsreal,mIV,Brunner14yRAT21(1))]);
+            set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+            
+            a=arrow([Brunner14yRAT28(1),0+interp1(vstepsreal,mIV,Brunner14yRAT28(1))],[Brunner14yRAT28(1) + Brunner14yRAT28(3) * Brunner14yRAT28(2)/1000,Brunner14yRAT28(2)+interp1(vstepsreal,mIV,Brunner14yRAT28(1))]);
+            set(a,'FaceColor',col{1},'EdgeColor',col{1},'LineWidth',1.5,'FaceAlpha',0.5,'EdgeAlpha',0.5)
+        end
     end
 end
 %%

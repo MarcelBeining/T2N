@@ -1807,8 +1807,6 @@ for n = 1:numel(neuron)
                                         makenewrect = false;
                                     end
                                     noutfiles = noutfiles +1;
-                                    %                     readfiles{noutfiles} = {sprintf('cell%d_node%d_%s.dat',tt-1,neuron{x}.record{t}{r,1},neuron{x}.record{t}{r,2} ) , 'record' ,  t , neuron{x}.record{t}{r,2} ,neuron{x}.record{t}{r,1} };
-                                    %                                     readfiles{noutfiles} = {n, sprintf('%s.dat',fname) , rectype ,  t , neuron{x}.record{t}.(recfields{f1}).record{r} , neuron{x}.record{t}.(recfields{f1}).rrecs(in,1), neuron{x}.record{t}.(recfields{f1}).rrecs(in,2) };
                                     readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , 'cell', neuron{x}.record{t}.(recfields{f1})(r).record , neuron{x}.record{t}.(recfields{f1})(r).node(neuron{x}.record{t}.(recfields{f1})(r).irrecs == in) }; %neuron{x}.record{t}.(recfields{f1})(r).node(in) };
                                 end
                             case 'pp'
@@ -1820,21 +1818,19 @@ for n = 1:numel(neuron)
                                         fprintf(ofile,sprintf('io = f.wopen("%s//%s//%s")\n',nrn_exchfolder,thisfolder,sprintf('%s.dat',fname))  );  % open file for this vector with write perm.
                                         fprintf(ofile,sprintf('io = recList.o(%d).printf(f, "%%%%-20.20g\\\\n")\n', neuron{x}.record{t}.(recfields{f1})(r).id(in) ) );    % print the data of the vector into the file
                                         fprintf(ofile,'io = f.close()\n');   %close the filehandle
-                                        if params.cvode
+                                        if params.cvode && makenewrect
                                             if params.use_local_dt
                                                 fnamet = sprintf('cell%d_tvec.dat', tt-1);
                                             else
                                                 fnamet = 'tvec.dat';
                                             end
                                             fprintf(ofile,'f = new File()\n');      %create a new filehandle
-                                            fprintf(ofile,sprintf('io = f.wopen("%s//%s//%s")\n',nrn_exchfolder,thisfolder,sprintf('%s_tvec.dat',fnamet))  );  % open file for this vector with write perm.
+                                            fprintf(ofile,sprintf('io = f.wopen("%s//%s//%s")\n',nrn_exchfolder,thisfolder,fnamet)  );  % open file for this vector with write perm.
                                             fprintf(ofile,sprintf('io = rectList.o(%d).printf(f, "%%%%-20.20g\\\\n")\n', neuron{x}.record{t}.(recfields{f1})(r).idt(in) ) );    % print the data of the vector into the file
                                             fprintf(ofile,'io = f.close()\n');   %close the filehandle
                                             makenewrect = false;
                                         end
                                         noutfiles = noutfiles +1;
-                                        %                     readfiles{noutfiles} = {sprintf('cell%d_node%d_%s.dat',tt-1,neuron{x}.record{t}{r,1},neuron{x}.record{t}{r,2} ) , 'record' ,  t , neuron{x}.record{t}{r,2} ,neuron{x}.record{t}{r,1} };
-                                        %                                     readfiles{noutfiles} = {n, sprintf('%s.dat',fname) , rectype ,  t , neuron{x}.record{t}.(recfields{f1}).record{r} };
                                         readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , recfields{f1}, neuron{x}.record{t}.(recfields{f1})(r).record , neuron{x}.record{t}.(recfields{f1})(r).node(neuron{x}.record{t}.(recfields{f1})(r).irrecs == in)};%neuron{x}.record{t}.(recfields{f1})(r).node(in) };
                                     end
                                 end
@@ -1844,14 +1840,14 @@ for n = 1:numel(neuron)
                                 fprintf(ofile,sprintf('io = f.wopen("%s//%s//%s")\n',nrn_exchfolder,thisfolder,sprintf('%s.dat',fname))  );  % open file for this vector with write perm.
                                 fprintf(ofile,sprintf('io = recList.o(%d).printf(f, "%%%%-20.20g\\\\n")\n', neuron{x}.record{t}.(recfields{f1})(r).id ) );    % print the data of the vector into the file
                                 fprintf(ofile,'io = f.close()\n');   %close the filehandle
-                                if params.cvode
+                                if params.cvode && makenewrect
                                     if params.use_local_dt
                                         fnamet = sprintf('cell%d_tvec.dat', tt-1);
                                     else
                                         fnamet = 'tvec.dat';
                                     end
                                     fprintf(ofile,'f = new File()\n');      %create a new filehandle
-                                    fprintf(ofile,sprintf('io = f.wopen("%s//%s//%s")\n',nrn_exchfolder,thisfolder,sprintf('%s_tvec.dat',fnamet))  );  % open file for this vector with write perm.
+                                    fprintf(ofile,sprintf('io = f.wopen("%s//%s//%s")\n',nrn_exchfolder,thisfolder,fnamet)  );  % open file for this vector with write perm.
                                     fprintf(ofile,sprintf('io = rectList.o(%d).printf(f, "%%%%-20.20g\\\\n")\n', neuron{x}.record{t}.(recfields{f1})(r).idt ) );    % print the data of the vector into the file
                                     fprintf(ofile,'io = f.close()\n');   %close the filehandle
                                     makenewrect = false;
