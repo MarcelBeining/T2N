@@ -1099,8 +1099,6 @@ for n = 1:numel(neuron)
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Define Connections *****\n');
         if isfield(neuron{n},'con')
-            % should have look like: {source(node or point process), what to
-            % watch, target, threshold, delay, weight}
             for c = 1:numel(neuron{n}.con)
                 str = cell(0);
                 nodeflag = false;
@@ -1111,7 +1109,6 @@ for n = 1:numel(neuron)
                     for t = 1:numel(cell_source)
                         if ~isempty(cell_source(t)) && isfield(tree{cell_source(t)},'artificial')
                             str{t} = sprintf('con = new NetCon(cellList.o(%d).cell,',find(thesetrees{n}==cell_source(t))-1);
-                            
                         else
                             str{t} = sprintf('con = new NetCon(nil,');
                         end

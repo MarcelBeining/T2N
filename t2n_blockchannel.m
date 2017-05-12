@@ -1,0 +1,82 @@
+function  [neuron, flag] = t2n_blockchannel(neuron,channels,amount,specify)
+if nargin < 3 || isempty(amount)
+    amount = 100;
+end
+
+if nargin < 2 || isempty(channels)
+    
+    if isempty(channels{1})
+        errordlg('No channel to block specified')
+        return
+    end
+elseif ~iscell(channels)
+    channels = {channels};
+end
+if nargin < 4
+    specify = {};
+elseif ischar(specify)
+    specify = {specify};
+end
+
+if strcmp(channels{1},'except')
+    except = 1;
+    notchannels = channels;
+else
+    except = 0;
+end
+if numel(amount) == 1
+    if ~except
+        amount = repmat(amount,numel(channels),1);
+    end
+elseif  numel(amount) ~= numel(channels)
+    errordlg('Number of channels to block (m) and number of relative blocking specifications are not the same. Relative blocking variable must have 1 or m elements')
+    return
+end
+flag = false(numel(channels),1);
+for t = 1:numel(neuron.mech)
+    fields = fieldnames(neuron.mech{t});
+    for f1 = 1:numel(fields)
+        fields2 = fieldnames(neuron.mech{t}.(fields{f1}));
+        if except
+            channels = setdiff(fields2,notchannels);
+            amount = repmat(100,numel(channels),1);
+        end
+        for f2 = 1:numel(fields2)
+            for c = 1:numel(channels)
+                if ~isempty(strfind(fields2{f2},channels{c}))
+                    fields3 = fieldnames(neuron.mech{t}.(fields{f1}).(fields2{f2}));
+                    if ~isempty(specify) && numel(specify) >= c && ~isempty(specify{c}) && (ischar(specify{c}) || iscell(specify{c}))  % allows to select only specific conductances of a channel
+                        fields3 = intersect(fields3,specify{c});
+                        for f3 = 1:numel(fields3)
+                            neuron.mech{t}.(fields{f1}).(fields2{f2}).(fields3{f3}) = neuron.mech{t}.(fields{f1}).(fields2{f2}).(fields3{f3}) * (100-amount(c))/100;
+                        end
+                        flag(c) = true;
+                    else
+                        for f3 = 1:numel(fields3)
+                            if ~isempty(strfind(fields3{f3},'bar')) || (strcmp(channels{c},'pas') && strcmp(fields3{f3},'g'))
+                                neuron.mech{t}.(fields{f1}).(fields2{f2}).(fields3{f3}) = neuron.mech{t}.(fields{f1}).(fields2{f2}).(fields3{f3}) * (100-amount(c))/100;
+                                flag(c) = true;
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+if ~except && any(~flag)
+    warndlg(sprintf('Caution,channel(s) %s was not found in the mechanism definitions!\n',strcat(channels{~flag})),'Channel not found')
+end
+
+str = '';
+for c = 1:numel(channels)
+    str = sprintf('%s%s(%d%%),',str,channels{c},amount(c));
+end
+str = str(1:end-1);
+if isfield(neuron,'experiment') && ~isempty(neuron.experiment)
+    neuron.experiment = strcat(neuron.experiment,sprintf('_Block-%s',str));
+else
+    neuron.experiment = sprintf('Block-%s',str);
+end
+
