@@ -1,4 +1,4 @@
-function [props, fig] = t2n_APprop(targetfolder_data,targetfolder_results,neuron,ostruct,tree)
+function [props, fig] = t2n_APprop(targetfolder_data,targetfolder_results,neuron,params,ostruct,tree)
 
 ap = -10; % minimum amplitude threshold for detection [mV]
 

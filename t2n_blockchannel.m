@@ -1,10 +1,14 @@
-function  [neuron, flag] = t2n_blockchannel(neuron,channels,amount,specify)
+function  [neuron, flag] = t2n_blockchannel(neuron,channels,amount,regions,specify)
+
+% specify : allows to select only specific conductances of a channel, eg.
+%           gabkbar_BK
+
+
 if nargin < 3 || isempty(amount)
     amount = 100;
 end
 
 if nargin < 2 || isempty(channels)
-    
     if isempty(channels{1})
         errordlg('No channel to block specified')
         return
@@ -12,10 +16,15 @@ if nargin < 2 || isempty(channels)
 elseif ~iscell(channels)
     channels = {channels};
 end
-if nargin < 4
+if nargin < 5 || isempty(specify)
     specify = {};
-elseif ischar(specify)
+elseif ischar(specify) % allows to select only specific conductances of a channel
     specify = {specify};
+end
+if nargin < 4 || isempty(regions)
+    regions = {};
+elseif ischar(regions) % allows to select only specific conductances of a channel
+    regions = {regions};
 end
 
 if strcmp(channels{1},'except')
@@ -35,6 +44,14 @@ end
 flag = false(numel(channels),1);
 for t = 1:numel(neuron.mech)
     fields = fieldnames(neuron.mech{t});
+    if ~isempty(regions)
+        if isfield(fields,'range')
+           if ~isempty(intersect(channels,fieldnames(neuron.mech{t}.range)))
+                warning('Caution! One or more channels that should be blocked are (at least partly) defined in the "range" variable but block was restricted to a specific region. This could be problematic, if the range variable contains the conductance (e.g. gbar) parameter that should be blocked. This conductance has to be blocked manually then.')
+           end
+        end
+        fields = intersect(fields,regions);
+    end
     for f1 = 1:numel(fields)
         fields2 = fieldnames(neuron.mech{t}.(fields{f1}));
         if except
