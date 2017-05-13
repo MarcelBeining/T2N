@@ -249,11 +249,23 @@ if ~isempty(strfind(options,'-cl'))
     %     params.server.envstr = [params.server.envstr, sprintf('module load %s; ',outp{1})];  % load first found neuron version
     display(sprintf('Available neuron modules found:\n%s\nChoosing %s',sprintf('%s',params.server.neuron{:}),params.server.neuron{1}))
 elseif exist(params.neuronpath,'file') ~= 2
-    if isempty(strfind(params.neuronpath,'.exe') && exist(fullfile(params.neuronpath,'nrniv.exe'),'file') == 2) % path only points to folder, not to exe
-        params.neuronpath = fullfile(params.neuronpath,'nrniv.exe');
+    if ispc
+        if isempty(strfind(params.neuronpath,'.exe') && exist(fullfile(params.neuronpath,'nrniv.exe'),'file') == 2) % path only points to folder, not to exe
+            params.neuronpath = fullfile(params.neuronpath,'nrniv.exe');
+        else
+            error('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath);
+            %         return
+        end
     else
-        error('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath);
-        %         return
+        [~,outp] = system('which nrniv');
+        if isempty(outp)
+            if ismac
+                error('NEURON software (nrniv) not found on this Mac! Either not installed correctly or Matlab was not started from Terminal')
+            else
+                error('NEURON software (nrniv) not found on this Linux machine! Check correct installation')
+            end
+        end
+        params.neuronpath = NaN;
     end
 end
 
