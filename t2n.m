@@ -265,7 +265,7 @@ elseif exist(params.neuronpath,'file') ~= 2
                 error('NEURON software (nrniv) not found on this Linux machine! Check correct installation')
             end
         end
-        params.neuronpath = NaN;
+        params.neuronpath = outp;
     end
 end
 
@@ -501,18 +501,30 @@ for n = 1:numel(neuron)
             fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',params.nrnmech));
         end
     else
-        if ~exist(fullfile(params.path,'lib_mech','nrnmech.dll'),'file') || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
-            nrn_installfolder = regexprep(fileparts(fileparts(params.neuronpath)),'\\','/');
-            tstr = sprintf('cd "%s" && %s/mingw/bin/sh "%s/mknrndll.sh" %s',[nrn_path,'/lib_mech'],nrn_installfolder, regexprep(t2npath,'\\','/'), ['/',regexprep(nrn_installfolder,':','')]);
-            [~,cmdout] = system(tstr);
-            if isempty(strfind(cmdout,'nrnmech.dll was built successfully'))
-                error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually')
-            else
-                display('nrnmech.dll compiled from mod files in folder lib_mech')
+        if ispc
+            if ~exist(fullfile(params.path,'lib_mech','nrnmech.dll'),'file') || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
+                nrn_installfolder = regexprep(fileparts(fileparts(params.neuronpath)),'\\','/');
+                tstr = sprintf('cd "%s" && %s/mingw/bin/sh "%s/mknrndll.sh" %s',[nrn_path,'/lib_mech'],nrn_installfolder, regexprep(t2npath,'\\','/'), ['/',regexprep(nrn_installfolder,':','')]);
+                [~,cmdout] = system(tstr);
+                if isempty(strfind(cmdout,'nrnmech.dll was built successfully'))
+                    error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually')
+                else
+                    display('nrnmech.dll compiled from mod files in folder lib_mech')
+                end
+                rename_nrnmech()  % delete the o and c files
             end
-            rename_nrnmech()  % delete the o and c files
+            fprintf(nfile,'nrn_load_dll("lib_mech/nrnmech.dll")\n');
+        else
+            mechfold = dir(fullfile(params.path,'lib_mech','x86_*'));
+            if isempty(mechfold) || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
+                [~,outp] = system(sprintf('cd "%s/lib_mech";nrnivmodl',params.path));
+                if ~isempty(regexp(outp,'Successfully','ONCE'))
+                    disp('nrn mechanisms compiled from mod files in folder lib_mech')
+                else
+                    error('There was an error during compiling of mechanisms:\n\n%s',outp)
+                end
+            end
         end
-        fprintf(nfile,'nrn_load_dll("lib_mech/nrnmech.dll")\n');
     end
     
     if params.openNeuron
@@ -2069,7 +2081,9 @@ if noutfiles > 0 % if output is expected
         end
         if ~isempty(strfind(options,'-w'))
             if ishandle(w)
-                waitbar(sum(simids>1)/numel(simids),w)
+                if any(simids>1)
+                    waitbar(sum(simids>1)/numel(simids),w)
+                end
             else
                 answer = questdlg(sprintf('Waitbar was closed, t2n stopped continuing. Only finished data is returned. If accidently, retry.\nClose all NEURON instances?\n (Caution if several Matlab instances are running)'),'Close NEURON instances?','Close','Ignore','Ignore');
                 if strcmp(answer,'Close')
@@ -2231,10 +2245,18 @@ if ~isempty(simid)
             oldpwd = pwd;
             cd(params.path);   % in order to have NEURON the path as its starting folder
         end
-        if params.openNeuron
-            system(['start ' params.neuronpath ' -nobanner "' fname sprintf('" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+        if ispc
+            if params.openNeuron
+                system(['start ' params.neuronpath ' -nobanner "' fname sprintf('" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+            else
+                system(['start /B ' params.neuronpath ' -nobanner "' fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+            end
         else
-            system(['start /B ' params.neuronpath ' -nobanner "' fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+            if params.openNeuron
+                system(['nrniv -nobanner "' fname sprintf('" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+            else
+                system(['nrniv -nobanner "' fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+            end
         end
         %         system(['wmic process call create ''', params.neuronpath, ' -nobanner "', fname, '" -c quit() ''',sprintf(' > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid) ]);
         %         f = fopen(sprintf('%s/sim%d/NeuronLogFile.txt',exchfolder,simid));
