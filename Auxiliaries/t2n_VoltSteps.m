@@ -28,7 +28,7 @@ for s = 1:numel(vstepsModel)
     end
     nneuron{s} = t2n_as(1,nneuron{s});
 end
-out = t2n(tree,params,nneuron,'-q-d-w');
+out = t2n(tree,params,nneuron,'-d-w');
 if any(cellfun(@(x) x.error,out(cellfun(@(x) isfield(x,'error'),out))))
     return
 end
