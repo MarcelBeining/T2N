@@ -2081,7 +2081,7 @@ if noutfiles > 0 % if output is expected
         if ~isempty(strfind(options,'-w'))
             if ishandle(w)
                 if any(simids>1)
-                    waitbar(sum(simids>1)/numel(simids),w)
+                    waitbar(sum(simids>1)/numel(simids),w);
                 end
             else
                 answer = questdlg(sprintf('Waitbar was closed, t2n stopped continuing. Only finished data is returned. If accidently, retry.\nClose all NEURON instances?\n (Caution if several Matlab instances are running)'),'Close NEURON instances?','Close','Ignore','Ignore');
@@ -2090,7 +2090,7 @@ if noutfiles > 0 % if output is expected
                         if ispc
                             system('taskkill /F /IM nrniv.exe');
                         else
-                            system('pkill -9 "nrniv.exe"');
+                            system('pkill -9 "nrniv"');
                         end
                     else
                         
@@ -2256,9 +2256,9 @@ if ~isempty(simid)
             end
         else
             if params.openNeuron
-                system(['open -a nrniv -nobanner "' fname sprintf('" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+                system([sprintf('echo ''cd "%s/lib_mech"; nrniv -nobanner "',params.path), fname,sprintf('" -''> "%s/sim%d/startNeuron.sh";chmod +x "%s/sim%d/startNeuron.sh";open -a terminal "%s/sim%d/startNeuron.sh"',exchfolder,simid,exchfolder,simid,exchfolder,simid)]);
             else
-                system(['nrniv -nobanner -nogui "' fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid),'&']); %&,char(13),'exit&']); %nrniv statt neuron
+                system([sprintf('cd "%s/lib_mech"; nrniv -nobanner -nogui "',params.path) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid),'&']);
             end
         end
         %         system(['wmic process call create ''', params.neuronpath, ' -nobanner "', fname, '" -c quit() ''',sprintf(' > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid) ]);

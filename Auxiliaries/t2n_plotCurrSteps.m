@@ -1,10 +1,10 @@
 function fig = t2n_plotCurrSteps(targetfolder_data,targetfolder_results,neuron,params,ostruct,steps)
 
-if nargin < 5
+if nargin < 6
     steps = [0.03,0.075]; % 30 and 75 pA
 end
 
-if nargin < 4
+if nargin < 5
     ostruct.dataset = 2;
 end
 if ~isfield(ostruct,'show')

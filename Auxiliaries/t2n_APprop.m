@@ -8,7 +8,7 @@ if numel(ostruct.amp)==1
 else
     str = '';
 end
-if nargin < 5
+if nargin < 6
     tree = [];
 end
 

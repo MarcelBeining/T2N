@@ -1,4 +1,4 @@
-function [imp,freq] = t2n_resonance(params,neuron,tree,ostruct,targetfolder_results)
+function [imp,freq] = t2n_resonance(amp,params,neuron,tree,ostruct,targetfolder_results)
 if ~isfield(ostruct,'errorbar')
     ostruct.errorbar = 0;
 end
@@ -18,7 +18,7 @@ ylabel('Impedance [M\Omega]')
 
 
 
-hstep = find_curr(params,neuron,tree,vholding,[],'-q-d');
+hstep = find_curr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
@@ -32,11 +32,11 @@ end
 
 
 for t = 1:numel(tree)
-    [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',vholding);
-    [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',vholding);
+    [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage);
+    [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage);
     [locs,ia] = sort([locs;locs2]);
     pks = [pks;-pks2];
-    pks = pks(ia)-vholding;
+    pks = pks(ia)-ostruct.holding_voltage;
     imp{1}(:,t) = abs(pks/amp);
 end
 if ostruct.errorbar
@@ -58,7 +58,7 @@ end
 % %         end
 %     end
 % end
-% hstep = find_curr(params,neuron,tree,vholding,[],'-q-d');
+% hstep = find_curr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
 % for t = 1:numel(tree)
 %     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
 %     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
@@ -68,11 +68,11 @@ end
 %     warndlg('Caution! Spike was elicited!')
 % end
 % for t = 1:numel(tree)
-%     [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',vholding);
-%     [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',vholding);
+%     [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage);
+%     [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage);
 %     [locs,ia] = sort([locs;locs2]);
 %     pks = [pks;-pks2];
-%     pks = pks(ia)-vholding;
+%     pks = pks(ia)-ostruct.holding_voltage;
 %     imp{2}(:,t) = abs(pks/amp);
 % %     plot(freq(locs-1),imp,'b')
 % end
@@ -93,7 +93,7 @@ end
 %         end
 %     end
 % end
-% hstep = find_curr(params,neuron,tree,vholding,[],'-q-d');
+% hstep = find_curr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
 % for t = 1:numel(tree)
 %     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
 %     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
@@ -103,11 +103,11 @@ end
 %     warndlg('Caution! Spike was elicited!')
 % end
 % for t = 1:numel(tree)
-%     [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',vholding);
-%     [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',vholding);
+%     [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage);
+%     [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage);
 %     [locs,ia] = sort([locs;locs2]);
 %     pks = [pks;-pks2];
-%     pks = pks(ia)-vholding;
+%     pks = pks(ia)-ostruct.holding_voltage;
 %     imp{3}(:,t) = abs(pks/amp);
 % %     plot(freq(locs-1),imp,'r')
 % end
@@ -120,7 +120,7 @@ end
 % 
 
 neuron = t2n_blockchannel(neuron,'Kir21',100);
-hstep = find_curr(params,neuron,tree,vholding,[],'-q-d');
+hstep = find_curr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
@@ -130,11 +130,11 @@ if any(cellfun(@(x) any(x.cell.v{1}>-30),out.record))
     warning('Caution! Spike was elicited!')
 end
 for t = 1:numel(tree)
-    [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',vholding,'NPeaks',450);
-    [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',vholding,'NPeaks',450);
+    [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage,'NPeaks',450);
+    [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage,'NPeaks',450);
     [locs,ia] = sort([locs;locs2]);
     pks = [pks;-pks2];
-    pks = pks(ia)-vholding;
+    pks = pks(ia)-ostruct.holding_voltage;
     imp{4}(:,t) = abs(pks/amp);
 end
 if ostruct.errorbar
@@ -145,7 +145,7 @@ else
 end
 
 neuron = t2n_blockchannel(neuron,'HCN',100);
-hstep = find_curr(params,neuron,tree,vholding,[],'-q-d');
+hstep = find_curr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
@@ -155,11 +155,11 @@ if any(cellfun(@(x) any(x.cell.v{1}>-30),out.record))
     warning('Caution! Spike was elicited!')
 end
 for t = 1:numel(tree)
-    [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',vholding);
-    [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',vholding);
+    [pks,locs] = findpeaks(out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage);
+    [pks2,locs2] = findpeaks(-out.record{t}.cell.v{1},'MinPeakHeight',ostruct.holding_voltage);
     [locs,ia] = sort([locs;locs2]);
     pks = [pks;-pks2];
-    pks = pks(ia)-vholding;
+    pks = pks(ia)-ostruct.holding_voltage;
     imp{5}(:,t) = abs(pks/amp);
 end
 if ostruct.errorbar

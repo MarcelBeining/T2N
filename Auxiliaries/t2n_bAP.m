@@ -11,7 +11,7 @@ end
 params.tstop = 1000;
 params.dt=0.025;
 params.cvode = 1;
-nodes = cell(3,1);
+nodes = cell(numel(tree),1);
 plen = nodes;
 eucl = nodes;
 plotvals = nodes;  
@@ -19,7 +19,6 @@ plotcaivals = nodes;
 bAP = nodes;
 CaNodes = nodes;
 ipar = nodes;
-nodes = nodes;
 
 if ~(ostruct.vmodel>=0) 
     cai = 'caim_Caold';  % AH99 model, does not have an own calcium buffer mechanism, thus variable has a different name
@@ -65,7 +64,7 @@ for t = 1:numel(tree)
         inode(in) = find(minterf(:,1) == nodes{t}(in),1,'first');    %find the index of the node in minterf
     end
     [~,ia] = unique(minterf(inode,[2,4]),'rows');
-    nodes{t} = nodes{t}(ia);
+    nodes{t} = sort(nodes{t}(ia));
     if ostruct.reduce  % reduce number of real recorded nodes to every third.
         nodes{t} = nodes{t}(1:3:end);
     end
@@ -110,18 +109,23 @@ for t = 1:numel(tree)
         for ff = 1:numel(CaNodes{t}{f})
             caivec = out.record{t}.cell.(cai){CaNodes{t}{f}(ff)};
             if ~isempty(caivec)  % cai was existent at that node (might not be the case for AH99
-%                 [maxcai(t,f,ff),ind(1)] = findpeaks(caivec,'npeaks',1);
-%                 % findpeaks does strange things sometimes... use max
+                %                 [maxcai(t,f,ff),ind(1)] = findpeaks(caivec,'npeaks',1);
+                %                 % findpeaks does strange things sometimes... use max
+                opts = optimset('MaxFunEvals',50000,'MaxIter',10000);
+
                 [maxcai(t,f,ff),ind(1)] = max(caivec);
                 ind(2) = find(caivec(ind(1):end) <= caivec(end)+ 1e-7,1,'first')+ind(1)-1;
                 if diff(ind) > 2
-                    est = fit(out.t(ind(1):ind(2))-out.t(ind(1)),caivec(ind(1):ind(2))-caivec(ind(2)),'exp2');
-                    %                 est.a/(est.a+est.c)/(-est.b) +  est.c/(est.a+est.c) / (-est.d)
-                    if est.a < 0 || est.b < 0
-                        est = fit(out.t(ind(1):ind(2))-out.t(ind(1)),caivec(ind(1):ind(2))-caivec(ind(2)),'exp1');
-                        tw(t,f,ff) = -1/est.b;
+                    x = out.t(ind(1):ind(2))-out.t(ind(1));
+                    yx = caivec(ind(1):ind(2))-caivec(ind(2));
+                    y1 = @(b,x) b(1).*exp(-b(2).*x); % single exp function
+                    y2 = @(b,x) b(1).*exp(-b(2).*x)+b(3).*exp(-b(4).*x);  % double exp function
+                    B = fminsearch(@(b) sum((y2(b,x) - yx).^2),rand(4,1),opts); % do double exp fit
+                    if B(1) < 0 || B(3) < 0  % if double exp fit fails (neg amplitude)
+                        B = fminsearch(@(b) sum((y1(b,x) - yx).^2),rand(2,1),opts); % do single exp fit
+                        tw(t,f,ff) = 1/B(2);
                     else
-                        tw(t,f,ff) = (-est.a/est.b+-est.c/est.d)/(est.a+est.c); % amplitude weighted tau as in stocca 2008
+                        tw(t,f,ff) = (B(1)/B(2)+B(3)/B(4))/(B(1)+B(3)); % amplitude weighted tau as in stocca 2008
                     end
                 else
                     tw(t,f,ff) = NaN;
