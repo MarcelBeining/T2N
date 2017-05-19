@@ -100,7 +100,6 @@ end
 p = zeros(size(voltVec,1),1);
 figure(fig(1))
 for ss = 1:size(voltVec,2)
-    s = find(cstepsSpiking == cstepsSpikingModel(ss));
     for f=1:size(voltVec,1)
         if ostruct.usemorph >=4  % rat
             subplot(floor(sqrt(size(voltVec,2))),ceil(sqrt(size(voltVec,2))),ss)
@@ -108,16 +107,10 @@ for ss = 1:size(voltVec,2)
             subplot(floor(sqrt(size(exp_iclamp,3))),ceil(sqrt(size(exp_iclamp,3))),s)
         end
         hold all
-        %         if params.realv
         thisv = squeeze(voltVec{f,ss});
-        %         else
-        %             thisv = squeeze(voltVec{f,s}) + params.LJP;
-        %         end
         maxdv{2}(f,ss) = max(diff(thisv,1,1))/params.dt;
         ind = find(voltVec{f,ss}>7,1,'first');  % find first
-        % spike  %buggg?
-        %         ind = find(diff(thisv,1,1)>7,1,'first');  % find first spike
-        
+
         thist = squeeze(timeVec{f,ss});
         if isempty(ind)
             ind =1;
@@ -164,7 +157,6 @@ set(gca,'XTick',-80:40:80)
 
 
 if any(ostruct.show == 1)
-    
     figure(fig(2))  % exp first spike
     xlim([-80 80])             
     set(gca,'XTick',-80:40:80)
