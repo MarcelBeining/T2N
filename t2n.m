@@ -511,7 +511,7 @@ for n = 1:numel(neuron)
                 else
                     display('nrnmech.dll compiled from mod files in folder lib_mech')
                 end
-                rename_nrnmech()  % delete the o and c files
+                t2n_rename_nrnmech()  % delete the o and c files
             end
             fprintf(nfile,'nrn_load_dll("lib_mech/nrnmech.dll")\n');
         else

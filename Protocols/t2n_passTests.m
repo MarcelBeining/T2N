@@ -108,10 +108,10 @@ switch ostruct.passtest
                 y = out.record{t}.SEClamp.i{recordnode(t)}(sign(amp)*out.record{t}.SEClamp.i{recordnode(t)} > sign(amp)*is)-is;
                 x = out.t(sign(amp)*out.record{t}.SEClamp.i{recordnode(t)} > sign(amp)*is);
                 cap(t) = trapz(x,y)/amp * 1000;
-                fprintf('Capacitance is %g pF\n',cap(t))
+                fprintf('\n\nCapacitance is %g pF\n\n',cap(t))
             end
             Rin(t) = amp/(is-I0); %MOhm mV/nA
-            fprintf('Rin: %g MOhm ,     tau:  ms\n',  Rin(t));%,tauexp(t));
+            fprintf('\n\nRin: %g MOhm ,     tau:  ms\n\n',  Rin(t));%,tauexp(t));
             if ~isempty(strfind(options,'-s'))
                 plot(out.t,out.record{t}.SEClamp.i{recordnode(t)},'Color',tree{t}.col{1},'LineWidth',1)
                 xlim([0 del+dur+100])
@@ -146,7 +146,7 @@ switch ostruct.passtest
            
             tau(t) = -1/a(1);
 
-            fprintf('Rin: %g MOhm ,     tau: %g ms\n',  Rin(t),tau(t));%,tauth(t));
+            fprintf('\n\nRin: %g MOhm ,     tau: %g ms\n\n',  Rin(t),tau(t));%,tauth(t));
         end
         if ~isempty(strfind(options,'-s'))
             linkaxes
@@ -162,6 +162,6 @@ if ~isempty(strfind(options,'-s'))
     xlim([0 2000])
     FontResizer
     FigureResizer(ostruct.figureheight,ostruct.figurewidth,[],ostruct)
-    tprint(fullfile(targetfolder,strcat(sprintf('PassMeasure_%s_',ostruct.passtest),neuron.experiment)),'-pdf')
+    tprint(fullfile(targetfolder,strcat(sprintf('PassMeasure_%s_',ostruct.passtest),neuron.experiment)),'-pdf');
 end
 

@@ -4,10 +4,13 @@ if ~isfield(ostruct,'duration') && ostruct.dataset < 7
     ostruct.duration = 200;
 end
 
-load(t2n_expcat(targetfolder_data,'Exp_Spiking',neuron.experiment),'voltVec','timeVec','numspikes','params','cstepsSpikingModel','tree','nneuron')
+load(t2n_expcat(targetfolder_data,'Exp_Spiking',neuron.experiment),'voltVec','timeVec','numspikes','params','cstepsSpikingModel','tree','nneuron');
 
-modelcol = [1 0 0];
-
+if isfield(ostruct,'color')
+    modelcol = ostruct.color;
+else
+    modelcol = [1 0 0];
+end
 
 if isfield(ostruct,'handles') && ~isempty(ostruct.handles) && ishandle(ostruct.handles(2))
     fig(1) = ostruct.handles(1);
@@ -21,9 +24,9 @@ ylabel('Number of spikes')
 FontResizer
 FigureResizer(ostruct.figureheight,ostruct.figurewidth)
 if isfield(ostruct,'savename') && ~isempty(ostruct.savename)
-    tprint(fullfile(targetfolder_results,ostruct.savename),'-pdf')
+    tprint(fullfile(targetfolder_results,ostruct.savename),'-pdf');
 else
-    tprint(fullfile(targetfolder_results,t2n_expcat('Fig.4-FI',neuron.experiment)),'-pdf')
+    tprint(fullfile(targetfolder_results,t2n_expcat('FI',neuron.experiment)),'-pdf');
 end
 
 
@@ -40,8 +43,8 @@ FontResizer
 FigureResizer(ostruct.figureheight,ostruct.figurewidth)
 if isfield(ostruct,'savename')  && ~isempty(ostruct.savename)
     if ~isempty(ostruct.savename)
-        tprint(fullfile(targetfolder_results,[ostruct.savename,'_Hz']),'-pdf')
+        tprint(fullfile(targetfolder_results,[ostruct.savename,'_Hz']),'-pdf');
     end
 else
-    tprint(fullfile(targetfolder_results,t2n_expcat('Fig.4-FI_Hz',neuron.experiment)),'-pdf')
+    tprint(fullfile(targetfolder_results,t2n_expcat('FI_Hz',neuron.experiment)),'-pdf');
 end
