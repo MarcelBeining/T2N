@@ -1,95 +1,71 @@
-function [props, fig] = t2n_APprop(targetfolder_data,targetfolder_results,neuron,params,ostruct,tree)
+function [props, fig, figname] = t2n_APprop(targetfolder_data,neuron,currstep,tree,dataset)
+% This function analyzes and optionally plots various action potential (AP) 
+% characteristics at a current injection step previously simulated with t2n_currsteps
+%
+% INPUTS
+% targetfolder_data destination of temporary results file
+% neuron            t2n neuron structure with already defined mechanisms
+% currstep          current injection amplitude at which AP properties
+%                   should be analyzed [nA]
+% tree              (optional) tree cell array with morphologies to
+%                   calculate dependencies on tree surfaces
+% dataset           (optional, so far only compatible with GC model) dataset of
+%                   experimental data which should be loaded
+%
+% OUTPUTS
+% props             structure with AP properties. If this is the only
+%                   output, figures are not plotted
+% fig               figure handles to figures
+% figname           name of each figure
+% 
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
-ap = -10; % minimum amplitude threshold for detection [mV]
+ap = -10; % minimum AP amplitude threshold for detection [mV]
 
 newrate = 0.005; %ms
-if numel(ostruct.amp)==1
-    str = sprintf('_%dpA',ostruct.amp);
-else
-    str = '';
+if nargin < 3
+    currstep = 0.09;
 end
-if nargin < 6
+if nargin < 4
     tree = [];
 end
 
-if isfield(ostruct,'data')
-    uu = ostruct.data;
+if exist('dataset','var')
+    uu = 1:2;
 else
-    if isfield(ostruct,'show')  %isfield(ostruct,'onlysim') && ostruct.onlysim ||
-        if ostruct.show == 0
-            uu = 2;
-        else
-            uu = ostruct.show;
-        end
-    else
-        uu = 1:2;
-    end
+    uu = 2;
 end
-if params.cvode == 0
-    sim1 = load(expcat(targetfolder_data,'Exp_Spiking',strcat(neuron.experiment,str,'_fixed-dt')));
-else
-    sim1 = load(expcat(targetfolder_data,'Exp_Spiking',strcat(neuron.experiment,str)));
-end
-if any(uu==3)
-    [fname,pname] = uigetfile('.mat','select Model Exp_Spiking file',fullfile(targetfolder_data,'Exp_Spiking.mat'));
-    if isempty(fname) || fname == 0
-        uu(uu==3) = [];
+if any(uu==2)
+    [fname,pname] = uigetfile('.mat','select Model Exp_Spiking file',t2n_expcat(targetfolder_data,'Exp_Spiking',strcat(neuron.experiment)));
+    if isempty(fname) || isnumeric(fname) && fname == 0
+        uu(uu==2) = [];
     else
-        sim2 = load(fullfile(pname,fname));%load(expcat(targetfolder_data,'Exp_Spiking',strcat(neuron.experiment,str,'_fixed-dt')));
+        sim1 = load(fullfile(pname,fname));
     end
 end
 
 if any(uu == 1)
-    [exp_iclamp,cstepsSpiking,rate] = load_ephys(ostruct.dataset,'CClamp');
+    [exp_iclamp,cstepsSpiking,rate] = load_ephys(dataset,'CClamp');
+end
+% find step which should be analyzed
+s2=find(sim1.cstepsSpikingModel == currstep);
+if any(uu == 1)
+    s1=find(cstepsSpiking == currstep);
 end
 
 
-if numel(ostruct.amp)==1
-    s2= 1;
-    if any(uu == 1)
-        s1 = find(cstepsSpiking == ostruct.amp/1000);
-    end
-else
-    if isfield(ostruct,'ampprop')
-        s2=find(round(sim1.cstepsSpikingModel*1000) == ostruct.ampprop);
-        if any(uu == 1)
-            s1=find(cstepsSpiking == ostruct.ampprop/1000);
-        end
-    else
-        s2=find(round(sim1.cstepsSpikingModel*1000)/1000 == 0.09);
-        if any(uu == 1)
-            s1 = 19;
-        end
-    end
-end
 dVthresh = 15;
 
-xl = repmat([0.5 5.5],5,1);
-if ostruct.newborn
-    yl = [0,-60,-80,0,0;4,-20,-40,100,150]';
-else
-    if isnan(ostruct.vmodel) %AH99
-        yl = [0,-60,-80,0,0;6,-30,-40,100,150]';
-    else
-        yl = [0,-60,-80,0,0;2,-30,-40,100,150]';
-    end
-end
 ylab = {'Spike width [ms]','Spike threshold [mV]','fAHP [mV]','Interspike interval [ms]','Spike amplitude [mV]','Spike width [ms]','fAHP [mV]'};%sprintf('Spike threshold [mV] (dV > %g mV/ms)',dVthresh)
 figname = {'APwidth','APvthresh','APfahp','APisi','APamp','APvthreshVSAPwidth','APampVSfahp','APampabsVSfahpabs','APfahpdeact','SurfacesAPwidth','SurfacesAPnum','SurfacesfAHPabs','SurfacesCthresh','SurfacesAPamp'};
 
-if ostruct.show
-    
+if nargout ~= 1
     for f = 1:9+~isempty(tree)*5
-        if isfield(ostruct,'handles') && ~isempty(ostruct.handles) && numel(ostruct.handles) >= f && ishandle(ostruct.handles(f))
-            fig(f) = ostruct.handles(f);
-            figure(fig(f))
-        else
-            fig(f) = figure;hold all,
-        end
+        fig(f) = figure;hold all,
         if f <= 5
-            ylim(yl(f,:))
-            xlim(xl(f,:))
-            set(gca,'XTick',1:5)
             if f == 4
                 xlabel('After n''th spike')
             else
@@ -99,33 +75,15 @@ if ostruct.show
         else
             switch f
                 case 6
-                    xlim(yl(2,:))
-                    if ostruct.newborn
-                        ylim([-10 30])
-                    else
-                        ylim([0 25])
-                    end
-                    %                     ylim(yl(3,:))
                     xlabel('Spike threshold [mV]')
-                    
                     ylabel('fAHP [mV]')
                 case 7
-                    xlim(yl(5,:))
-                    ylim(yl(1,:))
                     xlabel('Spike amplitude [mV]')
                     ylabel('Spike width [ms]')
                 case 8
-                    xlim([20 70])
-                    if ostruct.newborn
-                        ylim([-70 -35])
-                    else
-                        ylim([-70 -45])
-                    end
                     xlabel('Absolute spike amplitude [mV]')
                     ylabel('fAHP potential [mV]')
                 case 9
-                    xlim(xl(1,:))
-                    ylim([0 5])
                     xlabel('n''th spike')
                     ylabel('fAHP deactivation tau [ms]')
                 case {10,12,14}
@@ -154,12 +112,12 @@ for u = 1:numel(uu)
             if isempty(s1)
                 continue
             else
-                thisv = exp_iclamp(:,:,s1) - sim1.params.LJP;
+                thisv = exp_iclamp(:,:,s1);
                 thist = repmat((1/rate:1/rate:size(thisv,1)/rate)',1,size(thisv,2));
                 thisv = interp1(thist(:,1),thisv,thist(1,1):newrate:thist(end,1));
                 thist = repmat((thist(1,1):newrate:thist(end,1))',1,size(thisv,2));
                 spikdetect = squeeze(any(exp_iclamp > -30,1));
-                csteps = sim1.cstepsSpiking;
+                csteps = cstepsSpiking;
             end
         case 2
             if isempty(s2)
@@ -177,26 +135,26 @@ for u = 1:numel(uu)
             if ~isempty(tree)
                 for t = 1:numel(tree)
                     su=surf_tree(tree{t});
-                    len=len_tree(tree{t});
-                    B = B_tree(tree{t});
-                    Bs(t) = sum(B(tree{t}.R ~= find(strcmp(tree{t}.rnames,'axon')) & tree{t}.R ~= find(strcmp(tree{t}.rnames,'soma'))));
-                    lendend(t) = sum(len(tree{t}.R ~= find(strcmp(tree{t}.rnames,'soma')) & tree{t}.R ~= find(strcmp(tree{t}.rnames,'axon'))));
+%                     len=len_tree(tree{t});
+%                     B = B_tree(tree{t});
+%                     Bs(t) = sum(B(tree{t}.R ~= find(strcmp(tree{t}.rnames,'axon')) & tree{t}.R ~= find(strcmp(tree{t}.rnames,'soma'))));
+%                     lendend(t) = sum(len(tree{t}.R ~= find(strcmp(tree{t}.rnames,'soma')) & tree{t}.R ~= find(strcmp(tree{t}.rnames,'axon'))));
                     sudend(t) = sum(su(tree{t}.R ~= find(strcmp(tree{t}.rnames,'soma')) & tree{t}.R ~= find(strcmp(tree{t}.rnames,'axon'))));
                     susom(t) = sum(su(tree{t}.R == find(strcmp(tree{t}.rnames,'soma'))));
-                    Dsom(t) = tree{t}.D(1);
-                    suAIS(t) = sum(su(tree{t}.R == find(strcmp(tree{t}.rnames,'axonh'))));
+%                     Dsom(t) = tree{t}.D(1);
+%                     suAIS(t) = sum(su(tree{t}.R == find(strcmp(tree{t}.rnames,'axonh'))));
                 end
             end
-        case 3
-            thisv = cell2mat(sim2.voltVec(:,s2)');
-            thist = cell2mat(sim2.timeVec(:,s2)');
-            thisv = interp1(thist(:,1),thisv,thist(1,1):newrate:thist(end,1));
-            if size(thisv,1) == 1
-                thisv = thisv';
-            end
-            thist = repmat((thist(1,1):newrate:thist(end,1))',1,size(thisv,2));
-            spikdetect = cellfun(@(x) any(x > -30),sim2.voltVec);
-            csteps = sim2.cstepsSpikingModel;
+%         case 3
+%             thisv = cell2mat(sim2.voltVec(:,s2)');
+%             thist = cell2mat(sim2.timeVec(:,s2)');
+%             thisv = interp1(thist(:,1),thisv,thist(1,1):newrate:thist(end,1));
+%             if size(thisv,1) == 1
+%                 thisv = thisv';
+%             end
+%             thist = repmat((thist(1,1):newrate:thist(end,1))',1,size(thisv,2));
+%             spikdetect = cellfun(@(x) any(x > -30),sim2.voltVec);
+%             csteps = sim2.cstepsSpikingModel;
     end
     [~,props.APic{u}] = find(spikdetect == 1 & cumsum(spikdetect,2) == 1);
     props.APic{u} = csteps(props.APic{u})*1000;
@@ -289,8 +247,6 @@ for u = 1:numel(uu)
                 count = count + 1;
             end
         end
-        %         figure;plot(thist(:,t),thisv(:,t))
-        %         hold on, plot(props.APit{u,t},props.APiv{u,t},'x')
         switch uu(u)
             case 1
                 col = [0 0 0];
@@ -300,16 +256,9 @@ for u = 1:numel(uu)
                 else
                     col = [1 0 0];
                 end
-                
-            case 3
-                if isfield(sim2.tree{t},'col')
-                    col = sim2.tree{t}.col{1};
-                else
-                    col = [1 0 0];
-                end
         end
         
-        if ostruct.show
+        if nargout ~= 1
             figure(fig(1)),hold on
             plot(props.APwidth{u,t},'LineWidth',1,'Color',col,'Marker',markerstyle{u})
             figure(fig(2)),hold on
@@ -320,28 +269,28 @@ for u = 1:numel(uu)
             plot(props.APISI{u,t},'LineWidth',1,'Color',col,'Marker',markerstyle{u})
             figure(fig(5)),hold on
             plot(props.APamp{u,t},'LineWidth',1,'Color',col,'Marker',markerstyle{u})
-            if u == 3 && t == size(thisv,2)
-                fields = {'APiv','fAHP';'APamp','APwidth';'APampabs','fAHPabs'};
-                for ff = 1:size(fields,1)
-                    
-                    tmp1 = NaN(size(thisv,2),max(cellfun(@numel,props.(fields{ff,1})(u,:))));
-                    tmp2 = NaN(size(thisv,2),max(cellfun(@numel,props.(fields{ff,2})(u,:))));
-                    for tt = 1:size(thisv,2)
-                        tmp1(tt,1:numel(props.(fields{ff,1}){u,tt})) = props.(fields{ff,1}){u,tt};
-                        tmp2(tt,1:numel(props.(fields{ff,2}){u,tt})) = props.(fields{ff,2}){u,tt};
-                    end
-                    figure(fig(5+ff)),hold on
-                    p = plot(nanmean(tmp1,1),nanmean(tmp2,1));
-                    errbar(p,cat(3,nanstd(tmp2,[],1),nanstd(tmp1,[],1)))
-                end
-                %                 plot(props.APiv{u,t}(1:min(numel(props.APiv{u,t}),numel(props.fAHP{u,t}))),props.fAHP{u,t}(1:min(numel(props.APiv{u,t}),numel(props.fAHP{u,t}))),'LineWidth',u,'Color',col,'Marker','x')
-                %                 figure(fig(7)),hold on
-                %                 plot(props.APamp{u,t}(1:min(numel(props.APamp{u,t}),numel(props.APwidth{u,t}))),props.APwidth{u,t}(1:min(numel(props.APamp{u,t}),numel(props.APwidth{u,t}))),'LineWidth',u,'Color',col,'Marker','x')
-                %                 figure(fig(8)),hold on
-                %                 plot(props.APampabs{u,t}(1:min(numel(props.APampabs{u,t}),numel(props.fAHPabs{u,t}))),props.fAHPabs{u,t}(1:min(numel(props.APampabs{u,t}),numel(props.fAHPabs{u,t}))),'LineWidth',u,'Color',col,'Marker','x')
-                figure(fig(9)),hold on
-                plot(props.APdeact{u,t},'LineWidth',1,'Color',col,'Marker',markerstyle{u})
-            elseif u < 3
+%             if u == 3 && t == size(thisv,2)
+%                 fields = {'APiv','fAHP';'APamp','APwidth';'APampabs','fAHPabs'};
+%                 for ff = 1:size(fields,1)
+%                     
+%                     tmp1 = NaN(size(thisv,2),max(cellfun(@numel,props.(fields{ff,1})(u,:))));
+%                     tmp2 = NaN(size(thisv,2),max(cellfun(@numel,props.(fields{ff,2})(u,:))));
+%                     for tt = 1:size(thisv,2)
+%                         tmp1(tt,1:numel(props.(fields{ff,1}){u,tt})) = props.(fields{ff,1}){u,tt};
+%                         tmp2(tt,1:numel(props.(fields{ff,2}){u,tt})) = props.(fields{ff,2}){u,tt};
+%                     end
+%                     figure(fig(5+ff)),hold on
+%                     p = plot(nanmean(tmp1,1),nanmean(tmp2,1));
+%                     errbar(p,cat(3,nanstd(tmp2,[],1),nanstd(tmp1,[],1)))
+%                 end
+%                 %                 plot(props.APiv{u,t}(1:min(numel(props.APiv{u,t}),numel(props.fAHP{u,t}))),props.fAHP{u,t}(1:min(numel(props.APiv{u,t}),numel(props.fAHP{u,t}))),'LineWidth',u,'Color',col,'Marker','x')
+%                 %                 figure(fig(7)),hold on
+%                 %                 plot(props.APamp{u,t}(1:min(numel(props.APamp{u,t}),numel(props.APwidth{u,t}))),props.APwidth{u,t}(1:min(numel(props.APamp{u,t}),numel(props.APwidth{u,t}))),'LineWidth',u,'Color',col,'Marker','x')
+%                 %                 figure(fig(8)),hold on
+%                 %                 plot(props.APampabs{u,t}(1:min(numel(props.APampabs{u,t}),numel(props.fAHPabs{u,t}))),props.fAHPabs{u,t}(1:min(numel(props.APampabs{u,t}),numel(props.fAHPabs{u,t}))),'LineWidth',u,'Color',col,'Marker','x')
+%                 figure(fig(9)),hold on
+%                 plot(props.APdeact{u,t},'LineWidth',1,'Color',col,'Marker',markerstyle{u})
+%             elseif u < 3
                 figure(fig(6)),hold on
                 plot(props.APiv{u,t}(1:min(numel(props.APiv{u,t}),numel(props.fAHP{u,t}))),props.fAHP{u,t}(1:min(numel(props.APiv{u,t}),numel(props.fAHP{u,t}))),'LineWidth',1,'Color',col,'Marker',markerstyle{u})
                 figure(fig(7)),hold on
@@ -380,24 +329,12 @@ for u = 1:numel(uu)
                     ylim([4000 10000])
                     zlim([0 200])
                 end
-            end
+%             end
         end
     end
     
 end
-if ostruct.show
-    
-    for f = 1:9+~isempty(tree)*5
-        figure(fig(f))
-        FontResizer
-        FigureResizer(ostruct.figureheight,ostruct.figurewidth)
-        if isfield(ostruct,'savename')
-            tprint(fullfile(targetfolder_results,strcat(ostruct.savename,'-',figname{f})),'-pdf');
-        else
-            tprint(fullfile(targetfolder_results,expcat(strcat(figname{f}),neuron.experiment)),'-pdf');
-        end
-    end
-end
+   
 for u = 1:numel(uu)
     if uu(u) == 1 && isempty(s1)
         continue

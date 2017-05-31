@@ -3,7 +3,7 @@ if nargin < 3
     ostruct = [];
 end
 
-steps = -120;
+steps = -120-12.1;
 
 if ~isfield(ostruct,'subtract_hv')
     ostruct.subtract_hv = 0;
@@ -15,7 +15,6 @@ end
 load(loadingfile,'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','params','vstepsModel','tree')
 if any(ostruct.show==1)
     [exp_vclamp,vsteps,rate] = load_ephys(ostruct.dataset,'VClamp');
-    vsteps = vsteps - params.LJP;
 end
 
 fig(1) = figure; hold all
@@ -47,7 +46,7 @@ if any(ostruct.show == 1)
             ylim([-200,200])
             title(sprintf('VClamp % 4.4g mV%s',vsteps(s),str));
             xlim([0 300])
-            if vsteps(s) == steps-params.LJP
+            if any(vsteps(s) == steps)
                 figure(fig(2))
                 plot(1/rate:1/rate:size(exp_vclamp,1)/rate,squeeze(exp_vclamp(:,f,s)))
                 ylabel('Current [pA]')
@@ -75,7 +74,7 @@ if any(ostruct.show == 2)
             xlabel('Time [ms]')
             ylim([-200,200])
             title(sprintf('VClamp % 4.4g mV%s',vstepsModel(s),str));
-            if vstepsModel(s) == steps-params.LJP
+            if any(vstepsModel(s) == steps)
                 figure(fig(2))
                 plot(thiscurr{f,s}(1,:),thiscurr{f,s}(2,:),'LineWidth',1,'LineStyle','-','Color',tree{f}.col{1})
                 ylabel('Current [pA]')
