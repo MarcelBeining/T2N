@@ -37,7 +37,7 @@ params.tstart = 0;
 params.cvode=0;
 switch ostruct.passtest
     case 'Mongiat'
-        Vh = -70-params.LJP;
+        Vh = -70-12.1;  % LJP corrected
         dur = 100;
 %         params.cvode = 1;
         amp = -10; %mV for cap and Rin Mongiat 2009
@@ -48,7 +48,7 @@ switch ostruct.passtest
     case 'Mongiat2'
         dur = 500;
         amp = -0.01  ;      % 10pA for tau...Mongiat 2009
-        [hstep, Vrest] = find_curr(params,neuron,tree,-80-params.LJP);
+        [hstep, Vrest] = find_curr(params,neuron,tree,-80-12.1);  % LJP corrected
         for t = 1:numel(tree)
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));
@@ -162,6 +162,6 @@ if ~isempty(strfind(options,'-s'))
     xlim([0 2000])
     FontResizer
     FigureResizer(ostruct.figureheight,ostruct.figurewidth,[],ostruct)
-    tprint(fullfile(targetfolder,strcat(sprintf('Fig.2-PassMeasure_%s_',ostruct.passtest),neuron.experiment)),'-pdf')
+    tprint(fullfile(targetfolder,strcat(sprintf('PassMeasure_%s_',ostruct.passtest),neuron.experiment)),'-pdf')
 end
 
