@@ -5,7 +5,7 @@ begintemplate Temperature
 	proc init() {
 		q10_g_pas  =  1.98  // simulations. Passive membrane parameters (Ra, cm, g_pas) 
 		q10_Ra     =  0.80  // have no built-in temperature dependence. Instead, they
-		q10_cm     =  0.96  // will be scaled using Q10 values
+		q10_cm     =  0.96  // will be scaled when calling membrane.hoc using Q10 values
 					// according to:
                     // Trevelyan AJ, Jack JJB (2002), J Physiol 539:623-636
                     // Note that these Q10 values have been obtained for LII/III
@@ -15,6 +15,11 @@ begintemplate Temperature
                     // q10_g_pas  =  1.98 
                     // q10_Ra     =  0.80 
                     // q10_cm     =  0.96 
+	/*if (strf.is_name("celsius_init")) {
+		celsius = celsius_init
+	}else{
+		celsius    =  25    // This is to roughly account for the effects of temperature on
+	}*/
 	}
 proc reset() { local CELLINDEX
 	for CELLINDEX = 0,cellList.count()-1 {
@@ -56,6 +61,15 @@ proc addsurf_spines() {
 						if (scale_spines > 0) {
 							g_pas 	= g_pas * scale_spines
 							cm 		= cm * scale_spines
+							/*if (ismembrane("Kir32")) {
+								gkbar_Kir32 = gkbar_Kir32 * scale_spines
+							}
+							if (ismembrane("ichan3")) {
+								gkabar_ichan3 = gkabar_ichan3 * scale_spines
+							}
+							*/
+							
+							
 						}else{
 							if (density_spines > 0) {
 								x1 = arc3d(0)
