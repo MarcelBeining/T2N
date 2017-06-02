@@ -1379,17 +1379,18 @@ for n = 1:numel(neuron)
                         end
                         % these lines filter out multiple identlich
                         % recording node definitions
-                        if numel(setdiff(fieldnames(neuron{x}.record{t}.(recfields{f1})),{'record','node'}))>0
-                            error('this has not been implemented yet. write to marcel.beining@gmail.com with specification of the error line')
+                        if n == x  % only do it once for each real defined simulation
+                            if numel(setdiff(fieldnames(neuron{x}.record{t}.(recfields{f1})),{'record','node'}))>0
+                                error('this has not been implemented yet. write to marcel.beining@gmail.com with specification of the error line')
+                            end
+                            [uniqrecs,~,indrecgroups] = unique({neuron{x}.record{t}.(recfields{f1}).record}); % find recording fields with same recording variable
+                            tmpstruct = neuron{x}.record{t}.(recfields{f1})([]);
+                            for u = 1:numel(uniqrecs)  % go through variable groups
+                                unodes = unique(cat(1,neuron{x}.record{t}.(recfields{f1})(indrecgroups==u).node));  % get the unique nodes for that recorded variable
+                                tmpstruct(u) = struct('record',uniqrecs{u},'node',unodes);  % save these in a temporary structure
+                            end
+                            neuron{x}.record{t}.(recfields{f1}) = tmpstruct;  % overwrite old record defiition with new record structure
                         end
-                        [uniqrecs,~,indrecgroups] = unique({neuron{x}.record{t}.(recfields{f1}).record}); % find recording fields with same recording variable
-                        tmpstruct = neuron{x}.record{t}.(recfields{f1})([]);
-                        for u = 1:numel(uniqrecs)  % go through variable groups
-                            unodes = unique(cat(1,neuron{x}.record{t}.(recfields{f1})(indrecgroups==u).node));  % get the unique nodes for that recorded variable
-                            tmpstruct(u) = struct('record',uniqrecs{u},'node',unodes);  % save these in a temporary structure
-                        end
-                        neuron{x}.record{t}.(recfields{f1}) = tmpstruct;  % overwrite old record defiition with new record structure
-                        
                         for r = 1:numel(neuron{x}.record{t}.(recfields{f1})) %.record)  % go through all variables to be recorded
                             
                             if strcmp(rectype,'cell')

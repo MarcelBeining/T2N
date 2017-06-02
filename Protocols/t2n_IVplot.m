@@ -72,5 +72,5 @@ else
     errorbar(vstepsModel,mean(steadyStateCurrVec,2),std(steadyStateCurrVec,[],2)/sqrt(size(steadyStateCurrVec,2)),'Color',[0 0 1],'LineWidth',1);
 end
 
-xlabel('Holding Voltage [mV] corrected')
-ylabel('Measured Current [pA]')
+xlabel('Holding Voltage [mV]')
+ylabel('Current [pA]')
