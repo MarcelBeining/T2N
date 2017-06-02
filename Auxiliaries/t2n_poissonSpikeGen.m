@@ -1,4 +1,4 @@
-function [spikeMat, tVec] = poissonSpikeGen(freq, params, nTrials)
+function [spikeMat, tVec] = t2n_poissonSpikeGen(freq, params, nTrials)
 % dt, tstop and tvec in ms, freq in Hz
 
 if nargin < 3

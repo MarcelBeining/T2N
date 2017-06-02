@@ -1,6 +1,6 @@
 function [maxdv,fig] = t2n_plotdV(targetfolder_data,targetfolder_results,neuron,params,ostruct)
 checkthis = 90;
-load(t2n_expcat(targetfolder_data,'Exp_Spiking',neuron.experiment))
+load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment))
 
 modelcol = [1 0 0];
 

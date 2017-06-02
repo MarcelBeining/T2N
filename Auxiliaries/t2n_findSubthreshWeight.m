@@ -1,4 +1,4 @@
-function [weight] = find_subthreshweight(params,neuron_orig,tree,weight,freq,tim)
+function [weight] = t2n_findSubthreshWeight(params,neuron_orig,tree,weight,freq,tim)
 % this function finds the synaptic weight of Exp2Syn synapses necessary to 
 % have the neurons defined in "neuron" and "tree" at a sub-spiking threshold level
 % this function is part of the T2N package

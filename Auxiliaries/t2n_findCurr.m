@@ -1,4 +1,4 @@
-function [amp, Vrest] = find_curr(params,neuron,tree,desv,amp,options)
+function [amp, Vrest] = t2n_findCurr(params,neuron,tree,desv,amp,options)
 % this function finds the current necessary to keep the neurons defined in
 % "neuron" and "tree" at a desired voltage or alternatively finds the
 % spiking threshold

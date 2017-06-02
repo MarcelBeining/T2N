@@ -60,7 +60,7 @@ cstepsSpikingModel = ostruct.amp;  % 0:5:120
 params.tstop = 150+ostruct.duration;
 
 if isfield(ostruct,'holding_voltage') && ~isnan(ostruct.holding_voltage)
-    hstep = find_curr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
+    hstep = t2n_findCurr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
 else
     hstep = zeros(1,numel(tree));
 end
@@ -85,7 +85,7 @@ for s = 1:numel(cstepsSpikingModel)
 end
 
 if ostruct.find_freq > 0
-    amp = find_freq(params,nneuron{1},tree,ostruct.find_freq,'-q-d');
+    amp = t2n_findFreq(params,nneuron{1},tree,ostruct.find_freq,'-q-d');
     for t = 1:numel(tree)
         nneuron{1}.pp{t}.IClamp.amp = [hstep(t) amp(t) hstep(t)]; %n,del,dur,amp  %WICHTIG! nur amp da hstep nicht abgezogen
     end

@@ -1,4 +1,4 @@
-function strct = cat_struct(varargin)
+function strct = t2n_catStruct(varargin)
 % 
 % this function concatenates two structures which have the same fields iteratively
 % this function is part of the T2N package
@@ -14,7 +14,7 @@ for v = 1:nargin
     fields = fieldnames(varargin{v});
     for f = 1:numel(fields)
         if isfield(strct,fields{f})
-            strct.(fields{f}) = cat_struct(strct.(fields{f}),varargin{v}.(fields{f}));
+            strct.(fields{f}) = t2n_catStruct(strct.(fields{f}),varargin{v}.(fields{f}));
         else
             strct.(fields{f}) = varargin{v}.(fields{f});
         end

@@ -1,4 +1,4 @@
-function h = plotmytrees(tree,targetfolder,col,ostruct)
+function h = t2n_plotTrees(tree,targetfolder,col,ostruct)
 % this function plots and saves each tree in a nice way, eg for using in Adobe
 % Illustrator
 % this function is part of the T2N package
@@ -39,8 +39,7 @@ for t = 1:numel(tree)
         end
     end
     ylim([100 750])
-    xlim([-250,250])%*t+200])
-    % xlim([200 1200])
+    xlim([-250,250])
     axis off
     ostruct.image = 1;
     if ostruct.show

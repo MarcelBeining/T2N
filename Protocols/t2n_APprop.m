@@ -45,14 +45,14 @@ else
 end
 if any(uu==2)
     if askfile
-        [fname,pname] = uigetfile('.mat','select Model Exp_Spiking file',t2n_expcat(targetfolder_data,'Exp_Spiking',neuron.experiment));
+        [fname,pname] = uigetfile('.mat','select Model Exp_Spiking file',t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment));
         if isempty(fname) || isnumeric(fname) && fname == 0
             uu(uu==2) = [];
         else
             sim1 = load(fullfile(pname,fname));
         end
     else
-        sim1 = load(t2n_expcat(targetfolder_data,'Exp_Spiking',neuron.experiment));
+        sim1 = load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment));
     end
 end
 

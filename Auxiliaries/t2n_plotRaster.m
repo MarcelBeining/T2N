@@ -1,4 +1,4 @@
-function [] = plotRaster(varargin)
+function [] = t2n_plotRaster(varargin)
 switch nargin
     case 1
         % not used right now

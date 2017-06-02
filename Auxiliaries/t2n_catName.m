@@ -1,4 +1,4 @@
-function Filename = t2n_expcat(varargin)
+function Filename = t2n_catName(varargin)
 % concatenates strings to experiment name
 if strcmp(varargin{end-1}(1),'_')
     Filename = strcat(varargin{end-1},varargin{end}) ;

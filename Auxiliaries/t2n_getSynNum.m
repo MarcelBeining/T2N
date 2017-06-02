@@ -1,4 +1,4 @@
-function [nsyn,synids] = get_synapse_numbers(tree,syn_dens,regions)
+function [nsyn,synids] = t2n_getSynNum(tree,syn_dens,regions)
 
 if nargin < 3
     regions = tree.rnames;

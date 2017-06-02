@@ -1,4 +1,4 @@
-function [amp] = find_freq(params,neuron,tree,desNum,options)
+function [amp] = t2n_findFreq(params,neuron,tree,desNum,options)
 % this function finds the current necessary to let each neuron spike a certain
 % amount of spikes with an IClamp protocol previously defined in "neuron" 
 % this function is part of the T2N package
