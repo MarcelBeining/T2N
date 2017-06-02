@@ -10,7 +10,7 @@ if ~isfield(ostruct,'relamp')
     ostruct.relamp = 0;
 end
 load(t2n_expcat(targetfolder_data,'Exp_bAP',nneuron{1}.experiment),'params')
-if ostruct.show 
+if nargout == 0 || nargout > 4
     fig(1) = figure;clf,hold all
     if  exist(fullfile(params.path,'raw data','krueppel_data_fig_1d.dat'),'file')
         if ~ostruct.relamp
@@ -54,10 +54,7 @@ for n = 1:numel(nneuron)
     load(t2n_expcat(targetfolder_data,'Exp_bAP',nneuron{n}.experiment),'bAP','plotvals','params','nodes','neuron','tree','tim')
     
     spiked = cellfun(@(x) any(x(:,5)>0),bAP);
-    
-    
-    
-    
+
     xlims = [Inf Inf];
     ylims = xlims;
     for t = 1:numel(tree)
@@ -74,15 +71,13 @@ for n = 1:numel(nneuron)
         end
         [~,spikeinitnode]=min(bAP{t}(:,2));
         %delay
-        
-        
         y = NaN(numel(tree{t}.Y),1);
         rax = find(strncmp(tree{t}.rnames,'axon',4));
         dendind = find(all(repmat(tree{t}.R,1,numel(rax))~=repmat(rax,numel(tree{t}.R),1),2));
         axind = find(any(repmat(tree{t}.R,1,numel(rax))==repmat(rax,numel(tree{t}.R),1),2));
         [dendind2,iad] = intersect(nodes{t},dendind);
         y(dendind2) = (bAP{t}(iad,2)-bAP{t}(som,2)); %time minus time at soma ( as in krueppel) %bAP{t}(:,1) == 1
-        if ostruct.show
+        if nargout == 0 || nargout > 4
             figure(fig(2))
             if ostruct.relamp
                 plotadjval(L/max(L(dendind2)),y,tree{t},col);
@@ -91,7 +86,6 @@ for n = 1:numel(nneuron)
             end
             %bAP
             figure(fig(1))
-            %     plot(bAP{t}(:,3),bAP{t}(:,5)-bAP{t}(:,6),'Marker','.','Color',tree{t}.col{1},'markersize',4,'linestyle','none','linewidth',1)
             y = NaN(numel(tree{t}.Y),1);
             y(dendind2) = bAP{t}(iad,5)-bAP{t}(iad,6); %amplitude minus baseline
             if ostruct.relamp
@@ -121,7 +115,6 @@ for n = 1:numel(nneuron)
         end
         
         % ind nodes, time of max amp, PL at nodes, eucl at nodes, max amplitude, baseline, time of halfmax amp
-        
         ind = abs((bAP{t}(som,5)-bAP{t}(som,6))/2 - (bAP{t}(iad,5)-bAP{t}(iad,6))) <= 1; %index of half maximum
         
         if strcmp(ostruct.dist,'PL')
@@ -156,7 +149,7 @@ for n = 1:numel(nneuron)
         mveloc_farax(t) = mean(veloc_farax); % mean of velocity
         mveloc_nearax(t) = mean(veloc_nearax); % mean of velocity
     end
-    if ostruct.show
+    if nargout == 0 || nargout > 4
         figure(fig(1))
         if ostruct.usemorph >= 4  % rat
             plot(data(:,1),data(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
@@ -203,7 +196,7 @@ for n = 1:numel(nneuron)
         display('CAUTION: Not all cells spiked!')
     end
     fprintf('Mean voltage attenuation @ %d µm: %g +- %g %% (s.e.m.)\n',thisdist,mean(bAPrelthisdist)*100,std(bAPrelthisdist)/sqrt(numel(tree))*100)
-    if any(ostruct.show==1) && ~isnan(data(1))
+    if (nargout == 0 || nargout > 4) && ~isnan(data(1))
         fprintf('Mean voltage attenuation in exp @ 185 µm: %g +- %g %% (s.e.m.)\n',mean(data(17:20,2))/mean(cellfun(@(x) x(1,5)-x(1,6),bAP))*100,std(data(17:20,2))/mean(cellfun(@(x) x(1,5)-x(1,6),bAP))/sqrt(4)*100)  % bAP at 185 µm in exp
     end
     fprintf('Mean delay @ %d µm: %g +- %g ms (s.e.m.)\n',thisdist,mean(bAPdelaythisdist),std(bAPdelaythisdist)/sqrt(numel(tree)))
