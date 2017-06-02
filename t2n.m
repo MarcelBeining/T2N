@@ -532,7 +532,7 @@ for n = 1:numel(neuron)
     else
         fprintf(nfile,'io = load_file("stdgui.hoc")\n');     % ony load other standard procedures
     end
-    fprintf(nfile,sprintf('simfold = "%s/%s"\n',nrn_exchfolder,sprintf('sim%d',usestreesof(n)))); % das passt so!
+    fprintf(nfile,sprintf('simfold = "%s/%s"\n',nrn_exchfolder,sprintf('sim%d',n))); % das passt so!
     fprintf(nfile, sprintf('io = xopen("lib_genroutines/fixnseg.hoc")\n') );
     fprintf(nfile, sprintf('io = xopen("lib_genroutines/genroutines.hoc")\n') );
     fprintf(nfile, sprintf('io = xopen("lib_genroutines/pasroutines.hoc")\n') );
@@ -555,9 +555,7 @@ for n = 1:numel(neuron)
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Load cell morphologies and create artificial cells *****\n');
-    fprintf(nfile,'sprint(tmpstr,"%%s/init_cells.hoc",simfold)\n');
-    fprintf(nfile,'io = xopen(tmpstr)\n'); % das passt so!
-%     fprintf(nfile,sprintf('io = xopen("%s/%s/init_cells.hoc")\n',nrn_exchfolder,sprintf('sim%d',usestreesof(n)))); % das passt so!
+    fprintf(nfile,sprintf('io = xopen("%s/%s/init_cells.hoc")\n',nrn_exchfolder,sprintf('sim%d',usestreesof(n)))); % das passt so!
     
     fprintf(nfile,sprintf('\n\nchdir("%s/%s") // change directory to folder of simulation #%d \n',params.exchfolder,thisfolder,n));
     fprintf(nfile,'\n\n');

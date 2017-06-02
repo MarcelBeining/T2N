@@ -1,4 +1,5 @@
-function [props, fig, figname] = t2n_APprop(targetfolder_data,neuron,currstep,tree,dataset)
+function [props, fig, figname] = t2n_APprop(targetfolder_data,neuron,currstep,tree,dataset,askfile)
+
 % This function analyzes and optionally plots various action potential (AP) 
 % characteristics at a current injection step previously simulated with t2n_currsteps
 %
@@ -11,6 +12,8 @@ function [props, fig, figname] = t2n_APprop(targetfolder_data,neuron,currstep,tr
 %                   calculate dependencies on tree surfaces
 % dataset           (optional, so far only compatible with GC model) dataset of
 %                   experimental data which should be loaded
+% askfile           (optional) boolean if it should be ask for which
+%                   simulation should be loaded and analyzed
 %
 % OUTPUTS
 % props             structure with AP properties. If this is the only
@@ -24,7 +27,9 @@ function [props, fig, figname] = t2n_APprop(targetfolder_data,neuron,currstep,tr
 % *****************************************************************************************************
 
 ap = -10; % minimum AP amplitude threshold for detection [mV]
-
+if nargin < 6 
+    askfile = 0;
+end
 newrate = 0.005; %ms
 if nargin < 3
     currstep = 0.09;
@@ -39,11 +44,15 @@ else
     uu = 2;
 end
 if any(uu==2)
-    [fname,pname] = uigetfile('.mat','select Model Exp_Spiking file',t2n_expcat(targetfolder_data,'Exp_Spiking',strcat(neuron.experiment)));
-    if isempty(fname) || isnumeric(fname) && fname == 0
-        uu(uu==2) = [];
+    if askfile
+        [fname,pname] = uigetfile('.mat','select Model Exp_Spiking file',t2n_expcat(targetfolder_data,'Exp_Spiking',neuron.experiment));
+        if isempty(fname) || isnumeric(fname) && fname == 0
+            uu(uu==2) = [];
+        else
+            sim1 = load(fullfile(pname,fname));
+        end
     else
-        sim1 = load(fullfile(pname,fname));
+        sim1 = load(t2n_expcat(targetfolder_data,'Exp_Spiking',neuron.experiment));
     end
 end
 
