@@ -1,13 +1,17 @@
 function strct = t2n_catStruct(varargin)
-% 
-% this function concatenates two structures which have the same fields iteratively
-% this function is part of the T2N package
-% INPUT
-% several structures with same field names
-% OUTPUT
-% concatenated structure
+% This function concatenates two structures which have the same fields.
 %
-% Copyright by Marcel Beining <marcel.beining@gmail.com>
+% INPUTS
+% varargin          several structures with same field names
+%
+% OUTPUTs
+% strct             concatenated structure
+%
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 strct = struct();
 for v = 1:nargin

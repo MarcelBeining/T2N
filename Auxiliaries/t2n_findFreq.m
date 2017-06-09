@@ -1,17 +1,22 @@
-function [amp] = t2n_findFreq(params,neuron,tree,desNum,options)
-% this function finds the current necessary to let each neuron spike a certain
+function [amp] = t2n_findFreq(tree,params,neuron,desNum,options)
+% This function finds the current necessary to let each neuron spike a certain
 % amount of spikes with an IClamp protocol previously defined in "neuron" 
-% this function is part of the T2N package
-% INPUT
-% params: T2N parameter structure
-% neuron: T2N neuron structure already containing the desired IClamp protocol
-% tree: TREES toolbox tree cell array
-% desNum: desired number of spikes during the IClamp protocol
-% options (optional): options for starting T2N
-% OUTPUT
-% amp: current amplitude for each neuron to reach the desired number of spikes
 %
-% Copyright by Marcel Beining <marcel.beining@gmail.com>
+% INPUTS
+% tree              tree cell array with morphologies (see documentation)
+% params            t2n parameter structure (see documentation)
+% neuron            t2n neuron structure with already defined mechanisms (see documentation)
+% desNum            desired number of spikes during the IClamp protocol
+% options           (optional) options for starting T2N
+%
+% OUTPUT
+% amp               current amplitude [nA] for each neuron to reach the desired number of spikes
+%
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 if nargin < 6
     options = '-q-d';

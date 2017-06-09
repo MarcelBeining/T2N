@@ -18,7 +18,7 @@ ylabel('Impedance [M\Omega]')
 
 
 
-hstep = t2n_findCurr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
+hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
@@ -58,7 +58,7 @@ end
 % %         end
 %     end
 % end
-% hstep = t2n_findCurr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
+% hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
 % for t = 1:numel(tree)
 %     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
 %     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
@@ -93,7 +93,7 @@ end
 %         end
 %     end
 % end
-% hstep = t2n_findCurr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
+% hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
 % for t = 1:numel(tree)
 %     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
 %     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
@@ -120,7 +120,7 @@ end
 % 
 
 neuron = t2n_blockchannel(neuron,'Kir21',100);
-hstep = t2n_findCurr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
+hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
@@ -145,7 +145,7 @@ else
 end
 
 neuron = t2n_blockchannel(neuron,'HCN',100);
-hstep = t2n_findCurr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
+hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp

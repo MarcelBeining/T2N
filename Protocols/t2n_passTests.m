@@ -48,7 +48,7 @@ switch ostruct.passtest
     case 'Mongiat2'
         dur = 500;
         amp = -0.01  ;      % 10pA for tau...Mongiat 2009
-        [hstep, Vrest] = t2n_findCurr(params,neuron,tree,-80-12.1);  % LJP corrected
+        [hstep, Vrest] = t2n_findCurr(tree,params,neuron,-80-12.1);  % LJP corrected
         for t = 1:numel(tree)
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));
@@ -56,7 +56,7 @@ switch ostruct.passtest
     case 'Std'
         dur = 500;
         amp = -0.01  ;      % 10pA for tau...Mongiat 2009
-        [hstep, Vrest] = t2n_findCurr(params,neuron,tree,-80);
+        [hstep, Vrest] = t2n_findCurr(tree,params,neuron,-80);
         for t = 1:numel(tree)
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));
@@ -64,7 +64,7 @@ switch ostruct.passtest
     case 'Mehranfard'
         dur = 300;
         amp = -0.05  ;      % -50pA Meranfahrd 2015
-        [hstep, Vrest] = t2n_findCurr(params,neuron,tree,-70);
+        [hstep, Vrest] = t2n_findCurr(tree,params,neuron,-70);
         for t = 1:numel(tree)
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));
@@ -80,7 +80,7 @@ switch ostruct.passtest
     case 'Brenner'
         dur = 1000;
         amp = -0.02  ;      % -20pA Brenner 2005 from holding pot of -80mV
-        [hstep, Vrest] = t2n_findCurr(params,neuron,tree,-80);
+        [hstep, Vrest] = t2n_findCurr(tree,params,neuron,-80);
         for t = 1:numel(tree)
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));

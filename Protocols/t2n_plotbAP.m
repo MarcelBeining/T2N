@@ -9,7 +9,7 @@ end
 if ~isfield(ostruct,'relamp')
     ostruct.relamp = 0;
 end
-load(t2n_catName(targetfolder_data,'Exp_bAP',nneuron{1}.experiment),'params')
+load(t2n_catName(targetfolder_data,'Exp_bAP',nneuron{1}.experiment,'.mat'),'params')
 if nargout == 0 || nargout > 4
     fig(1) = figure;clf,hold all
     if  exist(fullfile(params.path,'raw data','krueppel_data_fig_1d.dat'),'file')
@@ -51,7 +51,7 @@ if nargout == 0 || nargout > 4
 end
 
 for n = 1:numel(nneuron)
-    load(t2n_catName(targetfolder_data,'Exp_bAP',nneuron{n}.experiment),'bAP','plotvals','params','nodes','neuron','tree','tim')
+    load(t2n_catName(targetfolder_data,'Exp_bAP',nneuron{n}.experiment,'.mat'),'bAP','plotvals','params','nodes','neuron','tree','tim')
     
     spiked = cellfun(@(x) any(x(:,5)>0),bAP);
 
@@ -185,7 +185,7 @@ for n = 1:numel(nneuron)
         c.Limits =[-80,80];
         set(c,'Position',[0.93 0.35 0.02 0.4],'fontweight','bold','fontname','Arial')
         set(c,'YTick',[-80,0,80])
-        tprint(fullfile(targetfolder_results,t2n_catName('bAP-trees',nneuron{n}.experiment)),'-SHR-tif')
+        tprint(t2n_catName(targetfolder_results,'bAP-trees',nneuron{n}.experiment),'-SHR-tif')
     end
     fprintf('Dendritic Velocity cell %d: %f µm/ms (time to max amp)\n',reshape(cat(1,(1:numel(mveloc_dend)),mveloc_dend),1,numel(mveloc_dend)*2))
     fprintf('Far Axonal Velocity cell %d: %f µm/ms (time to half-max amp)\n',reshape(cat(1,(1:numel(mveloc_farax)),mveloc_farax),1,numel(mveloc_farax)*2))

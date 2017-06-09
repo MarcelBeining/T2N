@@ -4,7 +4,7 @@ if ~isfield(ostruct,'duration') && ostruct.dataset < 7
     ostruct.duration = 200;
 end
 
-load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment),'voltVec','timeVec','numspikes','params','cstepsSpikingModel','tree','nneuron');
+load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment,'.mat'),'voltVec','timeVec','numspikes','params','cstepsSpikingModel','tree','nneuron');
 
 if isfield(ostruct,'color')
     modelcol = ostruct.color;
@@ -26,7 +26,7 @@ FigureResizer(ostruct.figureheight,ostruct.figurewidth)
 if isfield(ostruct,'savename') && ~isempty(ostruct.savename)
     tprint(fullfile(targetfolder_results,ostruct.savename),'-pdf');
 else
-    tprint(fullfile(targetfolder_results,t2n_catName('FI',neuron.experiment)),'-pdf');
+    tprint(t2n_catName(targetfolder_results,'FI',neuron.experiment),'-pdf');
 end
 
 
@@ -46,5 +46,5 @@ if isfield(ostruct,'savename')  && ~isempty(ostruct.savename)
         tprint(fullfile(targetfolder_results,[ostruct.savename,'_Hz']),'-pdf');
     end
 else
-    tprint(fullfile(targetfolder_results,t2n_catName('FI_Hz',neuron.experiment)),'-pdf');
+    tprint(t2n_catName(targetfolder_results,'FI_Hz',neuron.experiment),'-pdf');
 end

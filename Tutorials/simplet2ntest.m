@@ -35,7 +35,7 @@ end
 % neuron.pp{1}.AlphaSyn = struct('node',16,'gmax',0.2,'onset',50);
 neuron.record{1}.cell = struct('node',1,'record','v');                  % record voltage "v" from first node
 
-tree = t2n_writetrees(params,tree);                                     % transform tree to NEURON morphology
+tree = t2n_writeTrees(tree,params);                                     % transform tree to NEURON morphology
 
 %% do a simple current injection, execute neuron and plot
 nneuron = neuron;
@@ -68,8 +68,8 @@ nneuron{1} = neuron;  % use neuron structure defined above as bassis
 nneuron{1}.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[amp(1) 0]);   % define the IClamp
 for n = 2:numel(amp)
     nneuron{n}.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[amp(n) 0]);   % only define what is changed in for the next simulations and...
-    nneuron{n} = t2n_as(1,nneuron{n});        % ... use previously defined neuron structure as basis for each simulation list entry
 end
+nneuron = t2n_as(1,nneuron);        % ... use previously defined neuron structure as basis for each simulation list entry
 
 % % option 2 which is more efficient in Matlab but all hocs are written for
 % % all simulations

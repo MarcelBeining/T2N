@@ -60,7 +60,7 @@ cstepsSpikingModel = ostruct.amp;  % 0:5:120
 params.tstop = 150+ostruct.duration;
 
 if isfield(ostruct,'holding_voltage') && ~isnan(ostruct.holding_voltage)
-    hstep = t2n_findCurr(params,neuron,tree,ostruct.holding_voltage,[],'-q-d');
+    hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
 else
     hstep = zeros(1,numel(tree));
 end
@@ -73,19 +73,17 @@ for t=1:numel(tree)
 end
 
 nneuron = cell(numel(cstepsSpikingModel),1);
+nneuron{1} = neuron;
 for s = 1:numel(cstepsSpikingModel)
-    if s == 1
-        nneuron{s} = neuron;
-    end
     for t = 1:numel(tree)
         nneuron{s}.pp{t}.IClamp = struct('node',stimnode(t),'times',[-100,ostruct.delay,ostruct.delay+ostruct.duration],'amp', [hstep(t) hstep(t)+cstepsSpikingModel(s) hstep(t)]); %n,del,dur,amp
         nneuron{s}.record{t}.cell = struct('node',recordnode(t),'record','v');
-    end
-    nneuron{s} = t2n_as(1,nneuron{s});
+    end    
 end
+nneuron = t2n_as(1,nneuron);
 
 if ostruct.find_freq > 0
-    amp = t2n_findFreq(params,nneuron{1},tree,ostruct.find_freq,'-q-d');
+    amp = t2n_findFreq(tree,params,nneuron{1},ostruct.find_freq,'-q-d');
     for t = 1:numel(tree)
         nneuron{1}.pp{t}.IClamp.amp = [hstep(t) amp(t) hstep(t)]; %n,del,dur,amp  %WICHTIG! nur amp da hstep nicht abgezogen
     end

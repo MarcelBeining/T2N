@@ -11,7 +11,7 @@ function t2n_plotCurrSteps(targetfolder_data,neuron,steps)
 % * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
-load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment))
+load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment,'.mat'))
 
 if nargin < 3 || isempty(steps)
     steps = [];

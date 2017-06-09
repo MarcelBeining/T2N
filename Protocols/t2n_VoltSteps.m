@@ -17,17 +17,15 @@ params.tstop = sum(dur);
 
 
 nneuron = cell(numel(vstepsModel),1);
+nneuron{1} = neuron;
 for s = 1:numel(vstepsModel)
-    if s == 1
-        nneuron{s} = neuron;
-    end
     amp = cat(2,holding_voltage, vstepsModel(s), holding_voltage);
     for t = 1:numel(tree)
         nneuron{s}.pp{t}.SEClamp = struct('node',elecnode,'rs',15,'dur', dur,'amp', amp);
         nneuron{s}.record{t}.SEClamp = struct('record','i','node',elecnode);
     end
-    nneuron{s} = t2n_as(1,nneuron{s});
 end
+nneuron = t2n_as(1,nneuron);
 out = t2n(tree,params,nneuron,'-d-w');
 if any(cellfun(@(x) x.error,out(cellfun(@(x) isfield(x,'error'),out))))
     return

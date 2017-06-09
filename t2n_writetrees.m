@@ -1,11 +1,21 @@
-function tree = t2n_writetrees(params,tree,savepath,options)
-% transforms the tree file into hoc code and also saves a interface file
+function tree = t2n_writeTrees(tree,params,savepath,options)
+% This transforms the tree file into hoc code and also saves a interface file
 % for correct node-section assignment
 %
-% options
-% -d: Debug mode. The duration of writing hocs is shown
-% -w: Waitbar showing the progress
-% %deactived for the moment: -cl: Cluster mode. Files are written to Server
+% INPUTS
+% tree              tree cell array with morphologies (see documentation)
+% params            t2n parameter structure (see documentation)
+% savepath          (optional) if this file destination string is given, the
+%                   function does not have to ask for it via gui
+% options           string with optional arguments (can be concatenated):
+%                   -d: Debug mode. The duration of writing hocs is shown
+%                   -w: Waitbar showing the progress
+%                   %deactived for the moment: -cl: Cluster mode. Files are written to Server
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 if nargin < 4
     options = '';

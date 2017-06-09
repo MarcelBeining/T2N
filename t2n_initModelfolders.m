@@ -1,4 +1,16 @@
 function t2n_initModelfolders(folder)
+% This function initializes a new folder in which all necessary files and
+% folders are created to create a compartmental model featuring T2N
+%
+% INPUTS
+% folder                 (optional) path to the folder which should be
+%                        initialized/created.
+%
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 if nargin < 1
     folder = uigetdir(pwd,'Please give a folder where the model structure should be initialized');

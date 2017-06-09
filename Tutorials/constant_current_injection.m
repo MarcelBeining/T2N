@@ -45,7 +45,7 @@ end
 
 
 %% rewrite tree hocs if necessary ( if morphology changed)
-tree = t2n_writetrees(params,tree,fullfile(params.morphfolder,treename));
+tree = t2n_writeTrees(tree,params,fullfile(params.morphfolder,treename));
 
 
 %% run simulation and plot stuff

@@ -1,21 +1,26 @@
-function [amp, Vrest] = t2n_findCurr(params,neuron,tree,desv,amp,options)
-% this function finds the current necessary to keep the neurons defined in
+function [amp, Vrest] = t2n_findCurr(tree,params,neuron,desv,amp,options)
+% This function finds the current necessary to keep the neurons defined in
 % "neuron" and "tree" at a desired voltage or alternatively finds the
-% spiking threshold
-% this function is part of the T2N package
-% INPUT
-% params: T2N parameter structure
-% neuron: T2N neuron structure
-% tree: TREES toolbox tree cell array
-% desv: desired voltage (mV) or 'spike' if spiking threshold is searched
-% amp (optional): starting values of the current amplitudes (one for each
-%                 neuron defined in tree)
-% options (optional): options for starting T2N
-% OUTPUT
-% amp: current amplitude for each neuron to reach the desired voltage/spike
-% Vrest: resting potential of each cell
+% spiking threshold.
+% 
+% INPUTS
+% tree              tree cell array with morphologies (see documentation)
+% params            t2n parameter structure (see documentation)
+% neuron            t2n neuron structure with already defined mechanisms (see documentation)
+% desv              desired voltage (mV) or 'spike' if spiking threshold is searched
+% amp               (optional) starting values of the current amplitudes (one for each
+%                   neuron defined in tree)
+% options           (optional) options for starting T2N (see t2n)
 %
-% Copyright by Marcel Beining <marcel.beining@gmail.com>
+% OUTPUTS
+% amp               current amplitude for each neuron to reach the desired voltage/spike
+% Vrest             resting potential of each cell
+%
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 if nargin < 6
     options = '-q-d';
