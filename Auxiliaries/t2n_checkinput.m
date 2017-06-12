@@ -22,70 +22,74 @@ function [tree,params,neuron,thesetrees,usestreesof] = t2n_checkinput(tree,param
 % *****************************************************************************************************
 
 %% check for several standard parameter and initialize default value if not set
-if ~isfield(params,'cvode')
-    params.cvode = false;
-end
-if ~isfield(params,'use_local_dt')
-    params.use_local_dt = 0;
-end
-if ~isfield(params,'openNeuron') 
-    params.openNeuron = false;
-end
-if ~isfield(params,'nseg') || strcmpi(params.nseg,'d_lambda')
-    params.nseg = 'dlambda';
-    display('Number of segments or nseg rule not set in params.nseg. Dlambda rule will be applied')
-end
-if ~isfield(params,'tstart')
-    params.tstart = 0;
-end
-if ~isfield(params,'tstop')
-    params.tstop = 200;
-    display('Tstop not defined in params.tstop. Default value of 200 ms is applied.')
-end
-if ~isfield(params,'dt')
-    params.dt = 0.025;
-    if ~params.cvode
-        display('Time step not defined in params.dt. Default value of 0.025 ms is applied.')
+if ~isempty(params)
+    if ~isfield(params,'cvode')
+        params.cvode = false;
     end
-end
-if ~isfield(params,'accuracy')
-    params.accuracy = 0;
-end
-if ~isfield(params,'skiprun')
-    params.skiprun = false;
-end
-if ~isfield(params,'q10')
-    params.q10 = false;
-end
-if ~isfield(params,'prerun')
-    params.prerun = false;
-end
-if ~isfield(params,'path')
-    params.path = regexprep(pwd,'\\','/');
-    display('No standard path was given. Current folder is used instead');
-else
-    params.path = regexprep(params.path,'\\','/');
-end
-if strcmpi(params.path(end),'\')
-    params.path = params.path(1:end-1);
-end
-if params.cvode && isnumeric(params.dt)
-    warning ('t2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
-end
-if ~isfield(params,'neuronpath')
-    if ispc
-        warning('Path to neuron not given in params.neuronpath! Default path chosen (which might be wrong)')
+    if ~isfield(params,'use_local_dt')
+        params.use_local_dt = 0;
     end
-    params.neuronpath = 'C:/nrn73w64/bin64/nrniv.exe';  % default path to neuron exe
-end
-if ~isfield(params,'morphfolder') % check for morphology folder
-    if exist(fullfile(nrn_path,'morphos'),'dir')
-        params.morphfolder = 'morphos';
+    if ~isfield(params,'openNeuron')
+        params.openNeuron = false;
+    end
+    if ~isfield(params,'nseg') || strcmpi(params.nseg,'d_lambda')
+        params.nseg = 'dlambda';
+        display('Number of segments or nseg rule not set in params.nseg. Dlambda rule will be applied')
+    end
+    if ~isfield(params,'tstart')
+        params.tstart = 0;
+    end
+    if ~isfield(params,'tstop')
+        params.tstop = 200;
+        display('Tstop not defined in params.tstop. Default value of 200 ms is applied.')
+    end
+    if ~isfield(params,'dt')
+        params.dt = 0.025;
+        if ~params.cvode
+            display('Time step not defined in params.dt. Default value of 0.025 ms is applied.')
+        end
+    end
+    if ~isfield(params,'accuracy')
+        params.accuracy = 0;
+    end
+    if ~isfield(params,'skiprun')
+        params.skiprun = false;
+    end
+    if ~isfield(params,'q10')
+        params.q10 = false;
+    end
+    if ~isfield(params,'prerun')
+        params.prerun = false;
+    end
+    if ~isfield(params,'path')
+        params.path = regexprep(pwd,'\\','/');
+        display('No standard path was given. Current folder is used instead');
     else
-        error('Please give morphology folder in params.morphfolder or create standard morphology folder "morphos"');
+        params.path = regexprep(params.path,'\\','/');
     end
+    if strcmpi(params.path(end),'\')
+        params.path = params.path(1:end-1);
+    end
+    if params.cvode && isnumeric(params.dt)
+        warning ('t2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
+    end
+    if ~isfield(params,'neuronpath')
+        if ispc
+            warning('Path to neuron not given in params.neuronpath! Default path chosen (which might be wrong)')
+        end
+        params.neuronpath = 'C:/nrn73w64/bin64/nrniv.exe';  % default path to neuron exe
+    end
+    if ~isfield(params,'morphfolder') % check for morphology folder
+        if exist(fullfile(nrn_path,'morphos'),'dir')
+            params.morphfolder = 'morphos';
+        else
+            error('Please give morphology folder in params.morphfolder or create standard morphology folder "morphos"');
+        end
+    end
+    parflag = true;
+else
+    parflag = false;
 end
-
 %% check neuron
 params.nocell = false;
 if isstruct(neuron)         % transform structure neuron to cell neuron
@@ -109,7 +113,7 @@ for t = 1:numel(tree)
     end
 end
 NIDs = unique(cellfun(@(x) x.NID,tree,'UniformOutput',0));  % improves speed if many same cells are used
-if ~all(cellfun(@(x) isfield(x,'NID'),tree)) || ~all(cellfun(@(x) exist(fullfile(params.path,params.morphfolder,strcat(x,'.hoc')),'file'),NIDs))
+if parflag && (~all(cellfun(@(x) isfield(x,'NID'),tree)) || ~all(cellfun(@(x) exist(fullfile(params.path,params.morphfolder,strcat(x,'.hoc')),'file'),NIDs)))
     answer = questdlg('Caution! Not all of your trees have been transformed for NEURON yet or hoc file is missing! Transforming now..','Transform trees','OK','Cancel','OK');
     if strcmp(answer,'OK')
         ind = cellfun(@(x) ~isfield(x,'NID'),tree) ;
@@ -183,5 +187,7 @@ end
 if flag
     error('Error in neuron{%d}.tree, please check\n',n)
 end
-
+if parflag
+    params = [];
+end
 end

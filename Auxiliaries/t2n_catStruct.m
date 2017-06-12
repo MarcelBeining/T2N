@@ -18,7 +18,14 @@ for v = 1:nargin
     fields = fieldnames(varargin{v});
     for f = 1:numel(fields)
         if isfield(strct,fields{f})
-            strct.(fields{f}) = t2n_catStruct(strct.(fields{f}),varargin{v}.(fields{f}));
+            if ~isstruct(strct.(fields{f}))
+                if (isnumeric(strct.(fields{f})) && ~all(strct.(fields{f}) == varargin{v}.(fields{f}))) || (ischar(strct.(fields{f})) && ~strcmp(strct.(fields{f}),varargin{v}.(fields{f}))) % check if values are not the same
+                    warning('Entry of field %s (%d) has been overwritten with %d.\n',fields{f},strct.(fields{f}),varargin{v}.(fields{f}))
+                end
+                strct.(fields{f}) = varargin{v}.(fields{f});  % overwrite value
+            else
+                strct.(fields{f}) = t2n_catStruct(strct.(fields{f}),varargin{v}.(fields{f}));
+            end
         else
             strct.(fields{f}) = varargin{v}.(fields{f});
         end
