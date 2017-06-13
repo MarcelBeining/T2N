@@ -23,6 +23,9 @@ function [tree,params,neuron,thesetrees,usestreesof] = t2n_checkinput(tree,param
 
 %% check for several standard parameter and initialize default value if not set
 if ~isempty(params)
+    if ~isfield(params,'parallel')
+        params.parallel = false;
+    end
     if ~isfield(params,'cvode')
         params.cvode = false;
     end
@@ -187,7 +190,7 @@ end
 if flag
     error('Error in neuron{%d}.tree, please check\n',n)
 end
-if parflag
+if ~parflag
     params = [];
 end
 end
