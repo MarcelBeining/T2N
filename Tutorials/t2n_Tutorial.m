@@ -55,14 +55,15 @@ for t = 1:numel(tree)                                                       % lo
     neuron.mech{t}.all.k_ion.ek = -90;
     neuron.mech{t}.all.na_ion.ena = 50;
     neuron.mech{t}.soma.hh = struct('gnabar',0.25,'gkbar',0.036,'gl',0);     % add Hodgkin-Huxley Sodium channel only to soma
+    neuron.record{t}.cell = struct('node',1,'record','v');                   % record voltage "v" from first node (i.e. the soma)
 end
 
-neuron.record{1}.cell = struct('node',1,'record','v');                       % record voltage "v" from first node (i.e. the soma)
+tree = tree(1);                                                              % for simplicity, only one tree is looked at (if several exist at all)
 
-tree = t2n_writeTrees(tree,params);                                          % transform tree to NEURON morphology (.hoc file). This only has to be done once for each morphology
+tree = t2n_writeTrees(tree,params,fullfile(pwd,'test.mtr'));                                          % transform tree to NEURON morphology (.hoc file). This only has to be done once for each morphology
 
 
-%% First simulation protocol: somatic current injection
+%% Tutorial 1 - simulation protocol: somatic current injection
 % Now we want to do a simple somatic current injection, execute neuron and 
 % plot the result. In order that we do not have to rerun the upper sections
 % each time, we will just copy the 'neuron' structure into a new variable
@@ -104,7 +105,7 @@ xlim([0,params.tstop])
 ylabel('Injected current [nA]')
 
 
-%% Next simulation protocol: Do several simulations with different injected current amplitudes
+%% Tutorial 2 - simulation protocol: Do several simulations with different injected current amplitudes
 % Now we learn something about the real strength of t2n: It can execute 
 % simulations in parallel! All we have have to do is to create a cell array
 % of neuron structures (each defining a different protocol) and hand them 
@@ -154,7 +155,7 @@ end
 linkaxes                                                % make all axes the same size
 xlabel('Time [ms]')
 
-%% Next protocol: Map the membrane potential during a spike onto the tree
+%% Tutorial 3 - Map the membrane potential during a spike onto the tree
 % As t2n features the trees toolbox, morphological visualizations are easy.
 % We illustrate this by mapping the membrane potential at specific times 
 % during a current injection on our morphology.
@@ -183,26 +184,63 @@ for tt = 1:numel(times)                                                   % loop
     axis off
     title(sprintf('Tree at time %g ms',times(tt)))
 end
-%% parameter scan
-tree = tree(1); % for simplicity, only one tree is looked at 
+%% Tutorial 4 - parameter scan
+% Now we want to analyze the impact of a parameter on spiking, e.g. for
+% optimizing the model. We simply use a for loop to create neuron
+% instances, each being the same except for one parameter that is changed.
 
-fac = 0:0.5:2;   % define the range of the parameter scan
-for f = 1:numel(fac)
-    nneuron{f} = neuron;
-    nneuron.mech{1}.soma.hh.gkbar = fac(f) * 0.036;  % change the HH potassium channel according to fac
+fac = 0:0.5:2;   % define the multiplication factor range of the parameter scan
+for f = 1:numel(fac)  % loop through number of different factors
+    nneuron{f} = neuron;  % copy standard neuron definition
+    nneuron.mech{1}.soma.hh.gkbar = fac(f) * 0.036;  % change the HH potassium channel density according to fac
 end
-nneuron{1}.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[0.6 0]);   % define the IClamp only for first instance...
+nneuron{1}.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[0.6 0]);    % again define the IClamp only for first instance...
 nneuron = t2n_as(1,nneuron);                                                  % ... and let t2n use it for the rest
 
 out = t2n(tree,params,nneuron,'-w-q');   % execute t2n
 
-figure;
+% plot the result
+figure; hold all
 for f = 1:numel(fac)
-    plot(out{f}.t,out{f}.record{1}.cell.v{1})  % plot time vs voltage of current simulation
+    plot(out{f}.t,out{f}.record{1}.cell.v{1})  % plot time vs voltage of each simulation
 end
 legend((sprintf('K-channel factor of %g',fac)))   % add legend
 xlabel('Time [ms]')
 ylabel('Voltage [mV]')
 
-%%
-% nneuron.pp{1}.AlphaSyn = struct('node',16,'gmax',0.2,'onset',50);
+%% Tutorial 5 - Synaptic stimulation, simple Alpha synapse
+% Now we come closer to the point of building networks. First we do a
+% synaptic stimulation of a chosen point within the morphology using the
+% NEURON AlphaSynapse point process which adds synaptic current at a 
+% specific time "onset" at the location it is placed. For this example, we
+% chose the most far away point in the tree as the synapse location, which 
+% can be found by using the TREES toolbox function Pvec_tree. Other
+% examples to extract a specific synapse location that can be tested here
+% is: searching for termination points with "find(T_tree(tree{1})"; 
+% getting nodes at a specific distance to the soma with "find(plen == x)" 
+% (or add some tolerance y: "find(plen-x < y)"); 
+% getting nodes of a specific region name REG with "find(tree{1}.R ==
+% find(strcmp(tree{1}.rnames,REG))" or any combinaton of them.
+
+nneuron = neuron;                                                         % copy standard neuron structure
+plen = Pvec_tree(tree{1});                                                % get path length to soma at each node of morphology
+[~,synIDs] = max(plen);                                                   % search for the most far away point in the morpholgy    
+nneuron.pp{1}.AlphaSynapse = struct('node',synIDs,'gmax',0.01,'onset',50);% add an AlphaSynapse at this location
+nneuron.record{1}.cell.node = cat(1,1,synIDs);                            % record somatic voltage and voltage at synapse
+nneuron.record{1}.AlphaSynapse = struct('node',synIDs,'record','i');      % record somatic voltage and voltage at synapse
+
+out = t2n(tree,params,nneuron,'-w-q');   % execute t2n
+
+% plot the result (Vmem at soma and synapse)
+figure;
+subplot(2,1,1)
+hold all
+plot(out.t,out.record{1}.cell.v{1})  % plot time vs voltage at soma
+plot(out.t,out.record{1}.cell.v{synIDs})  % plot time vs voltage at dendrite end
+legend('Soma','Synapse')
+ylabel('Membrane potential [mV]')
+xlabel('Time [ms]')
+ylim([-85,-60])
+xlim([0,100])
+subplot(2,1,2)
+plot(out.t,out.record{1}.AlphaSynapse.i{synIDs})  % plot time vs voltage at dendrite end

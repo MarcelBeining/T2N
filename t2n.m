@@ -180,15 +180,15 @@ if ~exist(fullfile(params.path,'lib_genroutines'),'file')
     display('non-existent folder lib_genroutines created')
 end
 if ~exist(fullfile(params.path,'lib_genroutines/fixnseg.hoc'),'file')
-    copyfile(fullfile(t2npath,'fixnseg.hoc'),fullfile(params.path,'lib_genroutines/fixnseg.hoc'))
+    copyfile(fullfile(t2npath,'src','fixnseg.hoc'),fullfile(params.path,'lib_genroutines/fixnseg.hoc'))
     display('fixnseg.hoc copied to model folder')
 end
 if ~exist(fullfile(params.path,'lib_genroutines/genroutines.hoc'),'file')
-    copyfile(fullfile(t2npath,'genroutines.hoc'),fullfile(params.path,'lib_genroutines/genroutines.hoc'))
+    copyfile(fullfile(t2npath,'src','genroutines.hoc'),fullfile(params.path,'lib_genroutines/genroutines.hoc'))
     display('genroutines.hoc copied to model folder')
 end
 if ~exist(fullfile(params.path,'lib_genroutines/pasroutines.hoc'),'file')
-    copyfile(fullfile(t2npath,'pasroutines.hoc'),fullfile(params.path,'lib_genroutines/pasroutines.hoc'))
+    copyfile(fullfile(t2npath,'src','pasroutines.hoc'),fullfile(params.path,'lib_genroutines/pasroutines.hoc'))
     display('pasroutines.hoc copied to model folder')
 end
 
@@ -382,29 +382,33 @@ for n = 1:numel(neuron)
             fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',params.nrnmech));
         end
     else
-        if ispc
-            if ~exist(fullfile(params.path,'lib_mech','nrnmech.dll'),'file') || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
-                nrn_installfolder = regexprep(fileparts(fileparts(params.neuronpath)),'\\','/');
-                tstr = sprintf('cd "%s" && %s/mingw/bin/sh "%s/mknrndll.sh" %s',[nrn_path,'/lib_mech'],nrn_installfolder, regexprep(t2npath,'\\','/'), ['/',regexprep(nrn_installfolder,':','')]);
-                [~,cmdout] = system(tstr);
-                if isempty(strfind(cmdout,'nrnmech.dll was built successfully'))
-                    error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually')
-                else
-                    display('nrnmech.dll compiled from mod files in folder lib_mech')
+        if exist(fullfile(params.path,'lib_mech'),'dir')
+            if ispc
+                if ~exist(fullfile(params.path,'lib_mech','nrnmech.dll'),'file') || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
+                    nrn_installfolder = regexprep(fileparts(fileparts(params.neuronpath)),'\\','/');
+                    tstr = sprintf('cd "%s" && %s/mingw/bin/sh "%s/mknrndll.sh" %s',[nrn_path,'/lib_mech'],nrn_installfolder, regexprep(t2npath,'\\','/'), ['/',regexprep(nrn_installfolder,':','')]);
+                    [~,cmdout] = system(tstr);
+                    if isempty(strfind(cmdout,'nrnmech.dll was built successfully'))
+                        error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually')
+                    else
+                        display('nrnmech.dll compiled from mod files in folder lib_mech')
+                    end
+                    t2n_rename_nrnmech()  % delete the o and c files
                 end
-                t2n_rename_nrnmech()  % delete the o and c files
+                fprintf(nfile,'nrn_load_dll("lib_mech/nrnmech.dll")\n');
+            else
+                mechfold = dir(fullfile(params.path,'lib_mech','x86_*'));
+                if isempty(mechfold) || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
+                    [~,outp] = system(sprintf('cd "%s/lib_mech";nrnivmodl',params.path));
+                    if ~isempty(regexp(outp,'Successfully','ONCE'))
+                        disp('nrn mechanisms compiled from mod files in folder lib_mech')
+                    else
+                        error('There was an error during compiling of mechanisms:\n\n%s',outp)
+                    end
+                end
             end
-            fprintf(nfile,'nrn_load_dll("lib_mech/nrnmech.dll")\n');
         else
-            mechfold = dir(fullfile(params.path,'lib_mech','x86_*'));
-            if isempty(mechfold) || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
-                [~,outp] = system(sprintf('cd "%s/lib_mech";nrnivmodl',params.path));
-                if ~isempty(regexp(outp,'Successfully','ONCE'))
-                    disp('nrn mechanisms compiled from mod files in folder lib_mech')
-                else
-                    error('There was an error during compiling of mechanisms:\n\n%s',outp)
-                end
-            end
+            warning('No folder "lib_mech" found in your model directory and no nrnmech found to load in params.nrnmech. Only insertion of standard mechanisms (pas,hh,IClamp,AlphaSynapse etc.) possible.')
         end
     end
     
