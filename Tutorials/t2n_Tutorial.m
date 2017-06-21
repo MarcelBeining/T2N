@@ -15,7 +15,7 @@ tree{1}.R(1:2) = 3;     % make the first two nodes a new region
 tree{1}.rnames{3} = 'soma';   % name the region "soma"
 tree{1}.D(1:2) = 10;        % increase diameter of the somatic nodes
 
-figure;plot_tree(tree{1},tree{1}.R)   % plot tree with region code
+figure;plot_tree(tree{1},tree{1}.R),colorbar   % plot tree with region code
 axis off
 
 
@@ -60,7 +60,7 @@ end
 
 tree = tree(1);                                                              % for simplicity, only one tree is looked at (if several exist at all)
 
-tree = t2n_writeTrees(tree,params,fullfile(pwd,'test.mtr'));                                          % transform tree to NEURON morphology (.hoc file). This only has to be done once for each morphology
+tree = t2n_writeTrees(tree,params,fullfile(pwd,'test.mtr'));                 % transform tree to NEURON morphology (.hoc file). This only has to be done once for each morphology
 
 
 %% Tutorial 1 - simulation protocol: somatic current injection
@@ -113,8 +113,8 @@ ylabel('Injected current [nA]')
 % principle this can be used for any different protocols (e.g. different
 % channels, different synapses, different stimulation patterns etc).
 
-amp = 0:0.12:0.6;       % define a series of amplitudes for the electrode (here: 6 steps from 0 to 0.6 nA)
-nneuron = cell(0);      % initialize (clear) simulation list
+amp = 0:0.12:0.6;                  % define a series of amplitudes for the electrode (here: 6 steps from 0 to 0.6 nA)
+nneuron = cell(numel(amp),1);      % initialize (clear) simulation list
 
 % principally, we could copy the standard neuron structure into the neuron cell 
 % array for each protocol and then add the IClamp with different amplitudes
@@ -178,7 +178,7 @@ figure;
 for tt = 1:numel(times)                                                   % loop through all defined time points
     subplot(ceil(sqrt(numel(times))),ceil(sqrt(numel(times))),tt)         % make quadratically arranged subplots
     vec = t2n_get(out,'v',times(tt));                                     % extract the voltages at that time point
-    plot_tree(tree{1},vec)                                                % plot the tree with the voltage at that time at each node
+    plot_tree(tree{1},vec{1})                                             % plot the tree with the voltage at that time at each node
     colorbar                                                              % add a colorbar
     set(gca,'CLim',[-50 40])                                              % make the colors go only from -50 to 40 mV
     axis off
@@ -189,10 +189,11 @@ end
 % optimizing the model. We simply use a for loop to create neuron
 % instances, each being the same except for one parameter that is changed.
 
-fac = 0:0.5:2;   % define the multiplication factor range of the parameter scan
-for f = 1:numel(fac)  % loop through number of different factors
-    nneuron{f} = neuron;  % copy standard neuron definition
-    nneuron.mech{1}.soma.hh.gkbar = fac(f) * 0.036;  % change the HH potassium channel density according to fac
+fac = 0:0.5:2;                                          % define the multiplication factor range of the parameter scan
+nneuron = cell(numel(fac),1);                           %initialize neuron cell array (generally good strategy if you are using this variable in different sections)
+for f = 1:numel(fac)                                    % loop through number of different factors
+    nneuron{f} = neuron;                                % copy standard neuron definition
+    nneuron{f}.mech{1}.soma.hh.gkbar = fac(f) * 0.036;     % change the HH potassium channel density according to fac
 end
 nneuron{1}.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[0.6 0]);    % again define the IClamp only for first instance...
 nneuron = t2n_as(1,nneuron);                                                  % ... and let t2n use it for the rest
@@ -204,7 +205,7 @@ figure; hold all
 for f = 1:numel(fac)
     plot(out{f}.t,out{f}.record{1}.cell.v{1})  % plot time vs voltage of each simulation
 end
-legend((sprintf('K-channel factor of %g',fac)))   % add legend
+legend(arrayfun(@(x) sprintf('hh K-channel factor of %g',x),fac,'uni',0))   % add legend
 xlabel('Time [ms]')
 ylabel('Voltage [mV]')
 
@@ -225,22 +226,99 @@ ylabel('Voltage [mV]')
 nneuron = neuron;                                                         % copy standard neuron structure
 plen = Pvec_tree(tree{1});                                                % get path length to soma at each node of morphology
 [~,synIDs] = max(plen);                                                   % search for the most far away point in the morpholgy    
-nneuron.pp{1}.AlphaSynapse = struct('node',synIDs,'gmax',0.01,'onset',50);% add an AlphaSynapse at this location
+nneuron.pp{1}.AlphaSynapse = struct('node',synIDs,'gmax',0.01,'onset',20);% add an AlphaSynapse at this location
 nneuron.record{1}.cell.node = cat(1,1,synIDs);                            % record somatic voltage and voltage at synapse
-nneuron.record{1}.AlphaSynapse = struct('node',synIDs,'record','i');      % record somatic voltage and voltage at synapse
+nneuron.record{1}.AlphaSynapse = struct('node',synIDs,'record','i');      % record synaptic current
 
-out = t2n(tree,params,nneuron,'-w-q');   % execute t2n
+out = t2n(tree,params,nneuron,'-w-q');              % execute t2n
 
-% plot the result (Vmem at soma and synapse)
+% plot the result (Vmem at soma and synapse and synaptic current)
 figure;
 subplot(2,1,1)
 hold all
-plot(out.t,out.record{1}.cell.v{1})  % plot time vs voltage at soma
+plot(out.t,out.record{1}.cell.v{1})                 % plot time vs voltage at soma
+plot(out.t,out.record{1}.cell.v{synIDs})            % plot time vs voltage at dendrite end
+legend('Soma','Synapse')
+ylabel('Membrane potential [mV]')
+ylim([-85,-60])
+xlim([0,50])
+subplot(2,1,2)
+plot(out.t,out.record{1}.AlphaSynapse.i{synIDs})    % plot time vs synaptic current
+xlim([0,50])
+ylabel('Synaptic current [nA]')
+xlabel('Time [ms]')
+
+%% Tutorial 6 - Synaptic stimulation, Exp2Syn synapse and a NetStim
+% A more customizable synapse in NEURON is the Exp2Syn point process as it
+% is activated by another cell or point process. Hence, if we use such a
+% synapse, we have to make use of NEURON NetCon objects, which can be
+% defined in the .con field of the neuron structure. Additionally, we have
+% to introduce some cell that stimulates the synapse at given times, for
+% which we will introduce a NetStim as an artificial cell. This cell, as
+% all real and artificial cells, has to be defined in the tree structure
+% and is quite simple to define:
+
+tree{2} = struct('artificial','NetStim','params',struct('start',10,'interval',15,'number',10)); % add a NetStim as an artificial cell and define the start (10 ms) the interval (15 ms) and the number (10) of spikings
+tree = t2n_writeTrees(tree,params,fullfile(pwd,'test.mtr'));                                    % tree morphologies are rewritten because this NetStim might be not written yet
+
+nneuron = neuron;                                                         % copy standard neuron structure
+plen = Pvec_tree(tree{1});                                                % get path length to soma at each node of morphology
+[~,synIDs] = max(plen);                                                   % search for the most far away point in the morpholgy    
+nneuron.pp{1}.Exp2Syn = struct('node',synIDs,'tau1',0.2,'tau2',2.5,'e',0);% add an Exp2Syn at this location with 0.2 ms rise and 2.5 ms decay time
+nneuron.record{1}.cell.node = cat(1,1,synIDs);                            % record somatic voltage and voltage at synapse
+nneuron.record{1}.Exp2Syn = struct('node',synIDs,'record','i');           % record synaptic current
+nneuron.con(1) = struct('source',struct('cell',2),'target',struct('cell',1,'pp','Exp2Syn','node',synIDs),'delay',0,'threshold',0.5,'weight',0.1);  % connect the NetStim (cell 2) with the target (point process Exp2Syn of cell 1 at node specified in synIDs), and add threshold/weight and delay of the connection (NetStim parameters)
+
+out = t2n(tree,params,nneuron,'-w-q');                                    % execute t2n
+
+% plot the result (Vmem at soma and synapse and synaptic current)
+figure;
+subplot(2,1,1)
+hold all
+plot(out.t,out.record{1}.cell.v{1})       % plot time vs voltage at soma
 plot(out.t,out.record{1}.cell.v{synIDs})  % plot time vs voltage at dendrite end
 legend('Soma','Synapse')
 ylabel('Membrane potential [mV]')
 xlabel('Time [ms]')
-ylim([-85,-60])
-xlim([0,100])
+% ylim([-85,-60])
+% xlim([0,100])
 subplot(2,1,2)
-plot(out.t,out.record{1}.AlphaSynapse.i{synIDs})  % plot time vs voltage at dendrite end
+plot(out.t,out.record{1}.Exp2Syn.i{synIDs})  % plot time vs synaptic current
+
+
+%% Tutorial 7 - Synaptic stimulation, Exp2Syn synapse and a NetStim
+% A more customizable synapse in NEURON is the Exp2Syn point process as it
+% is activated by another cell or point process. Hence, if we use such a
+% synapse, we have to make use of NEURON NetCon objects, which can be
+% defined in the .con field of the neuron structure. Additionally, we have
+% to introduce some cell that stimulates the synapse at given times, for
+% which we will introduce a NetStim as an artificial cell. This cell, as
+% all real and artificial cells, has to be defined in the tree structure
+% and is quite simple to define:
+
+tree{2} = struct('artificial','NetStim','params',struct('start',10,'interval',15,'number',10)); % add a NetStim as an artificial cell and define the start (10 ms) the interval (15 ms) and the number (10) of spikings
+tree = t2n_writeTrees(tree,params,fullfile(pwd,'test.mtr'));                                    % tree morphologies are rewritten because this NetStim might be not written yet
+
+nneuron = neuron;                                                         % copy standard neuron structure
+plen = Pvec_tree(tree{1});                                                % get path length to soma at each node of morphology
+[~,synIDs] = max(plen);                                                   % search for the most far away point in the morpholgy    
+nneuron.pp{1}.Exp2Syn = struct('node',synIDs,'tau1',0.2,'tau2',2.5,'e',0);% add an Exp2Syn at this location with 0.2 ms rise and 2.5 ms decay time
+nneuron.record{1}.cell.node = cat(1,1,synIDs);                            % record somatic voltage and voltage at synapse
+nneuron.record{1}.Exp2Syn = struct('node',synIDs,'record','i');           % record synaptic current
+nneuron.con(1) = struct('source',struct('cell',2),'target',struct('cell',1,'pp','Exp2Syn','node',synIDs),'delay',0,'threshold',0.5,'weight',0.1);  % connect the NetStim (cell 2) with the target (point process Exp2Syn of cell 1 at node specified in synIDs), and add threshold/weight and delay of the connection (NetStim parameters)
+
+out = t2n(tree,params,nneuron,'-w-q');                                    % execute t2n
+
+% plot the result (Vmem at soma and synapse and synaptic current)
+figure;
+subplot(2,1,1)
+hold all
+plot(out.t,out.record{1}.cell.v{1})       % plot time vs voltage at soma
+plot(out.t,out.record{1}.cell.v{synIDs})  % plot time vs voltage at dendrite end
+legend('Soma','Synapse')
+ylabel('Membrane potential [mV]')
+xlabel('Time [ms]')
+% ylim([-85,-60])
+% xlim([0,100])
+subplot(2,1,2)
+plot(out.t,out.record{1}.Exp2Syn.i{synIDs})  % plot time vs synaptic current

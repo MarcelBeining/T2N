@@ -1,4 +1,4 @@
-function [tree,params,neuron,thesetrees,usestreesof] = t2n_checkinput(tree,params,neuron)
+function [tree,params,neuron,thesetrees,usestreesof] = t2n_checkinput(tree,params,neuron,options)
 % This function checks the neuron structure for correct definition of the
 % used morphologies and returns info about it
 
@@ -6,6 +6,7 @@ function [tree,params,neuron,thesetrees,usestreesof] = t2n_checkinput(tree,param
 % tree              tree cell array with morphologies (see documentation)
 % params            t2n parameter structure (see documentation)
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
+% options           (optional) option string of t2n
 %
 % OUTPUTS
 % tree              corrected tree cell array
@@ -21,6 +22,9 @@ function [tree,params,neuron,thesetrees,usestreesof] = t2n_checkinput(tree,param
 % * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
+if nargin < 4 || isempty(options)
+    options = '';
+end
 %% check for several standard parameter and initialize default value if not set
 if ~isempty(params)
     if ~isfield(params,'parallel')

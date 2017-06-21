@@ -9,3 +9,7 @@ m2n.asv
 *.asv
 ~$cumentation T2N.docx
 *.m~
+morphos/
+t2n_exchange/
+lib_genroutines/
+test.mtr
