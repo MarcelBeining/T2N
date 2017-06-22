@@ -23,10 +23,15 @@ if ~exist(folder,'file')
     mkdir(folder)
 end
 % cd(folder)
-
-mkdir(folder,'lib_mech')
-mkdir(folder,'lib_custom')
-mkdir(folder,'morphos')
+if ~ exist(fullfile(folder,'lib_mech'),'dir')
+    mkdir(folder,'lib_mech')
+end
+if ~ exist(fullfile(folder,'lib_custom'),'dir')
+    mkdir(folder,'lib_custom')
+end
+if ~ exist(fullfile(folder,'morphos'),'dir')
+    mkdir(folder,'morphos')
+end
 
 
 % check for standard hoc files in the model folder and copy them if not existing
