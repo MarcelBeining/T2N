@@ -152,14 +152,28 @@ if ~isempty(strfind(options,'-cl'))
     [~, outp] = sshfrommatlabissue(params.server.connect,'module avail');
     params.server.neuron = regexpi(outp.StdErr,'neuron/\d{1,2}\.\d{1,2}\s','match');  % available modules are reported to errorStream..dunno why
     %     params.server.envstr = [params.server.envstr, sprintf('module load %s; ',outp{1})];  % load first found neuron version
-    display(sprintf('Available neuron modules found:\n%s\nChoosing %s',sprintf('%s',params.server.neuron{:}),params.server.neuron{1}))
+    fprintf('Available neuron modules found:\n%s\nChoosing %s',sprintf('%s',params.server.neuron{:}),params.server.neuron{1})
 elseif exist(params.neuronpath,'file') ~= 2
     if ispc
-        if isempty(strfind(params.neuronpath,'.exe') && exist(fullfile(params.neuronpath,'nrniv.exe'),'file') == 2) % path only points to folder, not to exe
+        askflag = 0;
+        if isempty(~isempty(strfind(params.neuronpath,'.exe')) && exist(fullfile(params.neuronpath,'nrniv.exe'),'file') == 2) % path only points to folder, not to exe
             params.neuronpath = fullfile(params.neuronpath,'nrniv.exe');
+        elseif exist(fullfile(t2npath,'nrniv_win.txt'),'file')
+            fid = fopen(fullfile(t2npath,'nrniv_win.txt'),'r');
+            params.neuronpath = fread(fid,'*char')';
+            fclose(fid);
+            if exist(params.neuronpath,'file') ~= 2
+                askflag = 1;
+            end
         else
-            error('No NEURON software (nrniv.exe) found under "%s"\nPlease give correct path using params.neuronpath',params.neuronpath);
-            %         return
+            askflag = 1;
+        end
+        if askflag
+            [filename,pathname] = uigetfile('.exe',sprintf('No NEURON software found under "%s"! Please give enter path to nrniv.exe',params.neuronpath));
+            params.neuronpath = fullfile(pathname,filename);
+            fid = fopen(fullfile(t2npath,'nrniv_win.txt'),'w');
+            fprintf(fid,strrep(params.neuronpath,'\','/'));
+            fclose(fid);
         end
     else
         [~,outp] = system('which nrniv');
