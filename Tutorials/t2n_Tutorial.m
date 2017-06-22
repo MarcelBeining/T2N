@@ -4,13 +4,14 @@
 
 %% load a tree
 % First we need a morphology (tree), on which we can add the channels etc.
-% We are using here the sample_tree function from the TREES toolbox which
+% We are using here a sample_tree from the TREES toolbox which
 % loads a small tree. You can also load a different tree by using
-% tree = load_tree
+% tree = load_tree, or load another example, e.g. tree = {hsn_tree};
 
 tree = {sample_tree};   % load sample tree
-% this tree has no soma regino yet, so just make the first two nodes
-% "somatic"
+% this tree has no soma regino yet, so it is perfectly suitable to show you
+% how new regions can be defined in TREES toolbox. 
+% just make the first two nodes from the root "somatic"
 tree{1}.R(1:2) = 3;     % make the first two nodes a new region
 tree{1}.rnames{3} = 'soma';   % name the region "soma"
 tree{1}.D(1:2) = 10;        % increase diameter of the somatic nodes
@@ -279,46 +280,54 @@ plot(out.t,out.record{1}.cell.v{1})       % plot time vs voltage at soma
 plot(out.t,out.record{1}.cell.v{synIDs})  % plot time vs voltage at dendrite end
 legend('Soma','Synapse')
 ylabel('Membrane potential [mV]')
-xlabel('Time [ms]')
-% ylim([-85,-60])
-% xlim([0,100])
 subplot(2,1,2)
 plot(out.t,out.record{1}.Exp2Syn.i{synIDs})  % plot time vs synaptic current
+ylabel('Synaptic current [nA]')
+xlabel('Time [ms]')
 
 
-%% Tutorial 7 - Synaptic stimulation, Exp2Syn synapse and a NetStim
-% A more customizable synapse in NEURON is the Exp2Syn point process as it
-% is activated by another cell or point process. Hence, if we use such a
-% synapse, we have to make use of NEURON NetCon objects, which can be
-% defined in the .con field of the neuron structure. Additionally, we have
-% to introduce some cell that stimulates the synapse at given times, for
-% which we will introduce a NetStim as an artificial cell. This cell, as
-% all real and artificial cells, has to be defined in the tree structure
-% and is quite simple to define:
+%% Tutorial 7 - Small network
+% Our last tutorial gives an example of how to create a small network that
+% comprises feed-forward inhibition. We use the definitions of the previous
+% tutorial and add an inhibitory integrate-and-fire point neuron that 
+% receives input from our excitatory cell and and returns somatic 
+% inhibition. We also added a line that would transform the feed-forward
+% inhibition to a feed-back inhibition network by changing the input of the
+% inhibitory neuron from the netstim to the real cell.
 
-tree{2} = struct('artificial','NetStim','params',struct('start',10,'interval',15,'number',10)); % add a NetStim as an artificial cell and define the start (10 ms) the interval (15 ms) and the number (10) of spikings
+
+tree{2} = struct('artificial','NetStim','params',struct('start',20,'interval',15,'number',10)); % add a NetStim as an artificial cell and define the start (10 ms) the interval (15 ms) and the number (10) of spikings
+tree{3} = struct('artificial','IntFire2','params',struct('taus',15)); % add a NetStim as an artificial cell and define the start (10 ms) the interval (15 ms) and the number (10) of spikings
 tree = t2n_writeTrees(tree,params,fullfile(pwd,'test.mtr'));                                    % tree morphologies are rewritten because this NetStim might be not written yet
 
 nneuron = neuron;                                                         % copy standard neuron structure
 plen = Pvec_tree(tree{1});                                                % get path length to soma at each node of morphology
-[~,synIDs] = max(plen);                                                   % search for the most far away point in the morpholgy    
-nneuron.pp{1}.Exp2Syn = struct('node',synIDs,'tau1',0.2,'tau2',2.5,'e',0);% add an Exp2Syn at this location with 0.2 ms rise and 2.5 ms decay time
-nneuron.record{1}.cell.node = cat(1,1,synIDs);                            % record somatic voltage and voltage at synapse
-nneuron.record{1}.Exp2Syn = struct('node',synIDs,'record','i');           % record synaptic current
-nneuron.con(1) = struct('source',struct('cell',2),'target',struct('cell',1,'pp','Exp2Syn','node',synIDs),'delay',0,'threshold',0.5,'weight',0.1);  % connect the NetStim (cell 2) with the target (point process Exp2Syn of cell 1 at node specified in synIDs), and add threshold/weight and delay of the connection (NetStim parameters)
+[~,synIDsExc] = max(plen);                                                % search for the most far away point in the morpholgy    
+nneuron.pp{1}.Exp2Syn(1) = struct('node',synIDsExc,'tau1',0.2,'tau2',2.5,'e',0);% add an Exp2Syn at this location with 0.2 ms rise and 2.5 ms decay time
+synIDsInh = 1;                                                            % choose root as point of inhibitory synapse
+nneuron.pp{1}.Exp2Syn(2) = struct('node',synIDsInh,'tau1',0.5,'tau2',5,'e',-80);% add an inhibitory (e=-80) Exp2Syn at this location with 0.2 ms rise and 2.5 ms decay time
+nneuron.record{1}.cell.node = cat(1,1,synIDsExc);                         % record somatic voltage and voltage at synapse
+nneuron.record{1}.Exp2Syn(1) = struct('node',synIDsExc,'record','i');        % record synaptic current
+nneuron.record{1}.Exp2Syn(2) = struct('node',synIDsInh,'record','i');        % record synaptic current
+nneuron.con(1) = struct('source',struct('cell',2),'target',struct('cell',1,'pp','Exp2Syn','node',synIDsExc),'delay',0,'threshold',0.5,'weight',0.1);  % connect the NetStim (cell 2) with the target (point process Exp2Syn of cell 1 at node specified in synIDsExc), and add threshold/weight and delay of the connection (NetStim parameters)
+nneuron.con(2) = struct('source',struct('cell',2),'target',struct('cell',3),'delay',0,'threshold',0.5,'weight',1);  % connect the NetStim (cell 2) with the inhibitory cell to create a feed-forward inhibitory loop, and add threshold/weight and delay of the connection (NetStim parameters)
+% nneuron.con(2) = struct('source',struct('cell',1,'node',1),'target',struct('cell',3),'delay',0,'threshold',0.5,'weight',1);  % connect the real cell with the inhibitory cell to create a feed-back inhibitory loop, and add threshold/weight and delay of the connection (NetStim parameters)
+nneuron.con(3) = struct('source',struct('cell',3),'target',struct('cell',1,'pp','Exp2Syn','node',synIDsInh),'delay',3,'threshold',0.5,'weight',0.3);  % connect the inhibitory cell with the target (point process Exp2Syn of cell 1 at node specified in synIDsInh), and add threshold/weight and delay of the connection (NetStim parameters)
 
 out = t2n(tree,params,nneuron,'-w-q');                                    % execute t2n
 
 % plot the result (Vmem at soma and synapse and synaptic current)
 figure;
-subplot(2,1,1)
+subplot(3,1,1)
 hold all
 plot(out.t,out.record{1}.cell.v{1})       % plot time vs voltage at soma
-plot(out.t,out.record{1}.cell.v{synIDs})  % plot time vs voltage at dendrite end
-legend('Soma','Synapse')
+plot(out.t,out.record{1}.cell.v{synIDsExc})  % plot time vs voltage at dendrite end
+legend('Soma (Target Inh Synapse)','Exc. Synapse')
 ylabel('Membrane potential [mV]')
+subplot(3,1,2)
+plot(out.t,out.record{1}.Exp2Syn.i{synIDsExc})  % plot time vs synaptic current
+ylabel('Exc. syn. current [nA]')
+subplot(3,1,3)
+plot(out.t,out.record{1}.Exp2Syn.i{synIDsInh})  % plot time vs synaptic current
+ylabel('Inh. syn. current [nA]')
 xlabel('Time [ms]')
-% ylim([-85,-60])
-% xlim([0,100])
-subplot(2,1,2)
-plot(out.t,out.record{1}.Exp2Syn.i{synIDs})  % plot time vs synaptic current
