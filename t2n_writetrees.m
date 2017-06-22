@@ -37,8 +37,6 @@ else
 end
 if isfield(params,'morphfolder')
     morphfolder = fullfile(params.path,params.morphfolder);
-% elseif exist(fullfile(params.path,'morphos'),'dir')
-%     morphfolder = fullfile(params.path,'morphos');
 elseif exist(fullfile(params.path,'morphos'),'dir')
     morphfolder = fullfile(params.path,'morphos');
 else
@@ -69,7 +67,8 @@ badchars = 0;
 artflag = cellfun(@(x) isfield(x,'artificial'),tree);  % get boolean for trees being artificial
 indartflag = find(artflag);   % get indices
 [~,ia] = unique(cellfun(@(x) x.artificial,tree(artflag),'UniformOutput',0));  % find artificial cells that are of the same type
-tree = cat(1,tree(~artflag),tree(indartflag(ia)));  % only write trees that are not artificial and one artificial tree of each type
+indWrite = cat(1,find(~artflag),indartflag(ia));  % only write trees that are not artificial and one artificial tree of each type
+% tree = cat(1,tree(~artflag),tree(indartflag(ia)));  % only write trees that are not artificial and one artificial tree of each type
 
 tim = tic;
 if ~isempty(strfind(options,'-w'))
@@ -88,9 +87,9 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         countupflag = true;
     elseif artflag(t) && ~isfield(tree{t},'name')
         treename = tree{t}.artificial;
-        countupflag = false;%true; % caution, maybe countup in artificial is necessary for correct assignment of records etc...check
+        countupflag = false;
         nonameflag = true;
-    elseif isfield(tree{t},'name') % this is also true if name exist and it is artificial. good becaus
+    elseif isfield(tree{t},'name') % this is also true if name exist and it is artificial
         treename = tree{t}.name;
         countupflag = false;
     else
@@ -114,7 +113,7 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         treename = strcat('cell_',treename);
     end
     if countupflag
-        treename = sprintf('%s_%d%d',treename,floor(t/10),rem(t,10));
+        treename = sprintf('%s_%d',treename,t);
     end
 %     if strfind(options,'-cl')
 %         [params.server.connect, answer] = sshfrommatlabissue(params.server.connect,sprintf('ls %s/%s.hoc',nrn_morphfolder,treename));
@@ -122,7 +121,7 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
 %     else
 %         fchk = exist(fullfile(morphfolder,sprintf('%s.hoc',treename)),'file');
 %     end
-    
+if any(t == indWrite)  % inly rewrite artificial trees once
     oname = treename;
     neuron_template_tree (tree{t}, fullfile(morphfolder,sprintf('%s.hoc',treename)), '-m');
     
@@ -133,7 +132,7 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         pause(0.1)
         params.server.connect = sftpfrommatlab(params.server.connect,fullfile(morphfolder,sprintf('%s_minterf.mat',oname)),sprintf('%s/%s_minterf.mat',nrn_morphfolder,oname));
     end
-    
+end
     tree{t}.NID = treename;
     if nonameflag || badchars > 0
         tree{t}.name = treename;
