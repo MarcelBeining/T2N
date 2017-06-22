@@ -1,4 +1,4 @@
-function [varVec] = t2n_getMech(tree,neuron,var,params)
+function [varargout] = t2n_getMech(tree,neuron,var,params)
 % This function maps the values of a given NEURON variable onto each
 % morpholgy and optionally returns these values, too;
 % INPUT
@@ -106,7 +106,7 @@ for n = 1:numel(neuron) % go through all neuron definitions
                 tname = sprintf('tree %d',t);
             end
             title(sprintf('Neuron Simulation: %d, tree: "%s", variable "%s"',n,tname,strrep(var,'_','\_')))
-            plot_tree(tree{t},varVec{n,t})
+            plot_tree(tree{t},varVec{n,t});
             lims = [min(varVec{n,t}),max(varVec{n,t})];
             if diff(lims) == 0  % limits HAVE to be different from each other
                 lims = [lims(1)-1e-9,lims(1)+1e-9];
@@ -115,6 +115,8 @@ for n = 1:numel(neuron) % go through all neuron definitions
         end
     end
 end
-
+if nargout > 0
+    varargout{1} = varVec;
+end
 end
 

@@ -38,9 +38,11 @@ for o = 1:numel(out)
     
     %     vec{p} = NaN(numel(out.record),max(cellfun(@(x) numel(x.(typ).(par{p})),out.record)))  % initialize the matrix with N
     for t = 1:numel(out{o}.record)
-        vec{o}{t} = NaN(numel(out{o}.record{t}.(typ).(par)),numl);
-        for n = 1:numel(out{o}.record{t}.(typ).(par))
-            vec{o}{t}(n,:) = fHandle(out{o}.record{t}.(typ).(par){n}) ;
+        if ~isempty(out{o}.record{t})
+            vec{o}{t} = NaN(numel(out{o}.record{t}.(typ).(par)),numl);
+            for n = 1:numel(out{o}.record{t}.(typ).(par))
+                vec{o}{t}(n,:) = fHandle(out{o}.record{t}.(typ).(par){n}) ;
+            end
         end
     end
     if ~isa(arg,'char')
