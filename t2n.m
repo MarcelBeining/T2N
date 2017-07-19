@@ -191,19 +191,19 @@ end
 %% check for standard hoc files in the model folder and copy them if not existing
 if ~exist(fullfile(params.path,'lib_genroutines'),'file')
     mkdir(params.path,'lib_genroutines')
-    display('non-existent folder lib_genroutines created')
+    disp('non-existent folder lib_genroutines created')
 end
 if ~exist(fullfile(params.path,'lib_genroutines/fixnseg.hoc'),'file')
     copyfile(fullfile(t2npath,'src','fixnseg.hoc'),fullfile(params.path,'lib_genroutines/fixnseg.hoc'))
-    display('fixnseg.hoc copied to model folder')
+    disp('fixnseg.hoc copied to model folder')
 end
 if ~exist(fullfile(params.path,'lib_genroutines/genroutines.hoc'),'file')
     copyfile(fullfile(t2npath,'src','genroutines.hoc'),fullfile(params.path,'lib_genroutines/genroutines.hoc'))
-    display('genroutines.hoc copied to model folder')
+    disp('genroutines.hoc copied to model folder')
 end
 if ~exist(fullfile(params.path,'lib_genroutines/pasroutines.hoc'),'file')
     copyfile(fullfile(t2npath,'src','pasroutines.hoc'),fullfile(params.path,'lib_genroutines/pasroutines.hoc'))
-    display('pasroutines.hoc copied to model folder')
+    disp('pasroutines.hoc copied to model folder')
 end
 
 %% create the local and server exchange folder
@@ -405,7 +405,7 @@ for n = 1:numel(neuron)
                     if isempty(strfind(cmdout,'nrnmech.dll was built successfully'))
                         error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually')
                     else
-                        display('nrnmech.dll compiled from mod files in folder lib_mech')
+                        disp('nrnmech.dll compiled from mod files in folder lib_mech')
                     end
                     t2n_rename_nrnmech()  % delete the o and c files
                 end
@@ -452,7 +452,7 @@ for n = 1:numel(neuron)
                     if exist(fullfile(nrn_path,'lib_custom',neuron{n}.custom{c,1}),'file')
                         fprintf(nfile,sprintf('io = load_file("lib_custom/%s")\n',neuron{n}.custom{c,1}));
                     else
-                        display(sprintf('File "%s" does not exist',neuron{n}.custom{c,1}))
+                        fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
                     end
                 else
                     fprintf(nfile,neuron{n}.custom{c,1});  % add string as custom neuron code
@@ -560,7 +560,7 @@ for n = 1:numel(neuron)
                     if exist(fullfile(nrn_path,'lib_custom',neuron{n}.custom{c,1}),'file')
                         fprintf(nfile,sprintf('io = load_file("%s/lib_custom/%s")\n',nrn_path,neuron{n}.custom{c,1}));
                     else
-                        display(sprintf('File "%s" does not exist',neuron{n}.custom{c,1}))
+                        fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
                     end
                 else
                     fprintf(nfile,neuron{n}.custom{c,1});  % add string as custom neuron code
@@ -597,7 +597,7 @@ for n = 1:numel(neuron)
                     if exist(fullfile(nrn_path,'lib_custom',neuron{n}.custom{c,1}),'file')
                         fprintf(nfile,sprintf('io = load_file("%s/lib_custom/%s")\n',nrn_path,neuron{n}.custom{c,1}));
                     else
-                        display(sprintf('File "%s" does not exist',neuron{n}.custom{c,1}))
+                        fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
                     end
                 else
                     fprintf(nfile,neuron{n}.custom{c,1});  % add string as custom neuron code
@@ -1159,7 +1159,7 @@ for n = 1:numel(neuron)
                                 end
                                 
                             else
-                                display(sprintf('Warning cell %d. PP %s for connection does not exist at node %d',neuron{n}.con(c).target.cell,pp,ucon(uc)))
+                                fprintf('Warning cell %d. PP %s for connection does not exist at node %d',neuron{n}.con(c).target.cell,pp,ucon(uc))
                             end
                         end
                         
@@ -1251,7 +1251,7 @@ for n = 1:numel(neuron)
                                         if cpp(ucon(uc) == upp) < ccon(uc)  % less PPs exist than connections to node
                                             if numel(ind) == 1
                                                 iid{n1} = cat (1,iid{n1},repmat(ind,ccon(uc),1));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
-                                                display(sprintf('Warning cell %d. More connections to same %s declared than %ss at that node. All connections target now that %s.',cell_target,pp,pp,pp)) % give a warning if more connections were declared than PPs exist at that node
+                                                fprintf('Warning cell %d. More connections to same %s declared than %ss at that node. All connections target now that %s.',cell_target,pp,pp,pp) % give a warning if more connections were declared than PPs exist at that node
                                             else
                                                 for nn = 1:numel(neuron)
                                                     delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
@@ -1263,7 +1263,7 @@ for n = 1:numel(neuron)
                                                 iid{n1} = cat (1,iid{n1},ind(neuron{n}.con(c).target(it).ipp));
                                             else
                                                 iid{n1} = cat (1,iid{n1},ind(1:min(cpp(ucon(uc) == upp),ccon(uc))));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
-                                                display(sprintf('Warning cell %d, node %d. Less connections to same %s declared than %ss at that node. Connections target now only the first %d %ss.',cell_target,ucon(uc),pp,pp,min(cpp(ucon(uc) == upp),ccon(uc)),pp)) % give a warning if more connections were declared than PPs exist at that node
+                                                fprintf('Warning cell %d, node %d. Less connections to same %s declared than %ss at that node. Connections target now only the first %d %ss.',cell_target,ucon(uc),pp,pp,min(cpp(ucon(uc) == upp),ccon(uc)),pp) % give a warning if more connections were declared than PPs exist at that node
                                             end
                                         else   % same number of PPs and connections, put them together, should be ok without warning
                                             iid{n1} = cat (1,iid{n1},ind);
@@ -1273,11 +1273,11 @@ for n = 1:numel(neuron)
                                 end
                                 
                             else
-                                display(sprintf('Warning cell %d. PP %s for connection does not exist at node %d',cell_target,pp,ucon(uc)))
+                                fprintf('Warning cell %d. PP %s for connection does not exist at node %d',cell_target,pp,ucon(uc))
                             end
                         end
                         if numel(unique(cat(1,iid{:}))) ~= numel(cat(1,iid{:}))
-                            display(sprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(x).target(y).ppg = z" to connect only to the zth group of PP %s.',neuron{n}.con(c).target.cell,c,pp,pp,pp))
+                            fprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(x).target(y).ppg = z" to connect only to the zth group of PP %s.',neuron{n}.con(c).target.cell,c,pp,pp,pp)
                         end
                         for t1 = 1:numel(cell_source)
                             for n1 = 1:numel(iid)
@@ -1311,7 +1311,7 @@ for n = 1:numel(neuron)
                         newstr{s} = sprintf('%s,%g)\n', newstr{s},neuron{n}.con(c).weight);
                     else
                         newstr{s} = sprintf('%s,0)\n', newstr{s});
-                        display('Caution: NetCon Weight initialized with default (0) !')
+                        disp('Caution: NetCon Weight initialized with default (0) !')
                     end
                     newstr{s} = sprintf('%sio = conList.append(con)',newstr{s});  %append con to conList
                     if nodeflag
@@ -1485,7 +1485,7 @@ for n = 1:numel(neuron)
                                         else
                                             delin = cat(1,delin,in);
                                             neuron{x}.record{t}.(recfields{f1})(r).id(in) = NaN;
-                                            display(sprintf('Node %d of cell %d does not comprise the PP "%s". Recording is ignored.',neuron{x}.record{t}.(recfields{f1})(r).node(in),t,recfields{f1}))
+                                            fprintf('Node %d of cell %d does not comprise the PP "%s". Recording is ignored.',neuron{x}.record{t}.(recfields{f1})(r).node(in),t,recfields{f1})
                                             ic(ic == in) = [];  % if node does not correspond to some specified pp at that place, delete it
                                             ic(ic >= in) = ic(ic >= in) - 1;
                                         end
@@ -1683,14 +1683,14 @@ for n = 1:numel(neuron)
                                     fprintf(ofile,'io = playList.append(play)\n\n' );  %append playing vector to playList
                                     
                                 end
-                              case 'pp'
-                                  if isfield(neuron{x}.play{t}.(playfields{f1})(r),'ppg')
-                                        ppg = neuron{x}.play{t}.(playfields{f1})(r).ppg;
-                                    elseif numel(neuron{x3}.pp{t}.(playfields{f1})) == numel(neuron{x}.play{t}.(playfields{f1}))
-                                        ppg = r;
-                                    else
-                                        ppg =1;
-                                    end
+                            case 'pp'
+                                if isfield(neuron{x}.play{t}.(playfields{f1})(r),'ppg')
+                                    ppg = neuron{x}.play{t}.(playfields{f1})(r).ppg;
+                                elseif numel(neuron{x3}.pp{t}.(playfields{f1})) == numel(neuron{x}.play{t}.(playfields{f1}))
+                                    ppg = r;
+                                else
+                                    ppg =1;
+                                end
                                 for in =  1:numel(inode)%size(realplays,1)%numel(neuron{x}.play{t}{r,1})  % CAUTION might be wrong
                                     ind = find(neuron{x3}.pp{t}.(playfields{f1})(ppg).node == neuron{x}.play{t}.(playfields{f1})(r).node(in));  % check if node really has the corresponding PP
                                     if ~isempty(ind)
@@ -1739,7 +1739,7 @@ for n = 1:numel(neuron)
                                         count = count +1;
                                     else
                                         neuron{x}.play{t}.(playfields{f1})(r).id(in) = NaN;   % reference to find playing in playList
-                                        display(sprintf('Node %d of cell %d does not comprise the PP "%s". Playing is ignored.',neuron{x}.play{t}.(playfields{f1})(r).node(in),t,playfields{f1}))
+                                        fprintf('Node %d of cell %d does not comprise the PP "%s". Playing is ignored.',neuron{x}.play{t}.(playfields{f1})(r).node(in),t,playfields{f1})
                                     end
                                 end
                             case 'artificial'
@@ -1751,7 +1751,7 @@ for n = 1:numel(neuron)
                                 %written each time cn is called...
                                 if strcmp(tree{thesetrees{n}(tt)}.artificial,'VecStim') && any(neuron{n}.play{t}.(playfields{f1})(r).times < 0)
                                     neuron{n}.play{t}.(playfields{f1})(r).times(neuron{n}.play{t}.(playfields{f1})(r).times < 0) = [];
-                                    display('Warning, VecStim should not receive negative play times. These are deleted now')
+                                    disp('Warning, VecStim should not receive negative play times. These are deleted now')
                                 end
                                 f = fopen(fullfile(exchfolder,thisfolder,sprintf('plt_%s_of_art_%s_cell%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play, playfields{f1}, tt-1)),'w');
                                 fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).times(1:end-1));
@@ -2007,7 +2007,7 @@ if noutfiles > 0 % if output is expected
     % a file called 'readyflag' in the exchfolder; should be created in the last
     % line of the NEURON program
     if isempty(strfind(options,'-q'))
-        display('waiting for NEURON to finish...')
+        disp('waiting for NEURON to finish...')
     end
     if ~isempty(strfind(options,'-w'))
         w = waitbar(0,'Neuron Simulations are running, please wait');
@@ -2036,10 +2036,10 @@ if noutfiles > 0 % if output is expected
                         otherwise
                             jobstate = 'waiting';
                     end
-                    display(sprintf('Simulation %d is still %s on cluster, since %s %s',s,jobstate,jobanswer{6},jobanswer{7}))
+                    fprintf('Simulation %d is still %s on cluster, since %s %s',s,jobstate,jobanswer{6},jobanswer{7})
                     
                 else   % job is finished
-                    display(sprintf('Simulation %d has finished',s))
+                    fprintf('Simulation %d has finished',s)
                     simids(s) = 2;              % mark that simulation as finished
                     r = find(simids==0,1,'first');  % find next not runned simid
                     jobid(r) = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,params,options);          % start new simulation
@@ -2120,7 +2120,7 @@ if noutfiles > 0 % if output is expected
         fprintf(sprintf('NEURON execute time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
     end
     if isempty(strfind(options,'-q'))
-        display('NEURON finished... loading data...')
+        disp('NEURON finished... loading data...')
     end
     if ~isempty(strfind(options,'-w')) && ishandle(w)
         close(w)
@@ -2206,7 +2206,7 @@ if noutfiles > 0 % if output is expected
     end
     
     if isempty(strfind(options,'-q'))
-        display('data sucessfully loaded')
+        disp('data sucessfully loaded')
     end
     if ~isempty(strfind(options,'-w'))
         close(w)
