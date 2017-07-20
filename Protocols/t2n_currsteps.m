@@ -11,7 +11,9 @@ function t2n_currsteps(neuron,tree,params,targetfolder_data,ostruct)
 %                   amp     vector with amplitudes [nA]
 %                   delay   time point at which current injection starts [ms]
 %                   duration time period of current injection [ms]
-%                   holding_voltage potential at which cell is held before current injection [mV]
+%                   holding_voltage (optional) potential at which cell is held before current injection [mV]
+%                   spikeThresh (optional) threshold above which spikes are
+%                                          detected (default is -15 mV)
 % 
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
@@ -37,6 +39,10 @@ end
 if ~isfield(ostruct,'find_freq')
     ostruct.find_freq = 0;
 end
+if ~isfield(ostruct,'spikeThresh')
+    ostruct.spikeThresh = -15;
+end
+
 
 if ~isfield(ostruct,'amp')
     ostruct.amp = (0:5:90)/1000;  % standard current steps 0-90 pA
@@ -57,7 +63,7 @@ else
 end
 cstepsSpikingModel = ostruct.amp;  % 0:5:120
 
-params.tstop = 150+ostruct.duration;
+params.tstop = 150+ostruct.delay+ostruct.duration;
 
 if isfield(ostruct,'holding_voltage') && ~isnan(ostruct.holding_voltage)
     hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
@@ -69,7 +75,7 @@ if isnan(hstep)
     return
 end
 for t=1:numel(tree)
-    neuron.APCount{t} = [1,-10];
+    neuron.APCount{t} = [1,ostruct.spikeThresh];
 end
 
 nneuron = cell(numel(cstepsSpikingModel),1);

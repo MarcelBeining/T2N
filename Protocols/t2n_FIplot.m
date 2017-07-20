@@ -22,13 +22,16 @@ errorbar(cstepsSpikingModel*1000,mean(numspikes,1),std(numspikes,[],1),'Color',m
 xlabel('Current step [pA]')
 ylabel('Number of spikes')
 FontResizer
-FigureResizer(ostruct.figureheight,ostruct.figurewidth)
-if isfield(ostruct,'savename') && ~isempty(ostruct.savename)
-    tprint(fullfile(targetfolder_results,ostruct.savename),'-pdf');
-else
-    tprint(t2n_catName(targetfolder_results,'FI',neuron.experiment),'-pdf');
+if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
+    FigureResizer(ostruct.figureheight,ostruct.figurewidth)
 end
-
+if ~isempty(targetfolder_results)
+    if isfield(ostruct,'savename') && ~isempty(ostruct.savename)
+        tprint(fullfile(targetfolder_results,ostruct.savename),'-pdf');
+    else
+        tprint(t2n_catName(targetfolder_results,'FI',neuron.experiment),'-pdf');
+    end
+end
 
 if isfield(ostruct,'handles') && ~isempty(ostruct.handles) && ishandle(ostruct.handles(2))
     fig(2) = ostruct.handles(2);
@@ -40,11 +43,15 @@ errorbar(cstepsSpikingModel*1000,mean(numspikes,1)/ostruct.duration * 1000,std(n
 xlabel('current step [pA]')
 ylabel('frequency [Hz]')
 FontResizer
-FigureResizer(ostruct.figureheight,ostruct.figurewidth)
-if isfield(ostruct,'savename')  && ~isempty(ostruct.savename)
-    if ~isempty(ostruct.savename)
-        tprint(fullfile(targetfolder_results,[ostruct.savename,'_Hz']),'-pdf');
+if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
+    FigureResizer(ostruct.figureheight,ostruct.figurewidth)
+end
+if ~isempty(targetfolder_results)
+    if isfield(ostruct,'savename')  && ~isempty(ostruct.savename)
+        if ~isempty(ostruct.savename)
+            tprint(fullfile(targetfolder_results,[ostruct.savename,'_Hz']),'-pdf');
+        end
+    else
+        tprint(t2n_catName(targetfolder_results,'FI_Hz',neuron.experiment),'-pdf');
     end
-else
-    tprint(t2n_catName(targetfolder_results,'FI_Hz',neuron.experiment),'-pdf');
 end

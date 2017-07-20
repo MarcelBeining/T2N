@@ -220,10 +220,10 @@ if strfind(options,'-cl')
         fils = dir(fullfile(params.path,'lib_genroutines/'));  % get files from folder
         localfilename = cat(2,localfilename,fullfile(params.path,'lib_genroutines',{fils(~cellfun(@(x) strcmp(x,'.')|strcmp(x,'..'),{fils.name})).name})); % find all files
     end
-    if isempty(regexp(outp.StdOut,params.morphfolder, 'once'))
-        [params.server.connect,~] = sshfrommatlabissue(params.server.connect,sprintf('mkdir %s/%s',params.server.modelfolder,params.morphfolder));
-        fils = dir(fullfile(params.path,params.morphfolder));  % get files from folder
-        localfilename = cat(2,localfilename,fullfile(params.path,params.morphfolder,{fils(cellfun(@(x) ~isempty(regexpi(x,'.hoc')),{fils.name})).name})); % find all hoc files
+    if isempty(regexp(outp.StdOut,'morphos/hocs', 'once'))
+        [params.server.connect,~] = sshfrommatlabissue(params.server.connect,sprintf('mkdir %s/%s',params.server.modelfolder,'morphos/hocs'));
+        fils = dir(fullfile(params.path,'morphos/hocs'));  % get files from folder
+        localfilename = cat(2,localfilename,fullfile(params.path,'morphos/hocs',{fils(cellfun(@(x) ~isempty(regexpi(x,'.hoc')),{fils.name})).name})); % find all hoc files
     end
     if isempty(regexp(outp.StdOut,'lib_mech','ONCE'))
         [params.server.connect,~] = sshfrommatlabissue(params.server.connect,sprintf('mkdir %s/lib_mech',params.server.modelfolder));
@@ -263,7 +263,7 @@ out = cell(numel(neuron),1);
 origminterf = cell(numel(tree),1);
 for t = 1:numel(tree)
     if ~isfield(tree{t},'artificial')
-        origminterf{t} = load(fullfile(params.path,params.morphfolder,sprintf('%s_minterf.dat',tree{t}.NID)));
+        origminterf{t} = load(fullfile(params.path,'morphos','hocs',sprintf('%s_minterf.dat',tree{t}.NID)));
     end
 end
 
@@ -634,7 +634,7 @@ for n = 1:numel(neuron)
                 fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
             end
             if ~any(strcmp(templates,tree{thesetrees{n}(tt)}.NID))
-                fprintf(ofile,'io = xopen("%s//%s.hoc")\n',params.morphfolder,tree{thesetrees{n}(tt)}.NID );
+                fprintf(ofile,'io = xopen("%s//%s.hoc")\n','morphos/hocs',tree{thesetrees{n}(tt)}.NID );
                 templates = cat(1,templates,tree{thesetrees{n}(tt)}.NID);
             end
             fprintf(ofile,'cell = new %s()\n', tree{thesetrees{n}(tt)}.NID );

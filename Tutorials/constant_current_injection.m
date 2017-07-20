@@ -11,7 +11,6 @@ params.cvode = 1;
 params.celsius = 24;
 params.nseg = 'd_lambda';
 params.exchfolder = 't2nexchange';  % folder were simulation is written
-params.morphfolder = 'morphos/NEURON_hocs';  % folder for hoc morphology files
 
 g_pas = 0.0001;  % conductance of passive channel
 e_pas = -70;  % e leak
@@ -45,7 +44,7 @@ end
 
 
 %% rewrite tree hocs if necessary ( if morphology changed)
-tree = t2n_writeTrees(tree,params,fullfile(params.morphfolder,treename));
+tree = t2n_writeTrees(tree,params,fullfile('morphos','hocs',treename));
 
 
 %% run simulation and plot stuff

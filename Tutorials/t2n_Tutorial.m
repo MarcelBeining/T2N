@@ -30,7 +30,6 @@ t2n_initModelfolders(pwd);                           % initialize model folder h
 
 params = [];                                         % clear params structure
 params.neuronpath = 'C:/nrn73w64/bin64/nrniv.exe';   % add path to NEURON exe (only necessary for Windows)
-params.morphfolder = 'morphos/testmorphs';           % relative path of where the transformed trees are saved to
 params.v_init = -80;                                 % starting membrane potential [mV] of all cells
 params.dt = 0.025;                                   % integration time step [ms]
 params.tstop = 300;                                  % stop simulation after this (simulation) time [ms]

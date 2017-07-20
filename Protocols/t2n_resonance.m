@@ -171,7 +171,9 @@ end
 
 
 FontResizer
-FigureResizer(ostruct.figureheight,ostruct.figurewidth)
+if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
+    FigureResizer(ostruct.figureheight,ostruct.figurewidth)
+end
 
 if ostruct.newborn
     str = '_newborn';

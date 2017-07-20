@@ -86,12 +86,8 @@ if ~isempty(params)
         end
         params.neuronpath = 'C:/nrn73w64/bin64/nrniv.exe';  % default path to neuron exe
     end
-    if ~isfield(params,'morphfolder') % check for morphology folder
-        if exist(fullfile(nrn_path,'morphos'),'dir')
-            params.morphfolder = 'morphos';
-        else
-            error('Please give morphology folder in params.morphfolder or create standard morphology folder "morphos"');
-        end
+    if ~exist(fullfile(nrn_path,'morphos','hocs'),'dir')
+        mkdir(fullfile(nrn_path,'morphos','hocs'));
     end
     parflag = true;
 else
@@ -120,12 +116,12 @@ for t = 1:numel(tree)
     end
 end
 NIDs = unique(cellfun(@(x) x.NID,tree,'UniformOutput',0));  % improves speed if many same cells are used
-if parflag && (~all(cellfun(@(x) isfield(x,'NID'),tree)) || ~all(cellfun(@(x) exist(fullfile(params.path,params.morphfolder,strcat(x,'.hoc')),'file'),NIDs)))
+if parflag && (~all(cellfun(@(x) isfield(x,'NID'),tree)) || ~all(cellfun(@(x) exist(fullfile(params.path,'morphos','hocs',strcat(x,'.hoc')),'file'),NIDs)))
     answer = questdlg('Caution! Not all of your trees have been transformed for NEURON yet or hoc file is missing! Transforming now..','Transform trees','OK','Cancel','OK');
     if strcmp(answer,'OK')
         ind = cellfun(@(x) ~isfield(x,'NID'),tree) ;
         if ~all(ind)
-            ind(~ind) = ~cellfun(@(x) exist(fullfile(params.path,params.morphfolder,strcat(x.NID,'.hoc')),'file'),tree(~ind));
+            ind(~ind) = ~cellfun(@(x) exist(fullfile(params.path,'morphos','hocs',strcat(x.NID,'.hoc')),'file'),tree(~ind));
         end
         
         tree(ind) = t2n_writeTrees(tree(ind),params,'',options);

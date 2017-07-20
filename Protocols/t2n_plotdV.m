@@ -59,7 +59,9 @@ set(gca,'XTick',-80:40:80)
 ylim([-200 800])
 set(gca,'YTick',-200:200:800)
 FontResizer
-FigureResizer(ostruct.figureheight,ostruct.figurewidth,ostruct)
+if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
+    FigureResizer(ostruct.figureheight,ostruct.figurewidth,ostruct)
+end
 ylabel('')
 tprint(fullfile(targetfolder_results,sprintf('%s-PhasePlotModel',ostruct.savename)),'-pdf')
 figure(fig2(2))
@@ -70,13 +72,17 @@ set(gca,'YTick',-200:200:800)
 
 ylabel('')
 FontResizer
-FigureResizer(ostruct.figureheight,ostruct.figurewidth,ostruct)
+if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
+    FigureResizer(ostruct.figureheight,ostruct.figurewidth,ostruct)
+end
 tprint(fullfile(targetfolder_results,sprintf('%s-PhasePlotModel2',ostruct.savename)),'-pdf')
 
 figure(fig(2))
 errorbar(cstepsSpikingModel*1000,mean(maxdv{2},1),std(maxdv{2},[],1),'Color',modelcol);%/sqrt(size(maxdv{2},1)) )
 FontResizer
-FigureResizer(ostruct.figureheight,ostruct.figurewidth,ostruct)
+if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
+    FigureResizer(ostruct.figureheight,ostruct.figurewidth,ostruct)
+end
 ylabel('Maximal dV/dt [mV/ms]')
 xlabel('current steps [pA]')
 tprint(fullfile(targetfolder_results,sprintf('%s-MaxdV',ostruct.savename)),'-pdf')

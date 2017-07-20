@@ -35,18 +35,11 @@ if ~isfield(params,'path')
 else
     params.path = regexprep(params.path,'\\','/');
 end
-if isfield(params,'morphfolder')
-    morphfolder = fullfile(params.path,params.morphfolder);
-elseif exist(fullfile(params.path,'morphos'),'dir')
-    morphfolder = fullfile(params.path,'morphos');
-else
-    errordlg('Please give morphology folder in "params.morphfolder" or create the standard folder "morphos" using "t2n_init_modelfolders"!');
-    return
-end
+morphfolder = fullfile(params.path,'morphos','hocs');
 
 if strfind(options,'-cl')
     if isfield(params,'morphfolder')
-        nrn_morphfolder = fullfile(params.server.clpath,params.morphfolder);
+        nrn_morphfolder = fullfile(params.server.clpath,'morphos/hocs');
     else
         nrn_morphfolder = nrn_exchfolder;
     end
@@ -57,7 +50,7 @@ else
 end
 nrn_morphfolder = regexprep(nrn_morphfolder,'\\','/');
 
-if ~exist(morphfolder,'file')
+if ~exist(morphfolder,'dir')
     mkdir(morphfolder);
 end
 

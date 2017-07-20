@@ -34,7 +34,7 @@ for t = 1:numel(tree)
     % this part would have been done by t2n anyway, however to avoid
     % loading a lot of redundant values into Matlab, nodes are reduced to
     % the locations were NEURON actually calculates voltage here
-    minterf = load(fullfile(params.path,params.morphfolder,sprintf('%s_minterf.mat',tree{t}.NID)));
+    minterf = load(fullfile(params.path,'morphos','hocs',sprintf('%s_minterf.mat',tree{t}.NID)));
     minterf = t2n_make_nseg(tree{t},minterf.minterf,params,neuron.mech{t});
     inode = zeros(numel(nodes{t}),1);
     for in = 1:numel(nodes{t})
