@@ -1,4 +1,4 @@
-function [tree,params,neuron,thesetrees,usestreesof] = t2n_checkinput(tree,params,neuron,options)
+function [tree,params,neuron,usestreesof] = t2n_checkinput(tree,params,neuron,options)
 % This function checks the neuron structure for correct definition of the
 % used morphologies and returns info about it
 
@@ -12,8 +12,6 @@ function [tree,params,neuron,thesetrees,usestreesof] = t2n_checkinput(tree,param
 % tree              corrected tree cell array
 % params            corrected parameter structure
 % neuron            corrected neuron structure
-% thesetrees        returns for each cell array entry in neuron the index
-%                   to the trees that are used in this neuron instance
 % usestreesof       points to the neuron entry/instance from which the tree
 %                   definitions are taken from
 %
@@ -152,9 +150,6 @@ switch sum(bool)
             if isempty(x) % means it refers to itself (maybe due to usage of t2n_as)..use normal trees..
                 thesetrees = repmat({1:numel(tree)},numel(neuron),1);
                 usestreesof = ones(numel(neuron),1);
-                for n = 1:numel(neuron)
-                    neuron{n}.tree = thesetrees{n};
-                end
             else
                 n = find(bool);
                 flag = true;
@@ -163,9 +158,6 @@ switch sum(bool)
     case 0      % if no trees are given, use trees that are given to t2n in their order...
         thesetrees = repmat({1:numel(tree)},numel(neuron),1);
         usestreesof = ones(numel(neuron),1);
-        for n = 1:numel(neuron)
-            neuron{n}.tree = thesetrees{n};
-        end
     case numel(neuron)
         for n = 1:numel(neuron)
             x = t2n_getref(n,neuron,'tree');
@@ -175,9 +167,6 @@ switch sum(bool)
             elseif isempty(x)
                 thesetrees{n} = 1:numel(tree);%repmat({1:numel(tree)},numel(neuron),1);
                 usestreesof(n) = 1;%ones(numel(neuron),1);
-                %                 for n = 1:numel(neuron)
-                neuron{n}.tree = thesetrees{n};
-                %                 end
             else
                 flag = true;
                 break
@@ -189,6 +178,9 @@ switch sum(bool)
 end
 if flag
     error('Error in neuron{%d}.tree, please check\n',n)
+end
+for n = 1:numel(neuron)
+    neuron{n}.tree = thesetrees{n};
 end
 if ~parflag
     params = [];

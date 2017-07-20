@@ -21,10 +21,10 @@ if numel(node) == 1
     node = repmat(node,numel(tree),1);
 end
 prop = cell(numel(neuron),numel(tree));
-[tree,~,neuron,thesetrees] = t2n_checkinput(tree,[],neuron);
+[tree,~,neuron] = t2n_checkinput(tree,[],neuron);
 for n = 1:numel(neuron)
-    for tt = 1:numel(thesetrees{n})
-        t = thesetrees{n}(tt);
+    for tt = 1:numel(neuron{n}.tree)
+        t = neuron{n}.tree(tt);
         if isfield(neuron{n},'mech')
             if isfield(neuron{n}.mech{tt},'all')   % variable was set in all nodes
                 prop{n,t} = neuron{n}.mech{tt}.all;
