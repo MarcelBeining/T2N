@@ -1,4 +1,4 @@
-function [varargout] = t2n_getMech(tree,neuron,var,params)
+function [varargout] = t2n_getMech(tree,neuron,var)
 % This function maps the values of a given NEURON variable onto each
 % morpholgy and optionally returns these values, too;
 % INPUT
@@ -6,8 +6,6 @@ function [varargout] = t2n_getMech(tree,neuron,var,params)
 % neuron    t2n neuron structure or cell array of structure (see
 %           documentation)
 % var       string with valid NEURON variable name, such as 'g_pas'
-% params   (optional) the parameter structure used in t2n, which is then
-%           used to search for the mod file of the mechanism
 %
 % OUTPUT
 % varVec    m-by-n cell array with mapped values for m neuron
@@ -34,9 +32,9 @@ varSplit = regexp(var,'_','split');  % split variable into mechanism name and va
 varVec = cell(numel(neuron),numel(tree));
 
 stdval = NaN;
-if nargin > 3 && isfield(params,'path') && exist(fullfile(params.path,'lib_mech',sprintf('%s.mod',mech)),'file')  % check if mod file of mechanism exists
+if nargin > 3 && exist(fullfile(pwd,'lib_mech',sprintf('%s.mod',mech)),'file')  % check if mod file of mechanism exists
     % read everything
-    fid  = fopen(fullfile(params.path,'lib_mech',sprintf('%s.mod',mech)),'r');
+    fid  = fopen(fullfile(pwd,'lib_mech',sprintf('%s.mod',mech)),'r');
     text = textscan(fid,'%s','Delimiter','');
     text = text{1};
     fclose(fid);
@@ -95,7 +93,7 @@ for n = 1:numel(neuron) % go through all neuron definitions
             end
         end
         if any(isinf(varVec{n,t}))
-            warning('Caution! Values of %s seem to have not been defined at some nodes! NEURON uses the mechanisms default value (for which t2n_getMech needs the additional ''params'' input), hence these values cannot be displayed.',var)
+            warning('Caution! Values of %s seem to have not been defined at some nodes! NEURON uses the mechanisms default value.',var)
             varVec{n,t}(isinf(varVec{n,t})) = NaN;
         end
         if nargout == 0  % map values on tree

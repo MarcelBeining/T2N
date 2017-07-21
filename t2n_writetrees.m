@@ -1,16 +1,18 @@
-function tree = t2n_writeTrees(tree,params,savepath,options)
+function tree = t2n_writeTrees(tree,tname,savepath,options,server)
 % This transforms the tree file into hoc code and also saves a interface file
 % for correct node-section assignment
 %
 % INPUTS
 % tree              tree cell array with morphologies (see documentation)
-% params            t2n parameter structure (see documentation)
+% tname             (optional) name after which all tree files will be
+%                   named (with counting)
 % savepath          (optional) if this file destination string is given, the
 %                   function does not have to ask for it via gui
 % options           string with optional arguments (can be concatenated):
 %                   -d: Debug mode. The duration of writing hocs is shown
 %                   -w: Waitbar showing the progress
 %                   %deactived for the moment: -cl: Cluster mode. Files are written to Server
+% server            (optional for cluster mode) server structure
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
@@ -30,21 +32,12 @@ end
 if size(tree,1) ~= numel(tree)  % check for correct 1st dimension 
     tree = tree';
 end
-if ~isfield(params,'path')
-    params.path = regexprep(pwd,'\\','/');
-else
-    params.path = regexprep(params.path,'\\','/');
-end
-morphfolder = fullfile(params.path,'morphos','hocs');
+morphfolder = fullfile(pwd,'morphos','hocs');
 
 if strfind(options,'-cl')
-    if isfield(params,'morphfolder')
-        nrn_morphfolder = fullfile(params.server.clpath,'morphos/hocs');
-    else
-        nrn_morphfolder = nrn_exchfolder;
-    end
-    
-    sshfrommatlabissue(params.server.connect,sprintf('mkdir -p %s',nrn_morphfolder));
+    nrn_morphfolder = fullfile(server.clpath,'morphos/hocs');
+
+    sshfrommatlabissue(server.connect,sprintf('mkdir -p %s',nrn_morphfolder));
 else
     nrn_morphfolder = morphfolder;
 end
@@ -75,8 +68,8 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         end
     end
     nonameflag = false;
-    if ~artflag(t) && isfield(params,'tname') && ischar(params.tname) && ~isempty(params.tname)
-        treename = params.tname;
+    if ~artflag(t) && exist('tname','var') && ischar(tname) && ~isempty(tname)
+        treename = tname;
         countupflag = true;
     elseif artflag(t) && ~isfield(tree{t},'name')
         treename = tree{t}.artificial;
@@ -109,7 +102,7 @@ for t=1:numel(tree)     % make neuron templates from trees and save/get minterfa
         treename = sprintf('%s_%d',treename,t);
     end
 %     if strfind(options,'-cl')
-%         [params.server.connect, answer] = sshfrommatlabissue(params.server.connect,sprintf('ls %s/%s.hoc',nrn_morphfolder,treename));
+%         [server.connect, answer] = sshfrommatlabissue(server.connect,sprintf('ls %s/%s.hoc',nrn_morphfolder,treename));
 %         fchk =  ~isempty(answer{1});
 %     else
 %         fchk = exist(fullfile(morphfolder,sprintf('%s.hoc',treename)),'file');
@@ -119,11 +112,11 @@ if any(t == indWrite)  % inly rewrite artificial trees once
     neuron_template_tree (tree{t}, fullfile(morphfolder,sprintf('%s.hoc',treename)), '-m');
     
     if strfind(options,'-cl')   %transfer files to server
-        params.server.connect = sftpfrommatlab(params.server.connect,fullfile(morphfolder,sprintf('%s.hoc',oname)),sprintf('%s/%s.hoc',nrn_morphfolder,oname));
+        server.connect = sftpfrommatlab(server.connect,fullfile(morphfolder,sprintf('%s.hoc',oname)),sprintf('%s/%s.hoc',nrn_morphfolder,oname));
         pause(0.1)
-        params.server.connect = sftpfrommatlab(params.server.connect,fullfile(morphfolder,sprintf('%s_minterf.dat',oname)),sprintf('%s/%s_minterf.dat',nrn_morphfolder,oname));
+        server.connect = sftpfrommatlab(server.connect,fullfile(morphfolder,sprintf('%s_minterf.dat',oname)),sprintf('%s/%s_minterf.dat',nrn_morphfolder,oname));
         pause(0.1)
-        params.server.connect = sftpfrommatlab(params.server.connect,fullfile(morphfolder,sprintf('%s_minterf.mat',oname)),sprintf('%s/%s_minterf.mat',nrn_morphfolder,oname));
+        server.connect = sftpfrommatlab(server.connect,fullfile(morphfolder,sprintf('%s_minterf.mat',oname)),sprintf('%s/%s_minterf.mat',nrn_morphfolder,oname));
     end
 end
     tree{t}.NID = treename;

@@ -1,4 +1,4 @@
-function minterf = t2n_make_nseg(tree,minterf,params,mech)
+function minterf = t2n_make_nseg(tree,minterf,par,mech)
 % calculates at which position of the neuron there will be a segment node in NEURON
 % dlambda does the same as the d_lambda procedure in NEURON
 % necessary to find nearest segment which will be calculated
@@ -7,7 +7,7 @@ function minterf = t2n_make_nseg(tree,minterf,params,mech)
 % tree: TREES toolbox tree cell array
 % minterf: Nx3 mapping matrix created by neuron_template_tree (in morphology
 % folder)
-% params: T2N parameter structure
+% par: T2N neuron.params structure
 % mech: T2N mech structure from the T2N neuron structure
 % OUTPUT
 % minterf: updated mapping matrix with 4th column showing the real segment node locations
@@ -17,25 +17,25 @@ function minterf = t2n_make_nseg(tree,minterf,params,mech)
 dodlambda = 0;
 doeach = 0;
 
-if ischar(params.nseg)
+if ischar(par.nseg)
     %     pl = Pvec_tree(tree);  % path length of tree..
     len = len_tree(tree);
     idpar = idpar_tree(tree);
     
-    if strcmpi(params.nseg,'dlambda')
+    if strcmpi(par.nseg,'dlambda')
         dodlambda = 1;
         
         D =  tree.D;
         freq = 100;
         
-        if isfield(params,'d_lambda')
-            d_lambda = params.d_lambda;
+        if isfield(par,'d_lambda')
+            d_lambda = par.d_lambda;
         else
             
             d_lambda = 0.1;
         end
-    elseif ~isempty(strfind(params.nseg,'ach')) % check for "each"
-        each = double(cell2mat(textscan(params.nseg,'%*s %d'))); % get number
+    elseif ~isempty(strfind(par.nseg,'ach')) % check for "each"
+        each = double(cell2mat(textscan(par.nseg,'%*s %d'))); % get number
         doeach = 1;
     end
     
@@ -107,11 +107,11 @@ for sec = 0:max(minterf(:,2))  %go through all sections
             nseg = floor(L/each)+1;
         end
     else
-        nseg = params.nseg;
+        nseg = par.nseg;
     end
     %     fprintf('%d\n',nseg);
-    if isfield(params,'accuracy')
-        if params.accuracy == 2 || (params.accuracy == 1 && (~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'axon')) || ~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'soma'))) ) %triple nseg if accuracy is necessary also finds axonh
+    if isfield(par,'accuracy')
+        if par.accuracy == 2 || (par.accuracy == 1 && (~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'axon')) || ~isempty(strfind(tree.rnames(tree.R(minterf(secend))),'soma'))) ) %triple nseg if accuracy is necessary also finds axonh
             nseg = 3 * nseg;
         end
     end

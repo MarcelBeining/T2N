@@ -1,4 +1,4 @@
-function [Rin, tau, cap, Vrest] = t2n_passTests(neuron,tree,params,targetfolder,ostruct)
+function [Rin, tau, cap, Vrest] = t2n_passTests(neuron,tree,targetfolder,ostruct)
 % caution! ostruct.recordnode is vector giving each tree the location where
 % to record!
 
@@ -29,17 +29,17 @@ if isfield(ostruct,'show') && ~any(ostruct.show == 0)
 else
     options = '';
 end
-params.prerun = 1500;
+neuron.params.prerun = 1500;
 del = 100;
 
-params.tstart = 0;
+neuron.params.tstart = 0;
 
-params.cvode=0;
+neuron.params.cvode=0;
 switch ostruct.passtest
     case 'Mongiat'
         Vh = -70-12.1;  % LJP corrected
         dur = 100;
-%         params.cvode = 1;
+%         neuron.params.cvode = 1;
         amp = -10; %mV for cap and Rin Mongiat 2009
         for t = 1:numel(tree)
             neuron.pp{t}.SEClamp = struct('node',stimnode(t),'times',[-100, del, del+dur],'amp', [Vh Vh+amp Vh],'rs',15); 
@@ -48,7 +48,7 @@ switch ostruct.passtest
     case 'Mongiat2'
         dur = 500;
         amp = -0.01  ;      % 10pA for tau...Mongiat 2009
-        [hstep, Vrest] = t2n_findCurr(tree,params,neuron,-80-12.1);  % LJP corrected
+        [hstep, Vrest] = t2n_findCurr(tree,neuron,-80-12.1);  % LJP corrected
         for t = 1:numel(tree)
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));
@@ -56,7 +56,7 @@ switch ostruct.passtest
     case 'Std'
         dur = 500;
         amp = -0.01  ;      % 10pA for tau...Mongiat 2009
-        [hstep, Vrest] = t2n_findCurr(tree,params,neuron,-80);
+        [hstep, Vrest] = t2n_findCurr(tree,neuron,-80);
         for t = 1:numel(tree)
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));
@@ -64,7 +64,7 @@ switch ostruct.passtest
     case 'Mehranfard'
         dur = 300;
         amp = -0.05  ;      % -50pA Meranfahrd 2015
-        [hstep, Vrest] = t2n_findCurr(tree,params,neuron,-70);
+        [hstep, Vrest] = t2n_findCurr(tree,neuron,-70);
         for t = 1:numel(tree)
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));
@@ -80,15 +80,15 @@ switch ostruct.passtest
     case 'Brenner'
         dur = 1000;
         amp = -0.02  ;      % -20pA Brenner 2005 from holding pot of -80mV
-        [hstep, Vrest] = t2n_findCurr(tree,params,neuron,-80);
+        [hstep, Vrest] = t2n_findCurr(tree,neuron,-80);
         for t = 1:numel(tree)
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));
         end
 end
-params.tstop = 500+2*dur;
-params.dt = 2;
-[out, ~] = t2n(tree,params,neuron,'-q-d');
+neuron.params.tstop = 500+2*dur;
+neuron.params.dt = 2;
+[out, ~] = t2n(tree,neuron,'-q-d');
 fitstart = del+dur+2;
 if ~isempty(strfind(options,'-s'))
     figure, hold on
@@ -102,8 +102,8 @@ end
 switch ostruct.passtest
     case 'Mongiat'
         for t = 1:numel(tree)
-            I0 = mean(out.record{t}.SEClamp.i{recordnode(t)}(1:del/params.dt+1)); 
-            is = out.record{t}.SEClamp.i{recordnode(t)}((del+dur)/params.dt+1);
+            I0 = mean(out.record{t}.SEClamp.i{recordnode(t)}(1:del/neuron.params.dt+1)); 
+            is = out.record{t}.SEClamp.i{recordnode(t)}((del+dur)/neuron.params.dt+1);
             if ~isfield(ostruct,'capacitance') || ostruct.capacitance == 1
                 y = out.record{t}.SEClamp.i{recordnode(t)}(sign(amp)*out.record{t}.SEClamp.i{recordnode(t)} > sign(amp)*is)-is;
                 x = out.t(sign(amp)*out.record{t}.SEClamp.i{recordnode(t)} > sign(amp)*is);
@@ -121,18 +121,18 @@ switch ostruct.passtest
 
     case {'SH','Mongiat2','Brenner','Mehranfard','Std'}
         for t = 1:numel(tree)
-            V0 = mean(out.record{t}.cell.v{recordnode(t)}(1:del/params.dt+1));  %mV  only works with prerun
+            V0 = mean(out.record{t}.cell.v{recordnode(t)}(1:del/neuron.params.dt+1));  %mV  only works with prerun
             v0(t) = V0;
             
-            Vs = out.record{t}.cell.v{recordnode(t)}((del+dur)/params.dt+1); %mV   sensitive to noise since no mean
+            Vs = out.record{t}.cell.v{recordnode(t)}((del+dur)/neuron.params.dt+1); %mV   sensitive to noise since no mean
             vs(t) = Vs;
             Rin(t) = (Vs-V0)/(amp);  % MOhm
             
-            xend = find(fu(out.record{t}.cell.v{recordnode(t)}((del+dur)/params.dt+1:end) , (Vs-V0)*0.1+V0),1,'first');  % take trace from current release until decay has reached 10% of max amplitude
-            [a,~] = polyfit(out.t((fitstart)/params.dt+1:(fitstart)/params.dt+xend),log(sign(amp)*out.record{t}.cell.v{recordnode(t)}((fitstart)/params.dt+1:(fitstart)/params.dt+xend)-sign(amp)*V0),1);
+            xend = find(fu(out.record{t}.cell.v{recordnode(t)}((del+dur)/neuron.params.dt+1:end) , (Vs-V0)*0.1+V0),1,'first');  % take trace from current release until decay has reached 10% of max amplitude
+            [a,~] = polyfit(out.t((fitstart)/neuron.params.dt+1:(fitstart)/neuron.params.dt+xend),log(sign(amp)*out.record{t}.cell.v{recordnode(t)}((fitstart)/neuron.params.dt+1:(fitstart)/neuron.params.dt+xend)-sign(amp)*V0),1);
             if ~isempty(strfind(options,'-s'))
                 yf = NaN(1,numel(out.t));
-                yf((fitstart)/params.dt+1:end) = sign(amp)*exp(out.t((fitstart)/params.dt+1:end) * a(1) +a(2))+V0;
+                yf((fitstart)/neuron.params.dt+1:end) = sign(amp)*exp(out.t((fitstart)/neuron.params.dt+1:end) * a(1) +a(2))+V0;
                 hold all
                 if numel(tree) == t
                     xlabel('Time [ms]')

@@ -1,11 +1,10 @@
-function t2n_currsteps(neuron,tree,params,targetfolder_data,ostruct)
+function t2n_currsteps(neuron,tree,targetfolder_data,ostruct)
 % This function performs one or multiple current steps in the cells given
 % by "tree" and "neuron" and saves the results in a mat file named
 % according to neuron.experiment.
 % INPUTS
 % neuron            t2n neuron structure with already defined mechanisms
 % tree              tree cell array with morphologies
-% params            t2n parameter structure
 % targetfolder_data destination of temporary results file
 % ostruct           structure with fields defining the curr step simulation
 %                   amp     vector with amplitudes [nA]
@@ -51,22 +50,22 @@ if ~isfield(ostruct,'delay')
     ostruct.delay = 55.5;  % standard current steps 0-90 pA
 end
 
-params.accuracy = 1;  % for more nseg in axon and soma!
+neuron.params.accuracy = 1;  % for more nseg in axon and soma!
 
 if isfield(ostruct,'coarse') && ostruct.coarse == 1
-    params.nseg = 1;
-    params.dt=0.1;  % does only count if cvode = 0
+    neuron.params.nseg = 1;
+    neuron.params.dt=0.1;  % does only count if cvode = 0
 elseif isfield(ostruct,'coarse') && ostruct.coarse == 0.5
-    params.dt=0.05;  % does only count if cvode = 0
+    neuron.params.dt=0.05;  % does only count if cvode = 0
 else
-    params.dt=0.025;  % does only count if cvode = 0
+    neuron.params.dt=0.025;  % does only count if cvode = 0
 end
 cstepsSpikingModel = ostruct.amp;  % 0:5:120
 
-params.tstop = 150+ostruct.delay+ostruct.duration;
+neuron.params.tstop = 150+ostruct.delay+ostruct.duration;
 
 if isfield(ostruct,'holding_voltage') && ~isnan(ostruct.holding_voltage)
-    hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
+    hstep = t2n_findCurr(tree,neuron,ostruct.holding_voltage,[],'-q-d');
 else
     hstep = zeros(1,numel(tree));
 end
@@ -89,13 +88,13 @@ end
 nneuron = t2n_as(1,nneuron);
 
 if ostruct.find_freq > 0
-    amp = t2n_findFreq(tree,params,nneuron{1},ostruct.find_freq,'-q-d');
+    amp = t2n_findFreq(tree,nneuron{1},ostruct.find_freq,'-q-d');
     for t = 1:numel(tree)
         nneuron{1}.pp{t}.IClamp.amp = [hstep(t) amp(t) hstep(t)]; %n,del,dur,amp  %WICHTIG! nur amp da hstep nicht abgezogen
     end
 end
 
-out = t2n(tree,params,nneuron,'-q-d-w'); % run simulations
+out = t2n(tree,nneuron,'-q-d-w'); % run simulations
 
 numspikes = zeros(numel(tree),numel(cstepsSpikingModel));
 voltVec = cell(numel(tree),numel(cstepsSpikingModel));
@@ -115,4 +114,4 @@ for s = 1:numel(cstepsSpikingModel)
     end
 end
 
-save(fullfile(targetfolder_data,sprintf('Exp_Spiking_%s.mat',neuron.experiment)),'voltVec','timeVec','numspikes','params','cstepsSpikingModel','tree','nneuron')
+save(fullfile(targetfolder_data,sprintf('Exp_Spiking_%s.mat',neuron.experiment)),'voltVec','timeVec','numspikes','cstepsSpikingModel','tree','nneuron')

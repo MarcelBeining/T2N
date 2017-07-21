@@ -1,4 +1,4 @@
-function [maxdv,fig] = t2n_plotdV(targetfolder_data,targetfolder_results,neuron,params,ostruct)
+function [maxdv,fig] = t2n_plotdV(targetfolder_data,targetfolder_results,neuron,ostruct)
 checkthis = 90;
 load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment,'.mat'))
 
@@ -18,7 +18,7 @@ for ss = 1:size(voltVec,2)
         subplot(floor(sqrt(size(voltVec,2))),ceil(sqrt(size(voltVec,2))),ss)
         hold all
         thisv = squeeze(voltVec{f,ss});
-        maxdv{2}(f,ss) = max(diff(thisv,1,1))/params.dt;
+        maxdv{2}(f,ss) = max(diff(thisv,1,1))/neuron.params.dt;
         ind = find(voltVec{f,ss}>0,1,'first');  % find first AP
         
         thist = squeeze(timeVec{f,ss});
@@ -30,14 +30,14 @@ for ss = 1:size(voltVec,2)
             ind = find(thist >= thist(ind)+5,1,'first'); % first spike should be finished within ~6ms
             linstyl = ':';
         end
-        plot(thisv(ind+1:end),diff(thisv(ind:end),1,1)./params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle',linstyl);%,'Color',colorme(tree{f}.col{1},'brighter'))
+        plot(thisv(ind+1:end),diff(thisv(ind:end),1,1)./neuron.params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle',linstyl);%,'Color',colorme(tree{f}.col{1},'brighter'))
         if ind ~=1
-            p(f) = plot(thisv(2:ind),diff(thisv(1:ind),1,1)./params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle','-');
+            p(f) = plot(thisv(2:ind),diff(thisv(1:ind),1,1)./neuron.params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle','-');
         end
         if cstepsSpikingModel(ss) == checkthis/1000
-            plot(ax(5),thisv(ind+1:end),diff(thisv(ind:end),1,1)./params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle',linstyl);%,'Color',colorme(tree{f}.col{1},'brighter'))
+            plot(ax(5),thisv(ind+1:end),diff(thisv(ind:end),1,1)./neuron.params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle',linstyl);%,'Color',colorme(tree{f}.col{1},'brighter'))
             if ind ~=1
-                p(f) = plot(ax(4),thisv(2:ind),diff(thisv(1:ind),1,1)./params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle','-');
+                p(f) = plot(ax(4),thisv(2:ind),diff(thisv(1:ind),1,1)./neuron.params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle','-');
             end
         end
         xlim([-80 80])

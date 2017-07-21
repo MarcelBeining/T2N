@@ -1,11 +1,11 @@
-function [imp,freq] = t2n_resonance(amp,params,neuron,tree,ostruct,targetfolder_results)
+function [imp,freq] = t2n_resonance(amp,neuron,tree,ostruct,targetfolder_results)
 if ~isfield(ostruct,'errorbar')
     ostruct.errorbar = 0;
 end
 
 
-tvec=0:params.dt:params.tstop;
-freq = (0.5*(tvec+params.dt)/(1000));
+tvec=0:neuron.params.dt:neuron.params.tstop;
+freq = (0.5*(tvec+neuron.params.dt)/(1000));
 vec = sin(2*pi*tvec.*freq/1000) * amp;
 figure;plot(tvec/1000,freq)
 xlabel('time [s]')
@@ -18,14 +18,14 @@ ylabel('Impedance [M\Omega]')
 
 
 
-hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
+hstep = t2n_findCurr(tree,neuron,ostruct.holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
     neuron.record{t}.cell = struct('node',1,'record','v');
 end
 % neuron_orig = neuron;
-out = t2n(tree,params,neuron,'-q-d-w');
+out = t2n(tree,neuron,'-q-d-w');
 if any(cellfun(@(x) any(x.cell.v{1}>-30),out.record))
     warning('Caution! Spike was elicited!')
 end
@@ -58,12 +58,12 @@ end
 % %         end
 %     end
 % end
-% hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
+% hstep = t2n_findCurr(tree,neuron,ostruct.holding_voltage,[],'-q-d');
 % for t = 1:numel(tree)
 %     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
 %     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
 % end
-% out = t2n(tree,params,neuron,'-q-d-w');
+% out = t2n(tree,neuron,'-q-d-w');
 % if any(out.record{t}.cell.v{1}>-30)
 %     warndlg('Caution! Spike was elicited!')
 % end
@@ -93,12 +93,12 @@ end
 %         end
 %     end
 % end
-% hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
+% hstep = t2n_findCurr(tree,neuron,ostruct.holding_voltage,[],'-q-d');
 % for t = 1:numel(tree)
 %     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
 %     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
 % end
-% out = t2n(tree,params,neuron,'-q-d-w');
+% out = t2n(tree,neuron,'-q-d-w');
 % if any(out.record{t}.cell.v{1}>-30)
 %     warndlg('Caution! Spike was elicited!')
 % end
@@ -120,12 +120,12 @@ end
 % 
 
 neuron = t2n_blockchannel(neuron,'Kir21',100);
-hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
+hstep = t2n_findCurr(tree,neuron,ostruct.holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
 end
-out = t2n(tree,params,neuron,'-q-d-w');
+out = t2n(tree,neuron,'-q-d-w');
 if any(cellfun(@(x) any(x.cell.v{1}>-30),out.record))
     warning('Caution! Spike was elicited!')
 end
@@ -145,12 +145,12 @@ else
 end
 
 neuron = t2n_blockchannel(neuron,'HCN',100);
-hstep = t2n_findCurr(tree,params,neuron,ostruct.holding_voltage,[],'-q-d');
+hstep = t2n_findCurr(tree,neuron,ostruct.holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
 end
-out = t2n(tree,params,neuron,'-q-d-w');
+out = t2n(tree,neuron,'-q-d-w');
 if any(cellfun(@(x) any(x.cell.v{1}>-30),out.record))
     warning('Caution! Spike was elicited!')
 end
@@ -180,10 +180,10 @@ if ostruct.newborn
 else
     str = '';
 end
-save(sprintf('%s%s%s_Resonance.mat',targetfolder_results,params.tname,str));
+save(sprintf('%s%s%s_Resonance.mat',targetfolder_results,tree{1}.name,str));
 
 if isfield(ostruct,'savename') && ~isempty(ostruct.savename)
     tprint(fullfile(targetfolder_results,ostruct.savename),'-pdf');
 else
-    tprint(fullfile(targetfolder_results,sprintf('Fig5-Resonance_%s%s',params.tname,str)),'-pdf');
+    tprint(fullfile(targetfolder_results,sprintf('Fig5-Resonance_%s%s',tree{1}.name,str)),'-pdf');
 end

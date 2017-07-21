@@ -28,15 +28,14 @@ axis off
 
 t2n_initModelfolders(pwd);                           % initialize model folder hierarchy in current folder
 
-params = [];                                         % clear params structure
-params.neuronpath = 'C:/nrn73w64/bin64/nrniv.exe';   % add path to NEURON exe (only necessary for Windows)
-params.v_init = -80;                                 % starting membrane potential [mV] of all cells
-params.dt = 0.025;                                   % integration time step [ms]
-params.tstop = 300;                                  % stop simulation after this (simulation) time [ms]
-params.prerun = -400;                                % add a pre runtime [ms] to let system settle
-params.celsius = 10;                                 % temperature [celsius]
-params.nseg = 'dlambda';                             % the dlambda rule is used to set the amount of segments per section. Alternatively, a fixed number can be entered or a string 'EachX' with X being the interval between segments [micron]
-params.accuracy = 0;                                 % optional argument if number of segments should be increased in the soma and axon
+neuron = [];                                                                % clear neuron structure
+neuron.params.v_init = -80;                                 % starting membrane potential [mV] of all cells
+neuron.params.dt = 0.025;                                   % integration time step [ms]
+neuron.params.tstop = 300;                                  % stop simulation after this (simulation) time [ms]
+neuron.params.prerun = -400;                                % add a pre runtime [ms] to let system settle
+neuron.params.celsius = 10;                                 % temperature [celsius]
+neuron.params.nseg = 'dlambda';                             % the dlambda rule is used to set the amount of segments per section. Alternatively, a fixed number can be entered or a string 'EachX' with X being the interval between segments [micron]
+neuron.params.accuracy = 0;                                 % optional argument if number of segments should be increased in the soma and axon
 
 % now we set the t2n neuron structure which defines all mechanisms, point
 % processes, synapses, connections recordings, protocols etc. that should
@@ -46,7 +45,6 @@ params.accuracy = 0;                                 % optional argument if numb
 % folder from which it can be compiled by t2n. 'neuron' is a Matlab structure 
 % if a single simulation should be run 
 
-neuron = [];                                                                % clear neuron structure
 for t = 1:numel(tree)                                                       % loop though all morphologies (is one when using sample_tree)
     neuron.mech{t}.all.pas = struct('g',0.0003,'Ra',100,'e',-80,'cm',1);    % add passive channel to all regions and define membrane capacity [µF/cm²], cytoplasmic resistivity [Ohm cm] and e_leak [mV]
     % alternatively to the compact code above, one can define each
@@ -63,7 +61,7 @@ end
 
 tree = tree(1);                                                              % for simplicity, only one tree is looked at (if several exist at all)
 
-tree = t2n_writeTrees(tree,params,fullfile(pwd,'test.mtr'));                 % transform tree to NEURON morphology (.hoc file). This only has to be done once for each morphology
+tree = t2n_writeTrees(tree,[],fullfile(pwd,'test.mtr'));                 % transform tree to NEURON morphology (.hoc file). This only has to be done once for each morphology
 %% Tutorial 1 - simulation protocol: somatic current injection
 % Now we want to do a simple somatic current injection, execute neuron and plot 
 % the result. In order that we do not have to rerun the upper sections each time, 
@@ -77,7 +75,7 @@ nneuron = neuron;                                                           % co
 nneuron.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[0.6 0]);     % add a current clamp electrode to the first node and define stimulation times [ms] and amplitudes [nA]
 nneuron.record{1}.IClamp = struct('node',1,'record','i');                   % record the current of the IClamp just for visualization
 
-out = t2n(tree,params,nneuron,'-w-q');                                      % execute t2n and receive output
+out = t2n(tree,nneuron,'-w-q');                                      % execute t2n and receive output
 %% 
 % After execution of t2n we can plot the results. T2N returns all recordings 
 % that had previously been defined. We can access them in out.record{1} where 
@@ -88,7 +86,7 @@ out = t2n(tree,params,nneuron,'-w-q');                                      % ex
 % comes the name of the recorded variable and the index to the node at which the 
 % variable has been recorded or the corresponding point process had been placed  
 % (e.g. v{1} for the voltage at the first node). The time vector can be found 
-% in out.t and fits to all recordings, except if the options params.local_dt has 
+% in out.t and fits to all recordings, except if the options neuron.params.local_dt has 
 % been used which allows NEURON to use different time steps for different trees. 
 % In that case out.t is a cell array of vectors.
 
@@ -96,13 +94,13 @@ figure;
 subplot(2,1,1)                                                              % make a subplot in the figure
 plot(out.t,out.record{1}.cell.v{1})                                         % plot recorded somatic voltage (time vs voltage)
 ylim([-90,50])
-xlim([0,params.tstop])
+xlim([0,neuron.params.tstop])
 ylabel('Membrane potential [mV]')
 xlabel('Time [ms]')
 subplot(2,1,2)                                                              % make another subplot in the figure
 plot(out.t,out.record{1}.IClamp.i{1})                                       % plot electrode current (time vs current)
 ylim([0,1])
-xlim([0,params.tstop])
+xlim([0,neuron.params.tstop])
 ylabel('Injected current [nA]')
 %% Tutorial 2 - simulation protocol: Do several simulations with different injected current amplitudes
 % Now we learn something about the real strength of t2n: It can execute simulations 
@@ -142,7 +140,7 @@ nneuron = t2n_as(1,nneuron);                                                    
 % in each simulation and uses the hoc code about morphology,  recordings and mechanisms 
 % from the first simulation
 
-out = t2n(tree,params,nneuron,'-w-q');                                              % execute t2n
+out = t2n(tree,nneuron,'-w-q');                                              % execute t2n
 
 %% 
 % Now we can plot the recorded somatic voltages for each current step
@@ -166,7 +164,7 @@ nneuron.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[0.6 0]);   % defi
 times = [52 53 54 55];                                                    % define some time points at which the voltage should be mapped
 nneuron.record{1}.cell.node = 1:numel(tree{1}.X);                         % use already defined recording but modify it to record from all nodes of the tree
 warning off 
-out = t2n(tree,params,nneuron,'-w-q');                                    % execute t2n
+out = t2n(tree,nneuron,'-w-q');                                    % execute t2n
 warning on
 %% 
 % The plot_tree function of the TREES toolbox allows handing over a vector  
@@ -201,7 +199,7 @@ end
 nneuron{1}.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[0.6 0]);    % again define the IClamp only for first instance...
 nneuron = t2n_as(1,nneuron);                                                  % ... and let t2n use it for the rest
 
-out = t2n(tree,params,nneuron,'-w-q');   % execute t2n
+out = t2n(tree,nneuron,'-w-q');   % execute t2n
 
 % plot the result
 figure; hold all
@@ -231,7 +229,7 @@ nneuron.pp{1}.AlphaSynapse = struct('node',synIDs,'gmax',0.01,'onset',20);% add 
 nneuron.record{1}.cell.node = cat(1,1,synIDs);                            % record somatic voltage and voltage at synapse
 nneuron.record{1}.AlphaSynapse = struct('node',synIDs,'record','i');      % record synaptic current
 
-out = t2n(tree,params,nneuron,'-w-q');              % execute t2n
+out = t2n(tree,nneuron,'-w-q');              % execute t2n
 
 % plot the result (Vmem at soma and synapse and synaptic current)
 figure;
@@ -258,7 +256,7 @@ xlabel('Time [ms]')
 % defined in the tree structure and is quite simple to define:
 
 tree{2} = struct('artificial','NetStim','params',struct('start',10,'interval',15,'number',10)); % add a NetStim as an artificial cell and define the start (10 ms) the interval (15 ms) and the number (10) of spikings
-tree = t2n_writeTrees(tree,params,fullfile(pwd,'test.mtr'));                                    % tree morphologies are rewritten because this NetStim might be not written yet
+tree = t2n_writeTrees(tree,[],fullfile(pwd,'test.mtr'));                                    % tree morphologies are rewritten because this NetStim might be not written yet
 
 nneuron = neuron;                                                         % copy standard neuron structure
 plen = Pvec_tree(tree{1});                                                % get path length to soma at each node of morphology
@@ -268,7 +266,7 @@ nneuron.record{1}.cell.node = cat(1,1,synIDs);                            % reco
 nneuron.record{1}.Exp2Syn = struct('node',synIDs,'record','i');           % record synaptic current
 nneuron.con(1) = struct('source',struct('cell',2),'target',struct('cell',1,'pp','Exp2Syn','node',synIDs),'delay',0,'threshold',0.5,'weight',0.1);  % connect the NetStim (cell 2) with the target (point process Exp2Syn of cell 1 at node specified in synIDs), and add threshold/weight and delay of the connection (NetStim parameters)
 
-out = t2n(tree,params,nneuron,'-w-q');                                    % execute t2n
+out = t2n(tree,nneuron,'-w-q');                                    % execute t2n
 
 % plot the result (Vmem at soma and synapse and synaptic current)
 figure;
@@ -293,7 +291,7 @@ xlabel('Time [ms]')
 
 tree{2} = struct('artificial','NetStim','params',struct('start',20,'interval',15,'number',10)); % add a NetStim as an artificial cell and define the start (10 ms) the interval (15 ms) and the number (10) of spikings
 tree{3} = struct('artificial','IntFire2','params',struct('taus',15)); % add a NetStim as an artificial cell and define the start (10 ms) the interval (15 ms) and the number (10) of spikings
-tree = t2n_writeTrees(tree,params,fullfile(pwd,'test.mtr'));                                    % tree morphologies are rewritten because this NetStim might be not written yet
+tree = t2n_writeTrees(tree,[],fullfile(pwd,'test.mtr'));                                    % tree morphologies are rewritten because this NetStim might be not written yet
 
 nneuron = neuron;                                                         % copy standard neuron structure
 plen = Pvec_tree(tree{1});                                                % get path length to soma at each node of morphology
@@ -309,7 +307,7 @@ nneuron.con(2) = struct('source',struct('cell',2),'target',struct('cell',3),'del
 % nneuron.con(2) = struct('source',struct('cell',1,'node',1),'target',struct('cell',3),'delay',0,'threshold',0.5,'weight',1);  % connect the real cell with the inhibitory cell to create a feed-back inhibitory loop, and add threshold/weight and delay of the connection (NetStim parameters)
 nneuron.con(3) = struct('source',struct('cell',3),'target',struct('cell',1,'pp','Exp2Syn','node',synIDsInh),'delay',3,'threshold',0.5,'weight',0.3);  % connect the inhibitory cell with the target (point process Exp2Syn of cell 1 at node specified in synIDsInh), and add threshold/weight and delay of the connection (NetStim parameters)
 
-out = t2n(tree,params,nneuron,'-w-q');                                    % execute t2n
+out = t2n(tree,nneuron,'-w-q');                                    % execute t2n
 
 % plot the result (Vmem at soma and synapse and synaptic current)
 figure;

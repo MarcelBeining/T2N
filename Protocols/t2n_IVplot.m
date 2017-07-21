@@ -7,7 +7,7 @@ if ~isfield(ostruct,'subtract_hv')
     ostruct.subtract_hv = 0;
 end
 
-load(loadingfile,'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','params','vstepsModel','tree')
+load(loadingfile,'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree')
 
 amp = [-10,10];
 capm = zeros(2,numel(tree));

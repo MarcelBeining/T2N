@@ -2,15 +2,12 @@
 % equip the TREES sample_tree with the HH mechanism in nodes that have a branch order < 2.
 % further equip the tree with synapses in all dendritic terminals and inject a current there from
 % t = 1sec-2sec. Measure voltage everywhere. 
-
-params = [];
 neuron = [];
-params.tstop = 3000;
-% params.dt = 1;
-params.cvode = 1;
-params.celsius = 24;
-params.nseg = 'd_lambda';
-params.exchfolder = 't2nexchange';  % folder were simulation is written
+neuron.params.tstop = 3000;
+% neuron.params.dt = 1;
+neuron.params.cvode = 1;
+neuron.params.celsius = 24;
+neuron.params.nseg = 'd_lambda';
 
 g_pas = 0.0001;  % conductance of passive channel
 e_pas = -70;  % e leak
@@ -44,11 +41,11 @@ end
 
 
 %% rewrite tree hocs if necessary ( if morphology changed)
-tree = t2n_writeTrees(tree,params,fullfile('morphos','hocs',treename));
+tree = t2n_writeTrees(tree,[],fullfile('morphos','hocs',treename));
 
 
 %% run simulation and plot stuff
-out = t2n(tree,params,neuron);
+out = t2n(tree,neuron);
 
 [~,spikeind] = findpeaks(out.record{1}.cell.v{1},'MinPeakHeight',-10);
 

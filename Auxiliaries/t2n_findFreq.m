@@ -1,10 +1,9 @@
-function [amp] = t2n_findFreq(tree,params,neuron,desNum,options)
+function [amp] = t2n_findFreq(tree,neuron,desNum,options)
 % This function finds the current necessary to let each neuron spike a certain
 % amount of spikes with an IClamp protocol previously defined in "neuron" 
 %
 % INPUTS
 % tree              tree cell array with morphologies (see documentation)
-% params            t2n parameter structure (see documentation)
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
 % desNum            desired number of spikes during the IClamp protocol
 % options           (optional) options for starting T2N
@@ -26,11 +25,11 @@ counterthresh = 20;
 
 
 step = 0.05;
-params.tstop = params.tstop - neuron.pp{1}.IClamp.times(2);
+neuron.params.tstop = neuron.params.tstop - neuron.pp{1}.IClamp.times(2);
 ready = zeros(numel(tree),1);
 maxamp = NaN(numel(tree),2) ;
 minamp = NaN(numel(tree),2) ;
-params.skiprun = 0;
+neuron.params.skiprun = 0;
 flag = false;
 ostep = zeros(numel(tree),1);
 counter = 0;
@@ -60,7 +59,7 @@ while ~flag && counter <= counterthresh
             ready(treeind(t)) = true;
         end
     end
-    [out] = t2n(tree,params,neuron,options);
+    [out] = t2n(tree,neuron,options);
 %     if out.error
 %         amp = NaN;
 %         return
@@ -70,7 +69,7 @@ while ~flag && counter <= counterthresh
             
             thisNum = numel(out.APCtimes{t}{1});
             
-            display(sprintf('Reached: %g spikes of target spikes %g ',thisNum,desNum))
+            fprintf('Reached: %g spikes of target spikes %g \n',thisNum,desNum)
             if thisNum > desNum  % too many spike
                 maxamp(treeind(t),:) = [amp(treeind(t)) thisNum];
                 if counter == 1 || sflag(treeind(t))

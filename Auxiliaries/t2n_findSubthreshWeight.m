@@ -1,9 +1,8 @@
-function [weight] = t2n_findSubthreshWeight(params,neuron_orig,tree,weight,freq,tim)
+function [weight] = t2n_findSubthreshWeight(neuron_orig,tree,weight,freq,tim)
 % this function finds the synaptic weight of Exp2Syn synapses necessary to 
 % have the neurons defined in "neuron" and "tree" at a sub-spiking threshold level
 % this function is part of the T2N package
 % INPUT
-% params: T2N parameter structure
 % neuron: T2N neuron structure (already containing all synapses for which
 % the weight should be searched
 % tree: TREES toolbox tree cell array
@@ -33,13 +32,13 @@ counterthresh = 20;
 e = 0.00005;
 ostep = ones(numel(tree),1)*0.0001;
 
-params.cvode = 0;
-params.dt = 0.5; 
-params.tstop = tim + 10;
+neuron.params.cvode = 0;
+neuron.params.dt = 0.5; 
+neuron.params.tstop = tim + 10;
 
 ready = zeros(numel(tree),1);
 spikeamp = NaN(numel(tree),1) ;
-params.skiprun = 0;
+neuron.params.skiprun = 0;
 flag = false;
 
 counter = 0;
@@ -66,7 +65,7 @@ while ~flag && counter <= counterthresh
             ready(treeind(t)) = 2;
         end
     end
-    [out] = t2n(tree,params,neuron,'-q-d');
+    [out] = t2n(tree,neuron,'-q-d');
     if out.error
         weight = NaN;
         return
@@ -84,7 +83,7 @@ while ~flag && counter <= counterthresh
                         flag = true;
                     end
                 end
-                display(sprintf('Reached Spike with %g nS weight',weight(treeind(t))));
+                fprintf('Reached Spike with %g nS weight\n',weight(treeind(t)));
                 if counter == 1 || sflag(treeind(t))
                     ostep(treeind(t)) = min(weight(treeind(t)),ostep(treeind(t)) * 2);
                     weight(treeind(t)) = weight(treeind(t)) - ostep(treeind(t));

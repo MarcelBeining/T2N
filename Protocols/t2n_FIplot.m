@@ -4,7 +4,7 @@ if ~isfield(ostruct,'duration') && ostruct.dataset < 7
     ostruct.duration = 200;
 end
 
-load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment,'.mat'),'voltVec','timeVec','numspikes','params','cstepsSpikingModel','tree','nneuron');
+load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment,'.mat'),'voltVec','timeVec','numspikes','cstepsSpikingModel','tree','nneuron');
 
 if isfield(ostruct,'color')
     modelcol = ostruct.color;

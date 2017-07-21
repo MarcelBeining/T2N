@@ -9,21 +9,20 @@ end
 if ~isfield(ostruct,'relamp')
     ostruct.relamp = 0;
 end
-load(t2n_catName(targetfolder_data,'Exp_bAP',nneuron{1}.experiment,'.mat'),'params')
 if nargout == 0 || nargout > 4
     fig(1) = figure;clf,hold all
-    if  exist(fullfile(params.path,'raw data','krueppel_data_fig_1d.dat'),'file')
+    if  exist(fullfile(pwd,'raw data','krueppel_data_fig_1d.dat'),'file')
         if ~ostruct.relamp
-            data = importdata(fullfile(params.path,'raw data','krueppel_data_fig_1d.dat'));
+            data = importdata(fullfile(pwd,'raw data','krueppel_data_fig_1d.dat'));
             
         else
-            data = importdata(fullfile(params.path,'raw data','krueppel_data_fig_1e.csv'));
+            data = importdata(fullfile(pwd,'raw data','krueppel_data_fig_1e.csv'));
         end
     else
         data = NaN(1,2);
     end
-    if  exist(fullfile(params.path,'raw data','krueppel_data_fig_1f.csv'),'file')
-        data2 = importdata(fullfile(params.path,'raw data','krueppel_data_fig_1f.csv'));
+    if  exist(fullfile(pwd,'raw data','krueppel_data_fig_1f.csv'),'file')
+        data2 = importdata(fullfile(pwd,'raw data','krueppel_data_fig_1f.csv'));
     else
         data2 = NaN(1,2);
     end
@@ -51,7 +50,7 @@ if nargout == 0 || nargout > 4
 end
 
 for n = 1:numel(nneuron)
-    load(t2n_catName(targetfolder_data,'Exp_bAP',nneuron{n}.experiment,'.mat'),'bAP','plotvals','params','nodes','neuron','tree','tim')
+    load(t2n_catName(targetfolder_data,'Exp_bAP',nneuron{n}.experiment,'.mat'),'bAP','plotvals','nodes','neuron','tree','tim')
     
     spiked = cellfun(@(x) any(x(:,5)>0),bAP);
 

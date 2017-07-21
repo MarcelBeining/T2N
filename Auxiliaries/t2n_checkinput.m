@@ -1,16 +1,14 @@
-function [tree,params,neuron,usestreesof] = t2n_checkinput(tree,params,neuron,options)
+function [tree,neuron,usestreesof,nocell] = t2n_checkinput(tree,neuron,options)
 % This function checks the neuron structure for correct definition of the
 % used morphologies and returns info about it
 
 % INPUTS
 % tree              tree cell array with morphologies (see documentation)
-% params            t2n parameter structure (see documentation)
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
 % options           (optional) option string of t2n
 %
 % OUTPUTS
 % tree              corrected tree cell array
-% params            corrected parameter structure
 % neuron            corrected neuron structure
 % usestreesof       points to the neuron entry/instance from which the tree
 %                   definitions are taken from
@@ -23,80 +21,16 @@ function [tree,params,neuron,usestreesof] = t2n_checkinput(tree,params,neuron,op
 if nargin < 4 || isempty(options)
     options = '';
 end
-%% check for several standard parameter and initialize default value if not set
-if ~isempty(params)
-    if ~isfield(params,'parallel')
-        params.parallel = false;
-    end
-    if ~isfield(params,'cvode')
-        params.cvode = false;
-    end
-    if ~isfield(params,'use_local_dt')
-        params.use_local_dt = 0;
-    end
-    if ~isfield(params,'openNeuron')
-        params.openNeuron = false;
-    end
-    if ~isfield(params,'nseg') || strcmpi(params.nseg,'d_lambda')
-        params.nseg = 'dlambda';
-        display('Number of segments or nseg rule not set in params.nseg. Dlambda rule will be applied')
-    end
-    if ~isfield(params,'tstart')
-        params.tstart = 0;
-    end
-    if ~isfield(params,'tstop')
-        params.tstop = 200;
-        display('Tstop not defined in params.tstop. Default value of 200 ms is applied.')
-    end
-    if ~isfield(params,'dt')
-        params.dt = 0.025;
-        if ~params.cvode
-            display('Time step not defined in params.dt. Default value of 0.025 ms is applied.')
-        end
-    end
-    if ~isfield(params,'accuracy')
-        params.accuracy = 0;
-    end
-    if ~isfield(params,'skiprun')
-        params.skiprun = false;
-    end
-    if ~isfield(params,'q10')
-        params.q10 = false;
-    end
-    if ~isfield(params,'prerun')
-        params.prerun = false;
-    end
-    if ~isfield(params,'path')
-        params.path = regexprep(pwd,'\\','/');
-        display('No standard path was given. Current folder is used instead');
-    else
-        params.path = regexprep(params.path,'\\','/');
-    end
-    if strcmpi(params.path(end),'\')
-        params.path = params.path(1:end-1);
-    end
-    if params.cvode && isnumeric(params.dt)
-        warning ('t2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
-    end
-    if ~isfield(params,'neuronpath')
-        if ispc
-            warning('Path to neuron not given in params.neuronpath! Default path chosen (which might be wrong)')
-        end
-        params.neuronpath = 'C:/nrn73w64/bin64/nrniv.exe';  % default path to neuron exe
-    end
-    if ~exist(fullfile(nrn_path,'morphos','hocs'),'dir')
-        mkdir(fullfile(nrn_path,'morphos','hocs'));
-    end
-    parflag = true;
-else
-    parflag = false;
+if ~exist(fullfile(pwd,'morphos','hocs'),'dir')
+    mkdir(fullfile(pwd,'morphos','hocs'));
 end
+
 %% check neuron
-params.nocell = false;
+nocell = false;
 if isstruct(neuron)         % transform structure neuron to cell neuron
     if numel(neuron) == 1
         neuron = {neuron};
-        params.nocell = true;
+        nocell = true;
     else
         neuron = arrayfun(@(y) {y},neuron);
     end
@@ -114,15 +48,14 @@ for t = 1:numel(tree)
     end
 end
 NIDs = unique(cellfun(@(x) x.NID,tree,'UniformOutput',0));  % improves speed if many same cells are used
-if parflag && (~all(cellfun(@(x) isfield(x,'NID'),tree)) || ~all(cellfun(@(x) exist(fullfile(params.path,'morphos','hocs',strcat(x,'.hoc')),'file'),NIDs)))
+if (~all(cellfun(@(x) isfield(x,'NID'),tree)) || ~all(cellfun(@(x) exist(fullfile(pwd,'morphos','hocs',strcat(x,'.hoc')),'file'),NIDs)))
     answer = questdlg('Caution! Not all of your trees have been transformed for NEURON yet or hoc file is missing! Transforming now..','Transform trees','OK','Cancel','OK');
     if strcmp(answer,'OK')
         ind = cellfun(@(x) ~isfield(x,'NID'),tree) ;
         if ~all(ind)
-            ind(~ind) = ~cellfun(@(x) exist(fullfile(params.path,'morphos','hocs',strcat(x.NID,'.hoc')),'file'),tree(~ind));
+            ind(~ind) = ~cellfun(@(x) exist(fullfile(pwd,'morphos','hocs',strcat(x.NID,'.hoc')),'file'),tree(~ind));
         end
-        
-        tree(ind) = t2n_writeTrees(tree(ind),params,'',options);
+        tree(ind) = t2n_writeTrees(tree(ind),[],'',options);
     else
         error('Aborted');
     end
@@ -181,8 +114,52 @@ if flag
 end
 for n = 1:numel(neuron)
     neuron{n}.tree = thesetrees{n};
-end
-if ~parflag
-    params = [];
+    
+    %% check for several standard parameter and initialize default value if not set
+    refP = t2n_getref(n,neuron,'params');
+    if n == refP % only check if current instance has its own parameter struct
+        if ~isfield(neuron{n}.params,'parallel')
+            neuron{n}.params.parallel = false;
+        end
+        if ~isfield(neuron{n}.params,'cvode')
+            neuron{n}.params.cvode = false;
+        end
+        if ~isfield(neuron{n}.params,'use_local_dt')
+            neuron{n}.params.use_local_dt = 0;
+        end
+        if ~isfield(neuron{n}.params,'nseg') || strcmpi(neuron{n}.params.nseg,'d_lambda')
+            neuron{n}.params.nseg = 'dlambda';
+            disp('Number of segments or nseg rule not set in neuron{n}.params.nseg. Dlambda rule will be applied')
+        end
+        if ~isfield(neuron{n}.params,'tstart')
+            neuron{n}.params.tstart = 0;
+        end
+        if ~isfield(neuron{n}.params,'tstop')
+            neuron{n}.params.tstop = 200;
+            disp('Tstop not defined in neuron{n}.params.tstop. Default value of 200 ms is applied.')
+        end
+        if ~isfield(neuron{n}.params,'dt')
+            neuron{n}.params.dt = 0.025;
+            if ~neuron{n}.params.cvode
+                disp('Time step not defined in neuron{n}.params.dt. Default value of 0.025 ms is applied.')
+            end
+        end
+        if ~isfield(neuron{n}.params,'accuracy')
+            neuron{n}.params.accuracy = 0;
+        end
+        if ~isfield(neuron{n}.params,'skiprun')
+            neuron{n}.params.skiprun = false;
+        end
+        if ~isfield(neuron{n}.params,'q10')
+            neuron{n}.params.q10 = false;
+        end
+        if ~isfield(neuron{n}.params,'prerun')
+            neuron{n}.params.prerun = false;
+        end
+        if neuron{n}.params.cvode && isnumeric(neuron{n}.params.dt)
+            warning ('t2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
+        end
+    end
+
 end
 end
