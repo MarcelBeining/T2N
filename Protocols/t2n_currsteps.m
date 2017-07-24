@@ -19,7 +19,7 @@ function t2n_currsteps(neuron,tree,targetfolder_data,ostruct)
 % * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
-if nargin < 5
+if nargin < 4
     ostruct = struct();
 end
 if isfield(ostruct,'recordnode') && isnumeric(ostruct.recordnode) && numel(ostruct.recordnode) == numel(tree)

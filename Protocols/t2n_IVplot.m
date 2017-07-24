@@ -1,4 +1,4 @@
-function fig = t2n_IVplot(loadingfile,ostruct)
+function fig = t2n_IVplot(targetfolder_data,neuron,ostruct)
 
 if ~isfield(ostruct,'single')
     ostruct.single = 0;
@@ -6,8 +6,9 @@ end
 if ~isfield(ostruct,'subtract_hv')
     ostruct.subtract_hv = 0;
 end
+load(t2n_catName(targetfolder_data,'Exp_VoltSteps',neuron.experiment,'.mat'),'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree');
 
-load(loadingfile,'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree')
+% load(loadingfile,'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree')
 
 amp = [-10,10];
 capm = zeros(2,numel(tree));
@@ -47,7 +48,7 @@ if ostruct.subtract_hv
 end
 
 
-Kirind_model = vstepsModel <= -121.1;
+Kirind_model = vstepsModel <= -120;
 otherind_model = vstepsModel >= -82.1 & vstepsModel <= -62.1;
 Restind_model = vstepsModel >= -112.1 & vstepsModel <= -82.1;
 gKirModel = zeros(size(steadyStateCurrVec,2),1);
@@ -66,7 +67,7 @@ if ostruct.single
     for t =1:size(steadyStateCurrVec,2)
         set(p(t),'color',tree{t}.col{1})
     end
-elseif  any(ostruct.usemorph == [2,3,5,6])  % artificial cells
+elseif  isfield(ostruct,'usemorph') && any(ostruct.usemorph == [2,3,5,6])  % artificial cells
     errorbar(vstepsModel,mean(steadyStateCurrVec,2),std(steadyStateCurrVec,[],2)/sqrt(size(steadyStateCurrVec,2)),'Color',[0 1 0],'LineWidth',1);
 else
     errorbar(vstepsModel,mean(steadyStateCurrVec,2),std(steadyStateCurrVec,[],2)/sqrt(size(steadyStateCurrVec,2)),'Color',[0 0 1],'LineWidth',1);
