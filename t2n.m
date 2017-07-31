@@ -270,13 +270,18 @@ spines_flag = false(numel(neuron),1);
 minterf = cell(numel(tree),1);
 for n = 1:numel(neuron)
     makenewrect = true;
-    refP = t2n_getref(n,neuron,'params');
-    x = t2n_getref(n,neuron,'mech');
-    for t = 1:numel(neuron{x}.mech)   % check if any region of any tree has the spines mechanism
-        if ~isempty(neuron{x}.mech{t})
-            fields = fieldnames(neuron{x}.mech{t});
+    refPar = t2n_getref(n,neuron,'params');
+    refM = t2n_getref(n,neuron,'mech');
+    refPP = t2n_getref(n,neuron,'pp');
+    refC = t2n_getref(n,neuron,'con');
+    refR = t2n_getref(n,neuron,'record');
+    refP = t2n_getref(n,neuron,'play');
+    refAP = t2n_getref(n,neuron,'APCount');
+    for t = 1:numel(neuron{refM}.mech)   % check if any region of any tree has the spines mechanism
+        if ~isempty(neuron{refM}.mech{t})
+            fields = fieldnames(neuron{refM}.mech{t});
             for f = 1:numel(fields)
-                if any(strcmpi(fieldnames(neuron{x}.mech{t}.(fields{f})),'spines'))
+                if any(strcmpi(fieldnames(neuron{refM}.mech{t}.(fields{f})),'spines'))
                     spines_flag(n) = true;
                     break
                 end
@@ -295,8 +300,7 @@ for n = 1:numel(neuron)
     end
     for tt = 1:numel(tree(neuron{n}.tree))
         if ~isfield(tree{neuron{n}.tree(tt)},'artificial')
-            x = t2n_getref(n,neuron,'mech');
-            minterf{neuron{n}.tree(tt)} = t2n_make_nseg(tree{neuron{n}.tree(tt)},origminterf{neuron{n}.tree(tt)},neuron{refP}.params,neuron{x}.mech{neuron{n}.tree(tt)});
+            minterf{neuron{n}.tree(tt)} = t2n_make_nseg(tree{neuron{n}.tree(tt)},origminterf{neuron{n}.tree(tt)},neuron{refPar}.params,neuron{refM}.mech{neuron{n}.tree(tt)});
         end
     end
     access = [find(~cellfun(@(y) isfield(y,'artificial'),tree(neuron{n}.tree)),1,'first'), 1];      % std accessing first non-artificial tree at node 1
@@ -354,20 +358,20 @@ for n = 1:numel(neuron)
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Define some basic parameters *****\n');
     fprintf(nfile,sprintf('debug_mode = %d\n',debug) );
-    if isfield(neuron{refP}.params,'accuracy')
-        fprintf(nfile,sprintf('accuracy = %d\n',neuron{refP}.params.accuracy) );
+    if isfield(neuron{refPar}.params,'accuracy')
+        fprintf(nfile,sprintf('accuracy = %d\n',neuron{refPar}.params.accuracy) );
     else
         fprintf(nfile,'accuracy = 0\n' );
     end
     fprintf(nfile,'strf = new StringFunctions()\n');
-    if neuron{refP}.params.cvode
+    if neuron{refPar}.params.cvode
         fprintf(nfile,'cvode.active(1)\n');
-        if neuron{refP}.params.use_local_dt
+        if neuron{refPar}.params.use_local_dt
             fprintf(nfile,'io = cvode.use_local_dt(1)\n');
         end
     else
         fprintf(nfile,'io = cvode.active(0)\n');
-        fprintf(nfile,sprintf('tvec = new Vector()\ntvec = tvec.indgen(%f,%f,%f)\n',neuron{refP}.params.tstart,neuron{refP}.params.tstop,neuron{refP}.params.dt));
+        fprintf(nfile,sprintf('tvec = new Vector()\ntvec = tvec.indgen(%f,%f,%f)\n',neuron{refPar}.params.tstart,neuron{refPar}.params.tstop,neuron{refPar}.params.dt));
         fprintf(nfile,'f = new File()\n');      %create a new filehandle
         fprintf(nfile,sprintf('io = f.wopen("%s//%s//tvec.dat")\n',exchfolder,thisfolder)  );  % open file for this time vector with write perm.
         fprintf(nfile,sprintf('io = tvec.printf(f,"%%%%-20.10g\\\\n")\n') );    % print the data of the vector into the file
@@ -375,19 +379,19 @@ for n = 1:numel(neuron)
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Load standard libraries *****\n');
-    if isfield(neuron{refP}.params,'nrnmech')
-        if iscell(neuron{refP}.params.nrnmech)
-            for c = 1:numel(neuron{refP}.params.nrnmech)
-                if ~exist(fullfile(modelFolder,'lib_mech',neuron{refP}.params.nrnmech{c}),'file')
-                    error('File %s is not existent in folder lib_mech',neuron{refP}.params.nrnmech{c})
+    if isfield(neuron{refPar}.params,'nrnmech')
+        if iscell(neuron{refPar}.params.nrnmech)
+            for c = 1:numel(neuron{refPar}.params.nrnmech)
+                if ~exist(fullfile(modelFolder,'lib_mech',neuron{refPar}.params.nrnmech{c}),'file')
+                    error('File %s is not existent in folder lib_mech',neuron{refPar}.params.nrnmech{c})
                 end
-                fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',neuron{refP}.params.nrnmech{c}));
+                fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',neuron{refPar}.params.nrnmech{c}));
             end
         else
-            if ~exist(fullfile(modelFolder,'lib_mech',neuron{refP}.params.nrnmech),'file')
-                error('File %s is not existent in folder lib_mech',neuron{refP}.params.nrnmech)
+            if ~exist(fullfile(modelFolder,'lib_mech',neuron{refPar}.params.nrnmech),'file')
+                error('File %s is not existent in folder lib_mech',neuron{refPar}.params.nrnmech)
             end
-            fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',neuron{refP}.params.nrnmech));
+            fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',neuron{refPar}.params.nrnmech));
         end
     else
         if exist(fullfile(modelFolder,'lib_mech'),'dir')
@@ -430,12 +434,12 @@ for n = 1:numel(neuron)
     fprintf(nfile, sprintf('io = xopen("lib_genroutines/genroutines.hoc")\n') );
     fprintf(nfile, sprintf('io = xopen("lib_genroutines/pasroutines.hoc")\n') );
     fprintf(nfile,'\n\n');
-    if neuron{refP}.params.parallel
+    if neuron{refPar}.params.parallel
         [GIDs,neuron,mindelay] = t2n_getGIDs(neuron{n},trees,neuron{n}.tree);
         fprintf(nfile,'// ***** Initialize parallel manager *****\n');
         fprintf(nfile,'pnm = new ParallelNetManager(%d)\npc = pnm.pc\n\n\n',numel(GIDs));
         for in = 1:numel(GIDs)
-            fprintf(nfile,'pc.set_gid2node(%d, %d)\n',GIDs(in).gid,rem(GIDs(in).cell-1,neuron{refP}.params.parallel));  % distribute the gids in such a way that all sections/pps of one cell are on the same host, and do roundrobin for each cell
+            fprintf(nfile,'pc.set_gid2node(%d, %d)\n',GIDs(in).gid,rem(GIDs(in).cell-1,neuron{refPar}.params.parallel));  % distribute the gids in such a way that all sections/pps of one cell are on the same host, and do roundrobin for each cell
         end
     end
     fprintf(nfile,'// ***** Load custom libraries *****\n');
@@ -461,11 +465,10 @@ for n = 1:numel(neuron)
     fprintf(nfile,sprintf('\n\nchdir("%s/%s") // change directory to folder of simulation #%d \n',exchfolder,thisfolder,n));
     fprintf(nfile,'\n\n');
     
-    x = t2n_getref(n,neuron,'mech');
-    if ~isnan(x)
+    if ~isnan(refM)
         fprintf(nfile,'// ***** Load mechanisms and adjust nseg *****\n');
-        if x~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_mech.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
+        if refM~=n
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_mech.hoc")\n',nrn_exchfolder,sprintf('sim%d',refM)) );
         else
             fprintf(nfile,'io = xopen("init_mech.hoc")\n' );
         end
@@ -473,22 +476,20 @@ for n = 1:numel(neuron)
     end
     
     
-    x = t2n_getref(n,neuron,'pp');
-    if ~isnan(x)
+    if ~isnan(refPP)
         fprintf(nfile,'// ***** Place Point Processes *****\n');
-        if x~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_pp.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
+        if refPP~=n
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_pp.hoc")\n',nrn_exchfolder,sprintf('sim%d',refPP)) );
         else
             fprintf(nfile,'io = xopen("init_pp.hoc")\n' );
         end
         fprintf(nfile,'\n\n');
     end
     
-    x = t2n_getref(n,neuron,'con');
-    if ~isnan(x)
+    if ~isnan(refC)
         fprintf(nfile,'// ***** Define Connections *****\n');
-        if x~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_con.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
+        if refC~=n
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_con.hoc")\n',nrn_exchfolder,sprintf('sim%d',refC)) );
         else
             fprintf(nfile,'io = xopen("init_con.hoc")\n' );
         end
@@ -497,12 +498,12 @@ for n = 1:numel(neuron)
     
     
     
-    x = t2n_getref(n,neuron,'record');
-    x2 = t2n_getref(n,neuron,'APCount');
-    if ~isnan(x) || ~isnan(x2)
+    
+    
+    if ~isnan(refR) || ~isnan(refAP)
         fprintf(nfile,'// ***** Define recording sites *****\n');
-        if x~=n && x2~=n && x==x2  % if both reference to the same other sim, use this sim
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_rec.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
+        if refR~=n && refAP~=n && refR==refAP  % if both reference to the same other sim, use this sim
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_rec.hoc")\n',nrn_exchfolder,sprintf('sim%d',refR)) );
         else  % else write an own file
             fprintf(nfile,'io = xopen("init_rec.hoc")\n' );
         end
@@ -510,11 +511,10 @@ for n = 1:numel(neuron)
     end
     
     
-    x = t2n_getref(n,neuron,'play');
-    if ~isnan(x)
+    if ~isnan(refP)
         fprintf(nfile,'// ***** Define vector play sites *****\n');
-        if x~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_play.hoc")\n',nrn_exchfolder,sprintf('sim%d',x)) );
+        if refP~=n
+            fprintf(nfile,sprintf('io = load_file("%s/%s/init_play.hoc")\n',nrn_exchfolder,sprintf('sim%d',refP)) );
         else
             fprintf(nfile,'io = xopen("init_play.hoc")\n' );
         end
@@ -522,26 +522,26 @@ for n = 1:numel(neuron)
     
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Last settings *****\n');
-    if isfield(neuron{refP}.params,'celsius')
-        if neuron{refP}.params.q10 == 1
+    if isfield(neuron{refPar}.params,'celsius')
+        if neuron{refPar}.params.q10 == 1
             fprintf(nfile,'\n\nobjref q10\nq10 = new Temperature()\n' ) ;
-            fprintf(nfile,sprintf('io = q10.correct(%g)\n\n',neuron{refP}.params.celsius) ) ;
+            fprintf(nfile,sprintf('io = q10.correct(%g)\n\n',neuron{refPar}.params.celsius) ) ;
         else
-            fprintf(nfile,sprintf('celsius = %g\n\n',neuron{refP}.params.celsius) ) ;
+            fprintf(nfile,sprintf('celsius = %g\n\n',neuron{refPar}.params.celsius) ) ;
             
         end
     end
     if spines_flag(n)
         fprintf(nfile,'addsurf_spines()\n');
     end
-    fprintf(nfile,sprintf('tstart = %f\n',neuron{refP}.params.tstart));   %set tstart
-    fprintf(nfile,sprintf('tstop = %f + %f //advances one more step due to roundoff errors for high tstops\n',neuron{refP}.params.tstop,neuron{refP}.params.dt));   %set tstop
-    fprintf(nfile,sprintf('dt = %f\n',neuron{refP}.params.dt));         % set dt
-    fprintf(nfile,sprintf('steps_per_ms = %f\n',1/neuron{refP}.params.dt));         % set steps per ms to avois changing dt on reinit
-    if isfield(neuron{refP}.params,'v_init')
-        fprintf(nfile,sprintf('v_init = %f\n',neuron{refP}.params.v_init));
+    fprintf(nfile,sprintf('tstart = %f\n',neuron{refPar}.params.tstart));   %set tstart
+    fprintf(nfile,sprintf('tstop = %f + %f //advances one more step due to roundoff errors for high tstops\n',neuron{refPar}.params.tstop,neuron{refPar}.params.dt));   %set tstop
+    fprintf(nfile,sprintf('dt = %f\n',neuron{refPar}.params.dt));         % set dt
+    fprintf(nfile,sprintf('steps_per_ms = %f\n',1/neuron{refPar}.params.dt));         % set steps per ms to avois changing dt on reinit
+    if isfield(neuron{refPar}.params,'v_init')
+        fprintf(nfile,sprintf('v_init = %f\n',neuron{refPar}.params.v_init));
     end
-    fprintf(nfile,sprintf('prerun = %d\n',neuron{refP}.params.prerun));
+    fprintf(nfile,sprintf('prerun = %d\n',neuron{refPar}.params.prerun));
     if numel(access) > 1 % if there is any non-artificial cell defined
         fprintf(nfile,sprintf('access cellList.o(%d).allregobj.o(%d).sec\n',access(1)-1,minterf{neuron{n}.tree(access(1))}(access(2),2)) );
     end
@@ -562,14 +562,14 @@ for n = 1:numel(neuron)
             end
         end
     end
-    if neuron{refP}.params.parallel
+    if neuron{refPar}.params.parallel
         fprintf(nfile,'pc.barrier()\n');
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Run NEURON *****\n');
     
-    if ~neuron{refP}.params.skiprun
-        if neuron{refP}.params.parallel
+    if ~neuron{refPar}.params.skiprun
+        if neuron{refPar}.params.parallel
             fprintf(nfile,'pc.set_maxstep(%d)\npc.solve(tstop)\n',mindelay);   %!%!%!%! change this! neuron{n}.con...... %!%! also include prerun
         else
             fprintf(nfile,'init()\n');  % this needs to be modified later since v_init might be restarted
@@ -624,7 +624,7 @@ for n = 1:numel(neuron)
         for tt = 1:numel(neuron{n}.tree)
             % load templates generated by neuron_template_tree, create one
             % instance of them and add them to the cellList
-            if neuron{refP}.params.parallel
+            if neuron{refPar}.params.parallel
                 fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
             end
             if ~any(strcmp(templates,tree{neuron{n}.tree(tt)}.NID))
@@ -642,7 +642,7 @@ for n = 1:numel(neuron)
                     end
                 end
             end
-            if neuron{refP}.params.parallel
+            if neuron{refPar}.params.parallel
                 fprintf(ofile,'}else{cell = nil}\n');
             end
             fprintf(ofile, 'io = cellList.append(cell)\n');
@@ -681,7 +681,7 @@ for n = 1:numel(neuron)
                     else
                         continue
                     end
-                    if neuron{refP}.params.parallel
+                    if neuron{refPar}.params.parallel
                         fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                     end
                     if any(strcmpi(fields,'all'))
@@ -837,7 +837,7 @@ for n = 1:numel(neuron)
                         end
                     end
                 end
-                if neuron{refP}.params.parallel
+                if neuron{refPar}.params.parallel
                     fprintf(ofile,'}\n');
                 end
             end
@@ -848,11 +848,11 @@ for n = 1:numel(neuron)
                 if any(flag_strion_all)
                     for tt = 1:numel(neuron{n}.tree)
                         if flag_strion_all(tt)
-                            if neuron{refP}.params.parallel
+                            if neuron{refPar}.params.parallel
                                 fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                             end
                             fprintf(ofile,sprintf('%s}\n\n',strion_all{tt}));
-                            if neuron{refP}.params.parallel
+                            if neuron{refPar}.params.parallel
                                 fprintf(ofile,'}\n');
                             end
                         end
@@ -860,7 +860,7 @@ for n = 1:numel(neuron)
                 end
                 if any(cellfun(@any,flag_strion_reg))
                     for tt = 1:numel(neuron{n}.tree)
-                        if neuron{refP}.params.parallel && any(flag_strnseg_reg{tt})
+                        if neuron{refPar}.params.parallel && any(flag_strnseg_reg{tt})
                             fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                         end
                         for r = 1:numel(flag_strion_reg{tt})
@@ -869,7 +869,7 @@ for n = 1:numel(neuron)
                                 
                             end
                         end
-                        if neuron{refP}.params.parallel && any(flag_strnseg_reg{tt})
+                        if neuron{refPar}.params.parallel && any(flag_strnseg_reg{tt})
                             fprintf(ofile,'}\n');
                         end
                     end
@@ -879,27 +879,27 @@ for n = 1:numel(neuron)
             fprintf(ofile,'// ***** Define nseg for all cells *****\n');
             fprintf(ofile, 'proc make_nseg() {\n');
             fprintf(ofile, 'for CELLINDEX = 0, cellList.count -1 {\n');
-            if neuron{refP}.params.parallel
+            if neuron{refPar}.params.parallel
                 fprintf(ofile,'if (pc.gid_exists(CELLINDEX)) {\n');
             end
             fprintf(ofile, 'if (cellList.o(CELLINDEX).is_artificial == 0) {\n');
-            if isfield(neuron{refP}.params,'nseg') && isnumeric(neuron{refP}.params.nseg)
+            if isfield(neuron{refPar}.params,'nseg') && isnumeric(neuron{refPar}.params.nseg)
                 fprintf(ofile, 'forsec cellList.o(CELLINDEX).allreg {\n');
-                fprintf(ofile, sprintf('nseg = %f\n}\n}\n',round(neuron{refP}.params.nseg)) );
-                if rem(round(neuron{refP}.params.nseg),2) == 0
+                fprintf(ofile, sprintf('nseg = %f\n}\n}\n',round(neuron{refPar}.params.nseg)) );
+                if rem(round(neuron{refPar}.params.nseg),2) == 0
                     warning('nseg is not odd! Please reconsider nseg');
                 end
-            elseif isfield(neuron{refP}.params,'nseg') && strcmpi(neuron{refP}.params.nseg,'dlambda')
+            elseif isfield(neuron{refPar}.params,'nseg') && strcmpi(neuron{refPar}.params.nseg,'dlambda')
                 fprintf(ofile, 'geom_nseg()\n}\n');
-            elseif isfield(neuron{refP}.params,'nseg') && ~isempty(strfind(neuron{refP}.params.nseg,'ach'))
-                each = cell2mat(textscan(neuron{refP}.params.nseg,'%*s %d')); % get number
+            elseif isfield(neuron{refPar}.params,'nseg') && ~isempty(strfind(neuron{refPar}.params.nseg,'ach'))
+                each = cell2mat(textscan(neuron{refPar}.params.nseg,'%*s %d')); % get number
                 fprintf(ofile, 'forsec cellList.o(CELLINDEX).allreg {\n');
                 fprintf(ofile, sprintf('n = L/%d\nnseg = n+1\n}\n}\n',each) );
             else
                 fprintf(ofile, '// No nseg specified!!!\n}\n');
                 warning('nseg has not been specified in neuron.params.nseg (correctly?)!')
             end
-            if neuron{refP}.params.parallel
+            if neuron{refPar}.params.parallel
                 fprintf(ofile,'}\n');
             end
             fprintf(ofile,'}\n\n');
@@ -907,18 +907,18 @@ for n = 1:numel(neuron)
                 fprintf(ofile,'// ***** Add specific nseg definitions *****\n');
                 if any(flag_strnseg_all)
                     for tt = 1:numel(neuron{n}.tree)
-                        if neuron{refP}.params.parallel
+                        if neuron{refPar}.params.parallel
                             fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                         end
                         fprintf(ofile,sprintf('%s}\n\n',strnseg_all{tt}));
-                        if neuron{refP}.params.parallel
+                        if neuron{refPar}.params.parallel
                             fprintf(ofile,'}\n');
                         end
                     end
                 end
                 if any(cellfun(@any,flag_strnseg_reg))
                     for tt = 1:numel(neuron{n}.tree)
-                        if neuron{refP}.params.parallel && any(flag_strnseg_reg{tt})
+                        if neuron{refPar}.params.parallel && any(flag_strnseg_reg{tt})
                             fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                         end
                         for r = 1:numel(flag_strnseg_reg{tt})
@@ -926,7 +926,7 @@ for n = 1:numel(neuron)
                                 fprintf(ofile,sprintf('%s}\n\n',strnseg_reg{tt}{r}));
                             end
                         end
-                        if neuron{refP}.params.parallel && any(flag_strnseg_reg{tt})
+                        if neuron{refPar}.params.parallel && any(flag_strnseg_reg{tt})
                             fprintf(ofile,'}\n');
                         end
                     end
@@ -960,7 +960,7 @@ for n = 1:numel(neuron)
             for tt = 1:numel(neuron{n}.tree)
                 t = neuron{n}.tree(tt);
                 if numel(neuron{n}.pp) >= t && ~isempty(neuron{n}.pp{t})   && ~isfield(tree{neuron{n}.tree(tt)},'artificial')    % if point processes are defined for this tree
-                    if neuron{refP}.params.parallel
+                    if neuron{refPar}.params.parallel
                         fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                     end
                     ppfield = fieldnames(neuron{n}.pp{t});
@@ -1049,7 +1049,7 @@ for n = 1:numel(neuron)
                             end
                         end
                     end
-                    if neuron{refP}.params.parallel
+                    if neuron{refPar}.params.parallel
                         fprintf(ofile,'}\n');
                     end
                 end
@@ -1062,9 +1062,9 @@ for n = 1:numel(neuron)
     
     %% write init_con.hoc
     
-    if neuron{refP}.params.parallel || t2n_getref(n,neuron,'con') == n     %rewrite only if connections are not taken from previous sim
+    if neuron{refPar}.params.parallel || t2n_getref(n,neuron,'con') == n     %rewrite only if connections are not taken from previous sim
         ofile = fopen(fullfile(exchfolder,thisfolder,'init_con.hoc') ,'wt');   %open morph hoc file in write modus
-        if neuron{refP}.params.parallel
+        if neuron{refPar}.params.parallel
             for g = 1:numel(GIDs)
                 thiscell = GIDs(g).cell;
                 if isfield(tree{thiscell},'artificial')
@@ -1079,7 +1079,7 @@ for n = 1:numel(neuron)
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Define Connections *****\n');
         if isfield(neuron{n},'con')
-            if neuron{refP}.params.parallel
+            if neuron{refPar}.params.parallel
                 fprintf(ofile,'pc.barrier()\n'); % wait for all workers
             end
             for c = 1:numel(neuron{n}.con)
@@ -1092,7 +1092,7 @@ for n = 1:numel(neuron)
                     for t = 1:numel(cell_source)
                         if ~isempty(cell_source(t))
                             if isfield(tree{cell_source(t)},'artificial')
-                                if neuron{refP}.params.parallel
+                                if neuron{refPar}.params.parallel
                                     str{t} = sprintf('con = pc.gid_connect(%d,',find(neuron{n}.tree==cell_source(t))-1);
                                 else
                                     str{t} = sprintf('con = new NetCon(cellList.o(%d).cell,',find(neuron{n}.tree==cell_source(t))-1);
@@ -1112,22 +1112,21 @@ for n = 1:numel(neuron)
                         error('Error in connection %d of neuron instance %d! You must define a single cell ID if the source of a NetCon is a PointProcess or a section!',c,n)
                     end
                     if any(strcmp(sourcefields,'pp'))  % point process is the source
-                        x = t2n_getref(n,neuron,'pp');
                         pp = neuron{n}.con(c).source.pp;
-                        %                         [~,iid] = intersect(neuron{x}.pp{cell_source}.(pp).node,neuron{n}.con(c).source.node); % get reference to the node location of the PPs that should be connected
+                        %                         [~,iid] = intersect(neuron{refPP}.pp{cell_source}.(pp).node,neuron{n}.con(c).source.node); % get reference to the node location of the PPs that should be connected
                         % that is not working if several pp are defined at
                         % that node. here comes the workaround
                         if isfield(neuron{n}.con(c).source,'ppg')  % check for an index to a PP subgroup
                             ppg = neuron{n}.con(c).source.ppg;
                         else
-                            ppg = 1:numel(neuron{x}.pp{cell_source}.(pp));  % else take all PP subgroups
+                            ppg = 1:numel(neuron{refPP}.pp{cell_source}.(pp));  % else take all PP subgroups
                         end
                         
-                        upp = unique(cat(1,neuron{x}.pp{cell_source}.(pp)(ppg).node));  % unique pp nodes of the cell
+                        upp = unique(cat(1,neuron{refPP}.pp{cell_source}.(pp)(ppg).node));  % unique pp nodes of the cell
                         if numel(upp) == 1 % otherwise hist would make as many bins as upp
-                            cpp = numel(cat(1,neuron{x}.pp{cell_source}.(pp)(ppg).node));%1;
+                            cpp = numel(cat(1,neuron{refPP}.pp{cell_source}.(pp)(ppg).node));%1;
                         else
-                            cpp =hist(cat(1,neuron{x}.pp{cell_source}.(pp)(ppg).node),upp); % number of pps at the same nodes
+                            cpp =hist(cat(1,neuron{refPP}.pp{cell_source}.(pp)(ppg).node),upp); % number of pps at the same nodes
                         end
                         ucon = unique(neuron{n}.con(c).source.node); % unique connection nodes declared to the cell
                         if numel(ucon) == 1  % otherwise hist would make as many bins as ucon
@@ -1139,7 +1138,7 @@ for n = 1:numel(neuron)
                         for uc = 1:numel(ucon)  % go trough all nodes that should be connected from
                             if any(ucon(uc) == upp)  % check if the pp exists there
                                 for n1 = 1:numel(iid)
-                                    ind = find(neuron{x}.pp{cell_source}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
+                                    ind = find(neuron{refPP}.pp{cell_source}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
                                     if ~isempty(ind)
                                         if cpp(ucon(uc) == upp) == ccon(uc)    % same number of PPs and connections, put them together, should be ok without warning
                                             iid{n1} = cat (1,iid{n1},ind);
@@ -1158,11 +1157,11 @@ for n = 1:numel(neuron)
                         end
                         
                         for ii = 1:numel(iid)
-                            if neuron{refP}.params.parallel
-                                str{ii} = sprintf('con = new NetCon(ppList.o(%d),nil)\npc.cell(%d,con)\nobjref con\n',neuron{x}.pp{cell_source}.(pp).id(iid{ii}),neuron{n}.con(c).source.gid(ii));
+                            if neuron{refPar}.params.parallel
+                                str{ii} = sprintf('con = new NetCon(ppList.o(%d),nil)\npc.cell(%d,con)\nobjref con\n',neuron{refPP}.pp{cell_source}.(pp).id(iid{ii}),neuron{n}.con(c).source.gid(ii));
                                 % connect gid with pp object
                             else
-                                str{ii} = sprintf('con = new NetCon(ppList.o(%d),',neuron{x}.pp{cell_source}.(pp).id(iid{ii}));
+                                str{ii} = sprintf('con = new NetCon(ppList.o(%d),',neuron{refPP}.pp{cell_source}.(pp).id(iid{ii}));
                             end
                         end
                     else   % a normal section is the source
@@ -1170,13 +1169,13 @@ for n = 1:numel(neuron)
                         for in = 1:numel(node)
                             inode = find(minterf{cell_source}(:,1) == node(in),1,'first');    %find the index of the node in minterf
                             if isfield(neuron{n}.con(c).source,'watch') && ischar(neuron{n}.con(c).source.watch) && ~strcmp(neuron{n}.con(c).source.watch,'v')
-                                if neuron{refP}.params.parallel
+                                if neuron{refPar}.params.parallel
                                     error('T2N does not (yet) implement watching anything different than voltage in netcons that span workers')
                                 else
                                     str{in} = sprintf('cellList.o(%d).allregobj.o(%d).sec {con = new NetCon(&%s(%f),',find(neuron{n}.tree==cell_source)-1,minterf{neuron{n}.tree(cell_source)}(inode,2),neuron{n}.con(c).source.watch,minterf{neuron{n}.tree==cell_source}(inode,3));
                                 end
                             else
-                                if neuron{refP}.params.parallel
+                                if neuron{refPar}.params.parallel
                                     %!%!%! look here which node and use the
                                     %GIDs.gid .......
                                     %pc.gid_connect(srcgid,targetobj)
@@ -1210,24 +1209,22 @@ for n = 1:numel(neuron)
                             end
                         end
                     elseif any(strcmp(targetfields,'pp'))  % point process is the target
-                        x = t2n_getref(n,neuron,'pp');
-                        
                         pp = neuron{n}.con(c).target(it).pp;
-                        %                         %                         neuron{x}.pp{t_target}.(pp).node
-                        %                         [~,iid] = intersect(neuron{x}.pp{cell_target}.(pp).node,neuron{n}.con(c).target(it).node); % get reference to the node location of the PPs that should be connected
+                        %                         %                         neuron{refPP}.pp{t_target}.(pp).node
+                        %                         [~,iid] = intersect(neuron{refPP}.pp{cell_target}.(pp).node,neuron{n}.con(c).target(it).node); % get reference to the node location of the PPs that should be connected
                         %                         intersect unfortunately fails if more than one PP
                         %                         is declared at the same node and con wants to
                         %                         target both. here comes the workaround
                         if isfield(neuron{n}.con(c).target(it),'ppg')
                             ppg = neuron{n}.con(c).target(it).ppg;
                         else
-                            ppg = 1:numel(neuron{x}.pp{cell_target}.(pp));
+                            ppg = 1:numel(neuron{refPP}.pp{cell_target}.(pp));
                         end
-                        upp = unique(cat(1,neuron{x}.pp{cell_target}.(pp)(ppg).node));  % unique pp nodes of the cell
+                        upp = unique(cat(1,neuron{refPP}.pp{cell_target}.(pp)(ppg).node));  % unique pp nodes of the cell
                         if numel(upp) == 1 % otherwise hist would make as many bins as upp
-                            cpp = numel(cat(1,neuron{x}.pp{cell_target}.(pp)(ppg).node));%1;
+                            cpp = numel(cat(1,neuron{refPP}.pp{cell_target}.(pp)(ppg).node));%1;
                         else
-                            cpp =hist(cat(1,neuron{x}.pp{cell_target}.(pp)(ppg).node),upp); % number of pps at the same nodes
+                            cpp =hist(cat(1,neuron{refPP}.pp{cell_target}.(pp)(ppg).node),upp); % number of pps at the same nodes
                         end
                         ucon = unique(neuron{n}.con(c).target(it).node); % unique connection nodes declared to the cell
                         if numel(ucon) == 1  % otherwise hist would make as many bins as ucon
@@ -1240,7 +1237,7 @@ for n = 1:numel(neuron)
                             if any(ucon(uc) == upp)  % check if the pp exists there
                                 %
                                 for n1 = 1:numel(iid)
-                                    ind = find(neuron{x}.pp{cell_target}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
+                                    ind = find(neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
                                     if ~isempty(ind)
                                         if cpp(ucon(uc) == upp) < ccon(uc)  % less PPs exist than connections to node
                                             if numel(ind) == 1
@@ -1271,12 +1268,12 @@ for n = 1:numel(neuron)
                             end
                         end
                         if numel(unique(cat(1,iid{:}))) ~= numel(cat(1,iid{:}))
-                            fprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(x).target(y).ppg = z" to connect only to the zth group of PP %s.',neuron{n}.con(c).target.cell,c,pp,pp,pp)
+                            fprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(refPP).target(y).ppg = z" to connect only to the zth group of PP %s.',neuron{n}.con(c).target.cell,c,pp,pp,pp)
                         end
                         for t1 = 1:numel(cell_source)
                             for n1 = 1:numel(iid)
                                 for ii = 1:numel(iid{n1})
-                                    newstr{count} = sprintf('%sppList.o(%d)',str{t1},neuron{x}.pp{cell_target}.(pp)(ppg(n1)).id(iid{n1}(ii)));
+                                    newstr{count} = sprintf('%sppList.o(%d)',str{t1},neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).id(iid{n1}(ii)));
                                     count = count +1;
                                 end
                             end
@@ -1326,33 +1323,29 @@ for n = 1:numel(neuron)
     
     
     %% write init_rec.hoc
-    
-    x = t2n_getref(n,neuron,'record');
-    x2 = t2n_getref(n,neuron,'APCount');
-    x3 = t2n_getref(n,neuron,'pp');
-    if (~isnan(x) || ~isnan(x2)) && (x==n || x2==n || x2~=x)     %rewrite only if one or both of record/APCount are not taken from previous sim or if both are taken from another sim but from different ones (not possible because both are in one hoc)
+    if (~isnan(refR) || ~isnan(refAP)) && (refR==n || refAP==n || refAP~=refR)     %rewrite only if one or both of record/APCount are not taken from previous sim or if both are taken from another sim but from different ones (not possible because both are in one hoc)
         ofile = fopen(fullfile(exchfolder,thisfolder,'init_rec.hoc') ,'wt');   %open record hoc file in write modus
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Define recording sites *****\n');
-        if ~isnan(x)
+        if ~isnan(refR)
             count = 0;  % counter for recording vector List
             countt = -1; % counter for time vector List
             for tt = 1:numel(neuron{n}.tree)
                 t = neuron{n}.tree(tt);
-                if numel(neuron{x}.record) >= t && ~isempty(neuron{x}.record{t})  % if a recording site was defined for  this tree
-                    if neuron{refP}.params.parallel
+                if numel(neuron{refR}.record) >= t && ~isempty(neuron{refR}.record{t})  % if a recording site was defined for  this tree
+                    if neuron{refPar}.params.parallel
                         fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                     end
-                    if neuron{refP}.params.use_local_dt
+                    if neuron{refPar}.params.use_local_dt
                         makenewrect = true;
                     end
-                    recfields = fieldnames(neuron{x}.record{t});
+                    recfields = fieldnames(neuron{refR}.record{t});
                     if isfield(tree{neuron{n}.tree(tt)},'artificial')
                         if numel(recfields) > 1 && strcmp(recfields,'record')
-                            neuron{x}.record{t} = struct(tree{neuron{n}.tree(tt)}.artificial,neuron{x}.record{t}); % put the structure in field named as the artificial neuron
+                            neuron{refR}.record{t} = struct(tree{neuron{n}.tree(tt)}.artificial,neuron{refR}.record{t}); % put the structure in field named as the artificial neuron
                         end
                     end
-                    recfields = fieldnames(neuron{x}.record{t});
+                    recfields = fieldnames(neuron{refR}.record{t});
                     
                     for f1 = 1:numel(recfields)
                         if isfield(tree{neuron{n}.tree(tt)},'artificial')
@@ -1364,40 +1357,40 @@ for n = 1:numel(neuron)
                         end
                         % these lines filter out multiple
                         % recording node definitions
-                        if n == x  % only do it once for each real defined simulation
-                            if numel(setdiff(fieldnames(neuron{x}.record{t}.(recfields{f1})),{'record','node'}))>0
+                        if n == refR  % only do it once for each real defined simulation
+                            if numel(setdiff(fieldnames(neuron{refR}.record{t}.(recfields{f1})),{'record','node'}))>0
                                 error('this has not been implemented yet. write to marcel.beining@gmail.com with specification of the error line')
                             end
-                            [uniqrecs,~,indrecgroups] = unique({neuron{x}.record{t}.(recfields{f1}).record}); % find recording fields with same recording variable
-                            if strcmp(recfields{f1},'cell') || numel(neuron{x3}.pp{t}.(recfields{f1})) == 1  % leave this out if several groups of pps are defined
-                                tmpstruct = neuron{x}.record{t}.(recfields{f1})([]);
+                            [uniqrecs,~,indrecgroups] = unique({neuron{refR}.record{t}.(recfields{f1}).record}); % find recording fields with same recording variable
+                            if strcmp(recfields{f1},'cell') || numel(neuron{refPP}.pp{t}.(recfields{f1})) == 1  % leave this out if several groups of pps are defined
+                                tmpstruct = neuron{refR}.record{t}.(recfields{f1})([]);
                                 for u = 1:numel(uniqrecs)  % go through variable groups
-                                    unodes = unique(cat(1,neuron{x}.record{t}.(recfields{f1})(indrecgroups==u).node));  % get the unique nodes for that recorded variable
+                                    unodes = unique(cat(1,neuron{refR}.record{t}.(recfields{f1})(indrecgroups==u).node));  % get the unique nodes for that recorded variable
                                     tmpstruct(u) = struct('record',uniqrecs{u},'node',unodes);  % save these in a temporary structure
                                 end
-                                neuron{x}.record{t}.(recfields{f1}) = tmpstruct;  % overwrite old record defiition with new record structure
+                                neuron{refR}.record{t}.(recfields{f1}) = tmpstruct;  % overwrite old record defiition with new record structure
                             else
                                 warning('It seems recordings of different PP groups have been defined. Make sure that indices match, e.g. .record{1}.ExpSyn(3) is to target only .pp{1}.ExpSyn(3) etc.\n')
                             end
                         end
-                        for r = 1:numel(neuron{x}.record{t}.(recfields{f1})) %.record)  % go through all variables to be recorded
+                        for r = 1:numel(neuron{refR}.record{t}.(recfields{f1})) %.record)  % go through all variables to be recorded
                             
                             if strcmp(rectype,'cell')
                                 if isfield(tree{neuron{n}.tree(tt)},'R') && isfield(tree{neuron{n}.tree(tt)},'rnames')
-                                    Rs = tree{neuron{n}.tree(tt)}.rnames(tree{neuron{n}.tree(tt)}.R(neuron{x}.record{t}.cell(r).node));       % all region names of trees nodes
-                                    strs = regexp(neuron{x}.record{t}.cell(r).record,'_','split');            % split record string to get mechanism name
+                                    Rs = tree{neuron{n}.tree(tt)}.rnames(tree{neuron{n}.tree(tt)}.R(neuron{refR}.record{t}.cell(r).node));       % all region names of trees nodes
+                                    strs = regexp(neuron{refR}.record{t}.cell(r).record,'_','split');            % split record string to get mechanism name
                                     if numel(strs)>1   %any(strcmp(strs{1},{'v','i'}))             % check if record variable is variable of a mechanism or maybe global
-                                        ignorethese = false(1,numel(neuron{x}.record{t}.cell(r).node));
+                                        ignorethese = false(1,numel(neuron{refR}.record{t}.cell(r).node));
                                         uRs = unique(Rs);
                                         str = '';
                                         for u = 1:numel(uRs)                                            % go through regions to be recorded
-                                            if (~isfield(neuron{n}.mech{t},uRs{u}) || isfield(neuron{n}.mech{t},uRs{u}) && ~isfield(neuron{n}.mech{t}.(uRs{u}),strs{end})) &&  (~isfield(neuron{n}.mech{t},'all') || isfield(neuron{n}.mech{t},'all') && ~isfield(neuron{n}.mech{t}.all,strs{end}))             % check if this region also has the mechanism to be recorded
+                                            if (~isfield(neuron{refM}.mech{t},uRs{u}) || isfield(neuron{refM}.mech{t},uRs{u}) && ~isfield(neuron{refM}.mech{t}.(uRs{u}),strs{end})) &&  (~isfield(neuron{refM}.mech{t},'all') || isfield(neuron{refM}.mech{t},'all') && ~isfield(neuron{refM}.mech{t}.all,strs{end}))             % check if this region also has the mechanism to be recorded
                                                 ignorethese = ignorethese | strcmp(uRs{u},Rs);           % if not ignore these region for recording
                                                 str = strcat(str,uRs{u},'/');
                                             end
                                         end
                                         if ~isempty(str)
-                                            neuron{x}.record{t}.cell(r).node(ignorethese) = [];                     % delete the recording nodes which should be ignored
+                                            neuron{refR}.record{t}.cell(r).node(ignorethese) = [];                     % delete the recording nodes which should be ignored
                                             warning('Region(s) "%s" of tree %d do not contain mechanism "%s" for recording. Recording in this region is ignored',str(1:end-1),t,strs{end})
                                         end
                                     end
@@ -1405,9 +1398,9 @@ for n = 1:numel(neuron)
                             end
                             
                             if ~any(strcmp(rectype,'artificial'))
-                                inode = zeros(numel(neuron{x}.record{t}.(recfields{f1})(r).node),1);
-                                for in = 1:numel(neuron{x}.record{t}.(recfields{f1})(r).node)
-                                    inode(in) = find(minterf{neuron{n}.tree(tt)}(:,1) == neuron{x}.record{t}.(recfields{f1})(r).node(in),1,'first');    %find the index of the node in minterf
+                                inode = zeros(numel(neuron{refR}.record{t}.(recfields{f1})(r).node),1);
+                                for in = 1:numel(neuron{refR}.record{t}.(recfields{f1})(r).node)
+                                    inode(in) = find(minterf{neuron{n}.tree(tt)}(:,1) == neuron{refR}.record{t}.(recfields{f1})(r).node(in),1,'first');    %find the index of the node in minterf
                                 end
                                 [realrecs,~,ic] = unique(minterf{neuron{n}.tree(tt)}(inode,[2,4]),'rows');
                                 % put warning here !
@@ -1416,70 +1409,70 @@ for n = 1:numel(neuron)
                             switch rectype
                                 case 'cell'
                                     for in = 1:size(realrecs,1)
-                                        fprintf(ofile,sprintf('rec = new Vector(%f)\n',(neuron{refP}.params.tstop-neuron{refP}.params.tstart)/neuron{refP}.params.dt+1 ) );    % create new recording vector
-                                        fprintf(ofile,sprintf('rec.label("%s at location %06.4f of section %d of cell %d")\n', neuron{x}.record{t}.cell(r).record , realrecs(in,2), realrecs(in,1) ,tt-1) ); % label the vector for plotting
-                                        if neuron{refP}.params.cvode
+                                        fprintf(ofile,sprintf('rec = new Vector(%f)\n',(neuron{refPar}.params.tstop-neuron{refPar}.params.tstart)/neuron{refPar}.params.dt+1 ) );    % create new recording vector
+                                        fprintf(ofile,sprintf('rec.label("%s at location %06.4f of section %d of cell %d")\n', neuron{refR}.record{t}.cell(r).record , realrecs(in,2), realrecs(in,1) ,tt-1) ); % label the vector for plotting
+                                        if neuron{refPar}.params.cvode
                                             if makenewrect  % only make a new time vector for recording if a new simulation instance or a new cell (in case of use_local_dt)
-                                                fprintf(ofile,sprintf('rect = new Vector(%f)\n',(neuron{refP}.params.tstop-neuron{refP}.params.tstart)/neuron{refP}.params.dt+1 ) );    % create new recording vector
+                                                fprintf(ofile,sprintf('rect = new Vector(%f)\n',(neuron{refPar}.params.tstop-neuron{refPar}.params.tstart)/neuron{refPar}.params.dt+1 ) );    % create new recording vector
                                             end
-                                            fprintf(ofile,sprintf('cellList.o(%d).allregobj.o(%d).sec {io = cvode.record(&%s(%f),rec,rect)}\n',tt-1,realrecs(in,1), neuron{x}.record{t}.cell(r).record, realrecs(in,2) ) ); % record the parameter x at site y as specified in neuron{x}.record
+                                            fprintf(ofile,sprintf('cellList.o(%d).allregobj.o(%d).sec {io = cvode.record(&%s(%f),rec,rect)}\n',tt-1,realrecs(in,1), neuron{refR}.record{t}.cell(r).record, realrecs(in,2) ) ); % record the parameter x at site y as specified in neuron{refR}.record
                                         else
-                                            fprintf(ofile,sprintf('io = rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),tvec)\n',tt-1,realrecs(in,1), neuron{x}.record{t}.cell(r).record, realrecs(in,2) ) ); % record the parameter x at site y as specified in neuron{x}.record
+                                            fprintf(ofile,sprintf('io = rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),tvec)\n',tt-1,realrecs(in,1), neuron{refR}.record{t}.cell(r).record, realrecs(in,2) ) ); % record the parameter x at site y as specified in neuron{refR}.record
                                         end
                                         
                                         fprintf(ofile,'io = recList.append(rec)\n\n' );  %append recording vector to recList
-                                        if neuron{refP}.params.cvode
+                                        if neuron{refPar}.params.cvode
                                             if makenewrect
                                                 fprintf(ofile,'io = rectList.append(rect)\n\n' );  %append time recording vector to recList
                                                 countt = countt +1;
                                                 makenewrect = false;
                                             end
-                                            neuron{x}.record{t}.cell(r).idt(in) = countt;   % reference to find recording in recList
+                                            neuron{refR}.record{t}.cell(r).idt(in) = countt;   % reference to find recording in recList
                                         end
-                                        neuron{x}.record{t}.cell(r).id(in) = count;  % reference to find recording in recList
+                                        neuron{refR}.record{t}.cell(r).id(in) = count;  % reference to find recording in recList
                                         count = count +1;
                                     end
-                                    neuron{x}.record{t}.cell(r).rrecs = realrecs; % gives the section and segment to the recordings
-                                    neuron{x}.record{t}.cell(r).irrecs = ic; % gives the the index to realrecs for each node
+                                    neuron{refR}.record{t}.cell(r).rrecs = realrecs; % gives the section and segment to the recordings
+                                    neuron{refR}.record{t}.cell(r).irrecs = ic; % gives the the index to realrecs for each node
                                 case 'pp'
                                     delin = [];
-                                    %                                 [~,iid] = intersect(neuron{x3}.pp{t}.(recfields{f1}).node,neuron{x}.record{t}.(recfields{f1}).node); % get reference to the node location of the PPs that should be connected
-                                    if isfield(neuron{x}.record{t}.(recfields{f1})(r),'ppg')
-                                        ppg = neuron{x}.record{t}.(recfields{f1})(r).ppg;
-                                    elseif numel(neuron{x3}.pp{t}.(recfields{f1})) == numel(neuron{x}.record{t}.(recfields{f1}))
+                                    %                                 [~,iid] = intersect(neuron{x3}.pp{t}.(recfields{f1}).node,neuron{refR}.record{t}.(recfields{f1}).node); % get reference to the node location of the PPs that should be connected
+                                    if isfield(neuron{refR}.record{t}.(recfields{f1})(r),'ppg')
+                                        ppg = neuron{refR}.record{t}.(recfields{f1})(r).ppg;
+                                    elseif numel(neuron{refPP}.pp{t}.(recfields{f1})) == numel(neuron{refR}.record{t}.(recfields{f1}))
                                         ppg = r;
                                     else
                                         ppg =1;
                                     end
                                     for in =  1:size(realrecs,1)
-                                        ind = find(neuron{x3}.pp{t}.(recfields{f1})(ppg).node == neuron{x}.record{t}.(recfields{f1})(r).node(in));
+                                        ind = find(neuron{refPP}.pp{t}.(recfields{f1})(ppg).node == neuron{refR}.record{t}.(recfields{f1})(r).node(in));
                                         if ~isempty(ind)
-                                            fprintf(ofile,sprintf('rec = new Vector(%f)\n',(neuron{refP}.params.tstop-neuron{refP}.params.tstart)/neuron{refP}.params.dt+1 ) );    % create new recording vector
-                                            fprintf(ofile,sprintf('rec.label("%s of %s Point Process at location %06.4f of section %d of cell %d")\n', neuron{x}.record{t}.(recfields{f1})(r).record , recfields{f1} , fliplr(realrecs(in,:)) ,tt-1) ); % label the vector for plotting
-                                            if neuron{refP}.params.cvode
+                                            fprintf(ofile,sprintf('rec = new Vector(%f)\n',(neuron{refPar}.params.tstop-neuron{refPar}.params.tstart)/neuron{refPar}.params.dt+1 ) );    % create new recording vector
+                                            fprintf(ofile,sprintf('rec.label("%s of %s Point Process at location %06.4f of section %d of cell %d")\n', neuron{refR}.record{t}.(recfields{f1})(r).record , recfields{f1} , fliplr(realrecs(in,:)) ,tt-1) ); % label the vector for plotting
+                                            if neuron{refPar}.params.cvode
                                                 if makenewrect  % only make a new time vector for recording if a new simulation instance or a new cell (in case of use_local_dt)
-                                                    fprintf(ofile,sprintf('rect = new Vector(%f)\n',(neuron{refP}.params.tstop-neuron{refP}.params.tstart)/neuron{refP}.params.dt+1 ) );    % create new recording vector
+                                                    fprintf(ofile,sprintf('rect = new Vector(%f)\n',(neuron{refPar}.params.tstop-neuron{refPar}.params.tstart)/neuron{refPar}.params.dt+1 ) );    % create new recording vector
                                                 end
-                                                fprintf(ofile,sprintf('cellList.o(%d).allregobj.o(%d).sec {io = cvode.record(&ppList.o(%d).%s,rec,rect)}\n',tt-1, realrecs(in,1),neuron{x3}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{x}.record{t}.(recfields{f1})(r).record ) ); % record the parameter x at site y as specified in neuron{x}.record
+                                                fprintf(ofile,sprintf('cellList.o(%d).allregobj.o(%d).sec {io = cvode.record(&ppList.o(%d).%s,rec,rect)}\n',tt-1, realrecs(in,1),neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record ) ); % record the parameter x at site y as specified in neuron{refR}.record
                                             else
-                                                fprintf(ofile,sprintf('io = rec.record(&ppList.o(%d).%s,tvec)\n',neuron{x3}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{x}.record{t}.(recfields{f1})(r).record ) ); % record the parameter x at site y as specified in neuron{x}.record
+                                                fprintf(ofile,sprintf('io = rec.record(&ppList.o(%d).%s,tvec)\n',neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record ) ); % record the parameter x at site y as specified in neuron{refR}.record
                                             end
                                             fprintf(ofile,'io = recList.append(rec)\n\n' );  %append recording vector to recList
-                                            if neuron{refP}.params.cvode
+                                            if neuron{refPar}.params.cvode
                                                 if makenewrect
                                                     fprintf(ofile,'io = rectList.append(rect)\n\n' );  %append time recording vector to recList
                                                     countt = countt +1;
                                                     makenewrect = false;
                                                 end
-                                                neuron{x}.record{t}.(recfields{f1})(r).idt(in) = countt;    % reference to find recording in recList
+                                                neuron{refR}.record{t}.(recfields{f1})(r).idt(in) = countt;    % reference to find recording in recList
                                             end
                                             
-                                            neuron{x}.record{t}.(recfields{f1})(r).id(in) = count;   % reference to find recording in recList
+                                            neuron{refR}.record{t}.(recfields{f1})(r).id(in) = count;   % reference to find recording in recList
                                             count = count +1;
                                         else
                                             delin = cat(1,delin,in);
-                                            neuron{x}.record{t}.(recfields{f1})(r).id(in) = NaN;
-                                            fprintf('Node %d of cell %d does not comprise the PP "%s". Recording is ignored.',neuron{x}.record{t}.(recfields{f1})(r).node(in),t,recfields{f1})
+                                            neuron{refR}.record{t}.(recfields{f1})(r).id(in) = NaN;
+                                            fprintf('Node %d of cell %d does not comprise the PP "%s". Recording is ignored.',neuron{refR}.record{t}.(recfields{f1})(r).node(in),t,recfields{f1})
                                             ic(ic == in) = [];  % if node does not correspond to some specified pp at that place, delete it
                                             ic(ic >= in) = ic(ic >= in) - 1;
                                         end
@@ -1487,41 +1480,41 @@ for n = 1:numel(neuron)
                                     if ~isempty(delin)
                                         realrecs(delin,:) = [];  % if node does not correspond to some specified pp at that place, delete it
                                     end
-                                    neuron{x}.record{t}.(recfields{f1})(r).rrecs = realrecs;
-                                    neuron{x}.record{t}.(recfields{f1})(r).irrecs = ic; % gives the the index to realrecs for each node
+                                    neuron{refR}.record{t}.(recfields{f1})(r).rrecs = realrecs;
+                                    neuron{refR}.record{t}.(recfields{f1})(r).irrecs = ic; % gives the the index to realrecs for each node
                                 case 'artificial'
-                                    fprintf(ofile,sprintf('rec = new Vector(%f)\n',(neuron{refP}.params.tstop-neuron{refP}.params.tstart)/neuron{refP}.params.dt+1 ) );    % create new recording vector
-                                    fprintf(ofile,sprintf('rec.label("%s of artificial cell %s (cell #%d)")\n', neuron{x}.record{t}.cell(r).record , tree{neuron{n}.tree(tt)}.artificial, tt-1) ); % label the vector for plotting
-                                    if strcmpi(neuron{x}.record{t}.cell(r).record,'on')
+                                    fprintf(ofile,sprintf('rec = new Vector(%f)\n',(neuron{refPar}.params.tstop-neuron{refPar}.params.tstart)/neuron{refPar}.params.dt+1 ) );    % create new recording vector
+                                    fprintf(ofile,sprintf('rec.label("%s of artificial cell %s (cell #%d)")\n', neuron{refR}.record{t}.cell(r).record , tree{neuron{n}.tree(tt)}.artificial, tt-1) ); % label the vector for plotting
+                                    if strcmpi(neuron{refR}.record{t}.cell(r).record,'on')
                                         fprintf(ofile,sprintf('nilcon = new NetCon(cellList.o(%d).cell,nil,%g,0,5)\n',tt-1,0.5) );    % for art. cells, make netcon with threshold 0.5
                                         fprintf(ofile,sprintf('io = nilcon.record(rec)\n'));
                                         fprintf(ofile,'io = nilconList.append(nilcon)\n\n' );  %append recording vector to recList
                                     else
-                                        if neuron{refP}.params.cvode
+                                        if neuron{refPar}.params.cvode
                                             if makenewrect  % only make a new time vector for recording if a new simulation instance or a new cell (in case of use_local_dt)
-                                                fprintf(ofile,sprintf('rect = new Vector(%f)\n',(neuron{refP}.params.tstop-neuron{refP}.params.tstart)/neuron{refP}.params.dt+1 ) );    % create new recording vector
+                                                fprintf(ofile,sprintf('rect = new Vector(%f)\n',(neuron{refPar}.params.tstop-neuron{refPar}.params.tstart)/neuron{refPar}.params.dt+1 ) );    % create new recording vector
                                             end
-                                            fprintf(ofile,sprintf('io = cvode.record(&cellList.o(%d).cell.%s,rec,rect)\n',tt-1, neuron{x}.record{t}.cell(r).record ) );  % record the parameter x of artificial cell tt-1
+                                            fprintf(ofile,sprintf('io = cvode.record(&cellList.o(%d).cell.%s,rec,rect)\n',tt-1, neuron{refR}.record{t}.cell(r).record ) );  % record the parameter x of artificial cell tt-1
                                         else
-                                            fprintf(ofile,sprintf('io = rec.record(&cellList.o(%d).cell.%s,tvec)\n', tt-1, neuron{x}.record{t}.cell(r).record ) ); % record the parameter x of artificial cell tt-1
+                                            fprintf(ofile,sprintf('io = rec.record(&cellList.o(%d).cell.%s,tvec)\n', tt-1, neuron{refR}.record{t}.cell(r).record ) ); % record the parameter x of artificial cell tt-1
                                         end
-                                        if neuron{refP}.params.cvode
+                                        if neuron{refPar}.params.cvode
                                             if makenewrect
                                                 fprintf(ofile,'io = rectList.append(rect)\n\n' );  %append time recording vector to recList
                                                 countt = countt +1;
                                                 makenewrect = false;
                                             end
-                                            neuron{x}.record{t}.cell(r).idt = countt;    % reference to find recording in recList
+                                            neuron{refR}.record{t}.cell(r).idt = countt;    % reference to find recording in recList
                                         end
                                     end
                                     fprintf(ofile,'io = recList.append(rec)\n\n' );  %append recording vector to recList
-                                    neuron{x}.record{t}.cell(r).id = count;   % reference to find recording in recList
+                                    neuron{refR}.record{t}.cell(r).id = count;   % reference to find recording in recList
                                     count = count +1;
                             end
                         end
                         fprintf(ofile,'\n');
                     end
-                    if neuron{refP}.params.parallel
+                    if neuron{refPar}.params.parallel
                         fprintf(ofile,'}\n');
                     end
                 end
@@ -1530,24 +1523,24 @@ for n = 1:numel(neuron)
             fprintf(ofile, 'objref rect\n');
         end
         %
-        if ~isnan(x2)     %rewrite only if record def is not taken from previous sim
+        if ~isnan(refAP)     %rewrite only if record def is not taken from previous sim
             %!%! there might be problems with cvode (not adjusted yet)
             fprintf(ofile,'\n\n');
             fprintf(ofile,'// ***** Define APCount sites *****\n');
             for tt = 1:numel(neuron{n}.tree)
                 t = neuron{n}.tree(tt);
-                if numel(neuron{x2}.APCount) >= t && ~isempty(neuron{x2}.APCount{t})   % if a recording site was defined for  this tree
-                    if neuron{refP}.params.parallel
+                if numel(neuron{refAP}.APCount) >= t && ~isempty(neuron{refAP}.APCount{t})   % if a recording site was defined for  this tree
+                    if neuron{refPar}.params.parallel
                         fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                     end
-                    for r = 1: size(neuron{x2}.APCount{t},1)
+                    for r = 1: size(neuron{refAP}.APCount{t},1)
                         if ~isfield(tree{neuron{n}.tree(tt)},'artificial')
-                            inode = find(minterf{neuron{n}.tree(tt)}(:,1) == neuron{x2}.APCount{t}(r,1),1,'first');    %find the index of the node in minterf
+                            inode = find(minterf{neuron{n}.tree(tt)}(:,1) == neuron{refAP}.APCount{t}(r,1),1,'first');    %find the index of the node in minterf
                             fprintf(ofile,sprintf('cellList.o(%d).allregobj.o(%d).sec',tt-1,minterf{neuron{n}.tree(tt)}(inode,2) ) );    % corresponding section of node
                             fprintf(ofile,sprintf('{APC = new APCount(%f)\n',minterf{neuron{n}.tree(tt)}(inode,3) ) );    % make APCCount at position x
-                            fprintf(ofile,sprintf('APC.thresh = %f\n',neuron{x2}.APCount{t}(r,2) ) ); % set threshold of APCount [mV]
+                            fprintf(ofile,sprintf('APC.thresh = %f\n',neuron{refAP}.APCount{t}(r,2) ) ); % set threshold of APCount [mV]
                         else
-                            fprintf(ofile,sprintf('APC = new NetCon(cellList.o(%d).cell,nil,%g,0,5)\n',tt-1,neuron{x2}.APCount{t}(r,2) ) );    % for art. cells, make netcon with threshold
+                            fprintf(ofile,sprintf('APC = new NetCon(cellList.o(%d).cell,nil,%g,0,5)\n',tt-1,neuron{refAP}.APCount{t}(r,2) ) );    % for art. cells, make netcon with threshold
                         end
                         fprintf(ofile,'APCrec = new Vector()\n');
                         fprintf(ofile,'io = APCrecList.append(APCrec)\n');
@@ -1560,7 +1553,7 @@ for n = 1:numel(neuron)
                         end
                     end
                     fprintf(ofile,'\n');
-                    if neuron{refP}.params.parallel
+                    if neuron{refPar}.params.parallel
                         fprintf(ofile,'}\n');
                     end
                 end
@@ -1577,25 +1570,24 @@ for n = 1:numel(neuron)
     
     %% write init_play.hoc
     
-    x = t2n_getref(n,neuron,'play');
-    if (~isnan(x)) && x==n      %rewrite only if one or both of play/APCount are not taken from previous sim or if both are taken from another sim but from different ones (not possible because both are in one hoc)
+    if (~isnan(refP)) && refP==n      %rewrite only if one or both of play/APCount are not taken from previous sim or if both are taken from another sim but from different ones (not possible because both are in one hoc)
         ofile = fopen(fullfile(exchfolder,thisfolder,'init_play.hoc') ,'wt');   %open play hoc file in write modus
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Define play sites *****\n');
         count = 0;  % counter for playing vector List
         for tt = 1:numel(neuron{n}.tree)
             t = neuron{n}.tree(tt);
-            if numel(neuron{x}.play) >= t && ~isempty(neuron{x}.play{t})  % if a playing site was defined for  this tree
-                if neuron{refP}.params.parallel
+            if numel(neuron{refP}.play) >= t && ~isempty(neuron{refP}.play{t})  % if a playing site was defined for  this tree
+                if neuron{refPar}.params.parallel
                     fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                 end
                 if isfield(tree{neuron{n}.tree(tt)},'artificial')
-                    playfields = fieldnames(neuron{x}.play{t});
+                    playfields = fieldnames(neuron{refP}.play{t});
                     if numel(playfields) > 1 && strcmp(playfields,'play')
-                        neuron{x}.play{t} = struct(tree{neuron{n}.tree(tt)}.artificial,neuron{x}.play{t}); % put the structure in field named as the artificial neuron
+                        neuron{refP}.play{t} = struct(tree{neuron{n}.tree(tt)}.artificial,neuron{refP}.play{t}); % put the structure in field named as the artificial neuron
                     end
                 end
-                playfields = fieldnames(neuron{x}.play{t});
+                playfields = fieldnames(neuron{refP}.play{t});
                 
                 for f1 = 1:numel(playfields)
                     if isfield(tree{neuron{n}.tree(tt)},'artificial')
@@ -1606,7 +1598,7 @@ for n = 1:numel(neuron)
                         playtype = 'pp';
                     end
                     
-                    for r = 1:numel(neuron{x}.play{t}.(playfields{f1})) %.play)  % go through all variables to be played
+                    for r = 1:numel(neuron{refP}.play{t}.(playfields{f1})) %.play)  % go through all variables to be played
                         if isfield(neuron{n}.play{t}.(playfields{f1})(r),'cont')
                             cont = neuron{n}.play{t}.(playfields{f1})(r).cont;
                         else
@@ -1614,10 +1606,10 @@ for n = 1:numel(neuron)
                         end
                         if strcmp(playtype,'cell')
                             if isfield(tree{neuron{n}.tree(tt)},'R') && isfield(tree{neuron{n}.tree(tt)},'rnames')
-                                Rs = tree{neuron{n}.tree(tt)}.rnames(tree{neuron{n}.tree(tt)}.R(neuron{x}.play{t}.cell(r).node));       % all region names of trees nodes
-                                strs = regexp(neuron{x}.play{t}.cell(r).play,'_','split');            % split play string to get mechanism name
+                                Rs = tree{neuron{n}.tree(tt)}.rnames(tree{neuron{n}.tree(tt)}.R(neuron{refP}.play{t}.cell(r).node));       % all region names of trees nodes
+                                strs = regexp(neuron{refP}.play{t}.cell(r).play,'_','split');            % split play string to get mechanism name
                                 if numel(strs)>1              % check if play variable is variable of a mechanism or maybe global
-                                    ignorethese = false(1,numel(neuron{x}.play{t}.cell(r).node));
+                                    ignorethese = false(1,numel(neuron{refP}.play{t}.cell(r).node));
                                     uRs = unique(Rs);
                                     str = '';
                                     for u = 1:numel(uRs)                                            % go through regions to be played
@@ -1627,7 +1619,7 @@ for n = 1:numel(neuron)
                                         end
                                     end
                                     if ~isempty(str)
-                                        neuron{x}.play{t}.cell(r).node(ignorethese) = [];                     % delete the playing nodes which should be ignored
+                                        neuron{refP}.play{t}.cell(r).node(ignorethese) = [];                     % delete the playing nodes which should be ignored
                                         warning('Region(s) "%s" of tree %d do not contain mechanism "%s" for playing. Playing in this region is ignored',str(1:end-1),t,strs{end})
                                     end
                                 end
@@ -1635,9 +1627,9 @@ for n = 1:numel(neuron)
                         end
                         
                         if ~any(strcmp(playtype,'artificial'))
-                            inode = zeros(numel(neuron{x}.play{t}.(playfields{f1})(r).node),1);
-                            for in = 1:numel(neuron{x}.play{t}.(playfields{f1})(r).node)
-                                inode(in) = find(minterf{neuron{n}.tree(tt)}(:,1) == neuron{x}.play{t}.(playfields{f1})(r).node(in),1,'first');    %find the index of the node in minterf
+                            inode = zeros(numel(neuron{refP}.play{t}.(playfields{f1})(r).node),1);
+                            for in = 1:numel(neuron{refP}.play{t}.(playfields{f1})(r).node)
+                                inode(in) = find(minterf{neuron{n}.tree(tt)}(:,1) == neuron{refP}.play{t}.(playfields{f1})(r).node(in),1,'first');    %find the index of the node in minterf
                             end
                             [realplays,~,ic] = unique(minterf{neuron{n}.tree(tt)}(inode,[2,4]),'rows');
                             % put warning here !
@@ -1678,15 +1670,15 @@ for n = 1:numel(neuron)
                                     
                                 end
                             case 'pp'
-                                if isfield(neuron{x}.play{t}.(playfields{f1})(r),'ppg')
-                                    ppg = neuron{x}.play{t}.(playfields{f1})(r).ppg;
-                                elseif numel(neuron{x3}.pp{t}.(playfields{f1})) == numel(neuron{x}.play{t}.(playfields{f1}))
+                                if isfield(neuron{refP}.play{t}.(playfields{f1})(r),'ppg')
+                                    ppg = neuron{refP}.play{t}.(playfields{f1})(r).ppg;
+                                elseif numel(neuron{refPP}.pp{t}.(playfields{f1})) == numel(neuron{refP}.play{t}.(playfields{f1}))
                                     ppg = r;
                                 else
                                     ppg =1;
                                 end
-                                for in =  1:numel(inode)%size(realplays,1)%numel(neuron{x}.play{t}{r,1})  % CAUTION might be wrong
-                                    ind = find(neuron{x3}.pp{t}.(playfields{f1})(ppg).node == neuron{x}.play{t}.(playfields{f1})(r).node(in));  % check if node really has the corresponding PP
+                                for in =  1:numel(inode)%size(realplays,1)%numel(neuron{refP}.play{t}{r,1})  % CAUTION might be wrong
+                                    ind = find(neuron{refPP}.pp{t}.(playfields{f1})(ppg).node == neuron{refP}.play{t}.(playfields{f1})(r).node(in));  % check if node really has the corresponding PP
                                     if ~isempty(ind)
                                         fprintf(ofile,sprintf('playt = new Vector(%f)\n',length(neuron{n}.play{t}.(playfields{f1})(r).times) ));    % create new playing time vector
                                         %a file needs to be created to temporally save the vector so
@@ -1726,14 +1718,14 @@ for n = 1:numel(neuron)
                                         fprintf(ofile,'play.scanf(f)\n');     % file is read into play vector
                                         fprintf(ofile,'io = f.close()\n');   %file is closed
                                         fprintf(ofile,sprintf('play.label("playing %s %s at node %d of cell %d")\n', playfields{f1}, neuron{n}.play{t}.(playfields{f1})(r).play  , ic(in) ,tt-1) ); % label the vector for plotting
-                                        fprintf(ofile,sprintf('io = play.play(&ppList.o(%d).%s,playt)\n',neuron{x3}.pp{t}.(playfields{f1})(ppg).id(ind), neuron{x}.play{t}.(playfields{f1})(r).play ) ); % play the parameter x at site y as specified in neuron{x}.play
+                                        fprintf(ofile,sprintf('io = play.play(&ppList.o(%d).%s,playt)\n',neuron{refPP}.pp{t}.(playfields{f1})(ppg).id(ind), neuron{refP}.play{t}.(playfields{f1})(r).play ) ); % play the parameter x at site y as specified in neuron{refP}.play
                                         fprintf(ofile,'io = playList.append(play)\n\n' );  %append playing vector to playList
                                         
-                                        neuron{x}.play{t}.(playfields{f1})(r).id(in) = count;   % reference to find playing in playList
+                                        neuron{refP}.play{t}.(playfields{f1})(r).id(in) = count;   % reference to find playing in playList
                                         count = count +1;
                                     else
-                                        neuron{x}.play{t}.(playfields{f1})(r).id(in) = NaN;   % reference to find playing in playList
-                                        fprintf('Node %d of cell %d does not comprise the PP "%s". Playing is ignored.',neuron{x}.play{t}.(playfields{f1})(r).node(in),t,playfields{f1})
+                                        neuron{refP}.play{t}.(playfields{f1})(r).id(in) = NaN;   % reference to find playing in playList
+                                        fprintf('Node %d of cell %d does not comprise the PP "%s". Playing is ignored.',neuron{refP}.play{t}.(playfields{f1})(r).node(in),t,playfields{f1})
                                     end
                                 end
                             case 'artificial'
@@ -1766,22 +1758,22 @@ for n = 1:numel(neuron)
                                     fprintf(ofile,sprintf('f.ropen("plt_%s_of_art_%s_cell%d.dat")\n', neuron{n}.play{t}.(playfields{f1})(r).play, playfields{f1}, tt-1));  %vector file is opened
                                     fprintf(ofile,'play.scanf(f)\n');     % file is read into play vector
                                     fprintf(ofile,'io = f.close()\n');   %file is closed
-                                    fprintf(ofile,sprintf('play.label("%s of artificial cell %s (cell #%d)")\n', neuron{x}.play{t}.cell(r).play , tree{neuron{n}.tree(tt)}.artificial, tt-1) ); % label the vector for plotting
+                                    fprintf(ofile,sprintf('play.label("%s of artificial cell %s (cell #%d)")\n', neuron{refP}.play{t}.cell(r).play , tree{neuron{n}.tree(tt)}.artificial, tt-1) ); % label the vector for plotting
                                     warning('not tested yet play')
-                                    fprintf(ofile,sprintf('io = cellList.o(%d).cell.play(&,playt)\n',tt-1, neuron{x}.play{t}.(playfields{f1})(r).play ) ); % play the parameter x at site y as specified in neuron{x}.play
+                                    fprintf(ofile,sprintf('io = cellList.o(%d).cell.play(&,playt)\n',tt-1, neuron{refP}.play{t}.(playfields{f1})(r).play ) ); % play the parameter x at site y as specified in neuron{refP}.play
                                     fprintf(ofile,'io = playList.append(play)\n\n' );  %append playing vector to playList
                                 else
                                     fprintf(ofile,sprintf('io = cellList.o(%d).cell.play(playt)\n',tt-1 ) ); % the vecstim has its own play class
                                 end
                                 
-                                neuron{x}.play{t}.cell(r).id = count;   % reference to find playing in playList
+                                neuron{refP}.play{t}.cell(r).id = count;   % reference to find playing in playList
                                 count = count +1;
                                 
                         end
                     end
                     fprintf(ofile,'\n');
                 end
-                if neuron{refP}.params.parallel
+                if neuron{refPar}.params.parallel
                     fprintf(ofile,'}\n');
                 end
             end
@@ -1798,22 +1790,21 @@ for n = 1:numel(neuron)
     
     ofile = fopen(fullfile(exchfolder,thisfolder,'save_rec.hoc') ,'wt');   %open record hoc file in write modus
     fprintf(ofile,'// * Write Recordings to Files *\n');
-    x = t2n_getref(n,neuron,'record');
-    if ~isnan(x)
+    if ~isnan(refR)
         makenewrect = true;
         out{n}.record = cell(1,numel(neuron{n}.tree));   % initialize output of cn
         
         for tt = 1:numel(neuron{n}.tree)
             t = neuron{n}.tree(tt);
-            if neuron{refP}.params.use_local_dt
+            if neuron{refPar}.params.use_local_dt
                 makenewrect = true;
             end
-            if numel(neuron{x}.record) >= t && ~isempty(neuron{x}.record{t})
-                if neuron{refP}.params.parallel
+            if numel(neuron{refR}.record) >= t && ~isempty(neuron{refR}.record{t})
+                if neuron{refPar}.params.parallel
                     fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                 end
-                %                 for r = 1: size(neuron{x}.record{t},1)
-                recfields = fieldnames(neuron{x}.record{t});
+                %                 for r = 1: size(neuron{refR}.record{t},1)
+                recfields = fieldnames(neuron{refR}.record{t});
                 
                 for f1 = 1:numel(recfields)
                     if isfield(tree{neuron{n}.tree(tt)},'artificial')
@@ -1824,44 +1815,44 @@ for n = 1:numel(neuron)
                         rectype = 'pp';
                     end
                     
-                    for r = 1:numel(neuron{x}.record{t}.(recfields{f1}))   % go through all variables to be recorded
+                    for r = 1:numel(neuron{refR}.record{t}.(recfields{f1}))   % go through all variables to be recorded
                         
                         
                         switch rectype
                             case 'cell'
-                                for in = 1:size(neuron{x}.record{t}.cell(r).rrecs,1)
-                                    fname = sprintf('cell%d_sec%d_loc%06.4f_%s', tt-1, neuron{x}.record{t}.cell(r).rrecs(in,:), neuron{x}.record{t}.(recfields{f1})(r).record  );
-                                    fprintf(ofile,'save_rec("%s.dat",%d)\n',fname,neuron{x}.record{t}.(recfields{f1})(r).id(in));
+                                for in = 1:size(neuron{refR}.record{t}.cell(r).rrecs,1)
+                                    fname = sprintf('cell%d_sec%d_loc%06.4f_%s', tt-1, neuron{refR}.record{t}.cell(r).rrecs(in,:), neuron{refR}.record{t}.(recfields{f1})(r).record  );
+                                    fprintf(ofile,'save_rec("%s.dat",%d)\n',fname,neuron{refR}.record{t}.(recfields{f1})(r).id(in));
                                     noutfiles = noutfiles +1;
-                                    readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , 'cell', neuron{x}.record{t}.(recfields{f1})(r).record , neuron{x}.record{t}.(recfields{f1})(r).node(neuron{x}.record{t}.(recfields{f1})(r).irrecs == in) }; %neuron{x}.record{t}.(recfields{f1})(r).node(in) };
+                                    readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , 'cell', neuron{refR}.record{t}.(recfields{f1})(r).record , neuron{refR}.record{t}.(recfields{f1})(r).node(neuron{refR}.record{t}.(recfields{f1})(r).irrecs == in) }; %neuron{refR}.record{t}.(recfields{f1})(r).node(in) };
                                 end
                             case 'pp'
-                                for in = 1:size(neuron{x}.record{t}.(recfields{f1})(r).rrecs,1)
-                                    if ~isnan(neuron{x}.record{t}.(recfields{f1})(r).id(in))  % if recording has not been deleted because the PP did not exist at that place
-                                        fname = sprintf('%s_cell%d_sec%d_loc%06.4f_%s',recfields{f1},tt-1, neuron{x}.record{t}.(recfields{f1})(r).rrecs(in,:), neuron{x}.record{t}.(recfields{f1})(r).record  );
-                                        fprintf(ofile,'save_rec("%s.dat",%d)\n',fname,neuron{x}.record{t}.(recfields{f1})(r).id(in));
+                                for in = 1:size(neuron{refR}.record{t}.(recfields{f1})(r).rrecs,1)
+                                    if ~isnan(neuron{refR}.record{t}.(recfields{f1})(r).id(in))  % if recording has not been deleted because the PP did not exist at that place
+                                        fname = sprintf('%s_cell%d_sec%d_loc%06.4f_%s',recfields{f1},tt-1, neuron{refR}.record{t}.(recfields{f1})(r).rrecs(in,:), neuron{refR}.record{t}.(recfields{f1})(r).record  );
+                                        fprintf(ofile,'save_rec("%s.dat",%d)\n',fname,neuron{refR}.record{t}.(recfields{f1})(r).id(in));
                                         noutfiles = noutfiles +1;
-                                        readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , recfields{f1}, neuron{x}.record{t}.(recfields{f1})(r).record , neuron{x}.record{t}.(recfields{f1})(r).node(neuron{x}.record{t}.(recfields{f1})(r).irrecs == in)};%neuron{x}.record{t}.(recfields{f1})(r).node(in) };
+                                        readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , recfields{f1}, neuron{refR}.record{t}.(recfields{f1})(r).record , neuron{refR}.record{t}.(recfields{f1})(r).node(neuron{refR}.record{t}.(recfields{f1})(r).irrecs == in)};%neuron{refR}.record{t}.(recfields{f1})(r).node(in) };
                                     end
                                 end
                             case 'artificial'
-                                fname = sprintf('cell%d_%s',tt-1, neuron{x}.record{t}.(recfields{f1})(r).record );
-                                fprintf(ofile,'save_rec("%s.dat",%d)\n',fname,neuron{x}.record{t}.(recfields{f1})(r).id);
+                                fname = sprintf('cell%d_%s',tt-1, neuron{refR}.record{t}.(recfields{f1})(r).record );
+                                fprintf(ofile,'save_rec("%s.dat",%d)\n',fname,neuron{refR}.record{t}.(recfields{f1})(r).id);
                                 noutfiles = noutfiles +1;
-                                readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , 'cell', neuron{x}.record{t}.(recfields{f1})(r).record , 1 };
+                                readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , 'cell', neuron{refR}.record{t}.(recfields{f1})(r).record , 1 };
                         end
-                        if neuron{refP}.params.cvode && makenewrect  % save tvector once (or for each cell if local dt)
-                            if neuron{refP}.params.use_local_dt
+                        if neuron{refPar}.params.cvode && makenewrect  % save tvector once (or for each cell if local dt)
+                            if neuron{refPar}.params.use_local_dt
                                 fnamet = sprintf('cell%d_tvec.dat', tt-1);
                             else
                                 fnamet = 'tvec.dat';
                             end
-                            fprintf(ofile,'save_rect("%s",%d)\n',fnamet,neuron{x}.record{t}.(recfields{f1})(r).idt(1));
+                            fprintf(ofile,'save_rect("%s",%d)\n',fnamet,neuron{refR}.record{t}.(recfields{f1})(r).idt(1));
                             makenewrect = false;
                         end
                     end
                 end
-                if neuron{refP}.params.parallel
+                if neuron{refPar}.params.parallel
                     fprintf(ofile,'}\n');
                 end
             end
@@ -1870,17 +1861,16 @@ for n = 1:numel(neuron)
     end
     fprintf(ofile,'// * Write APCounts to Files *\n');
     
-    x = t2n_getref(n,neuron,'APCount');
-    if ~isnan(x)
+    if ~isnan(refAP)
         c=0;
         for tt = 1:numel(neuron{n}.tree)
             t = neuron{n}.tree(tt);
-            if numel(neuron{x}.APCount) >= t && ~isempty(neuron{x}.APCount{t})     % if a recording site was defined for  this tree
-                if neuron{refP}.params.parallel
+            if numel(neuron{refAP}.APCount) >= t && ~isempty(neuron{refAP}.APCount{t})     % if a recording site was defined for  this tree
+                if neuron{refPar}.params.parallel
                     fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                 end
-                for r = 1: size(neuron{x}.APCount{t},1)
-                    fname = sprintf('cell%d_node%d_APCtimes.dat',tt-1,neuron{x}.APCount{t}(r,1) );
+                for r = 1: size(neuron{refAP}.APCount{t},1)
+                    fname = sprintf('cell%d_node%d_APCtimes.dat',tt-1,neuron{refAP}.APCount{t}(r,1) );
                     fprintf(ofile,'f = new File()\n');      %create a new filehandle
                     fprintf(ofile,sprintf('io = f.wopen("%s//%s//%s")\n',nrn_exchfolder,thisfolder,fname) );  % open file for this vector with write perm.
                     fprintf(ofile,sprintf('io = APCrecList.o(%d).printf(f, "%%%%-20.10g")\n', c ) );    % print the data of the vector into the file
@@ -1888,10 +1878,10 @@ for n = 1:numel(neuron)
                     
                     c= c+1;
                     noutfiles = noutfiles +1;
-                    readfiles{noutfiles} = {fname, n, t , 'APCtimes', 'times' , neuron{x}.APCount{t}(r,1)};
+                    readfiles{noutfiles} = {fname, n, t , 'APCtimes', 'times' , neuron{refAP}.APCount{t}(r,1)};
                 end
                 fprintf(ofile,'\n');
-                if neuron{refP}.params.parallel
+                if neuron{refPar}.params.parallel
                     fprintf(ofile,'}\n');
                 end
             end
@@ -1980,7 +1970,7 @@ end
 if ~isempty(strfind(options,'-nc'))
     nc = str2double(regexp(options,'(?<=-nc)[0-9]*', 'match'));
     if num_cores < nc
-        warning('%d cores have been assigned to T2N, however only %d physical cores where detected. Defining more cores might slow down PC and simulations',neuron{refP}.params.numCores,num_cores)
+        warning('%d cores have been assigned to T2N, however only %d physical cores where detected. Defining more cores might slow down PC and simulations',neuron{refPar}.params.numCores,num_cores)
     end
     num_cores = nc;
 end
@@ -2140,8 +2130,8 @@ if noutfiles > 0 % if output is expected
         sftptomatlab(server.user,server.host,server.pw,remotefilename,localfilename)
     end
     for s = 1:numel(simids)
-        refP = t2n_getref(s,neuron,'params');
-        if ~neuron{refP}.params.cvode
+        refPar = t2n_getref(s,neuron,'params');
+        if ~neuron{refPar}.params.cvode
             fn = fullfile(exchfolder,sprintf('sim%d',s),'tvec.dat');
             out{s}.t = load(fn,'-ascii');
         end
@@ -2152,7 +2142,7 @@ if noutfiles > 0 % if output is expected
         w = waitbar(0,'Loading files, please wait');
     end
     for f = 1:noutfiles
-        refP = t2n_getref(readfiles{f}{2},neuron,'params');
+        refPar = t2n_getref(readfiles{f}{2},neuron,'params');
         if simids(readfiles{f}{2}) == 2    % if there was no error during simulation
             fn = fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),readfiles{f}{1});
             if numel(readfiles{f}{6}) > 1
@@ -2163,8 +2153,8 @@ if noutfiles > 0 % if output is expected
                     out{readfiles{f}{2}}.APCtimes{readfiles{f}{3}}(readfiles{f}{6}) = repmat({load(fn,'-ascii')},numel(readfiles{f}{6}),1);
                 otherwise
                     out{readfiles{f}{2}}.record{readfiles{f}{3}}.(readfiles{f}{4}).(readfiles{f}{5})(readfiles{f}{6}) = repmat({load(fn,'-ascii')},numel(readfiles{f}{6}),1);
-                    if neuron{refP}.params.cvode
-                        if neuron{refP}.params.use_local_dt  % if yes, dt was different for each cell, so there is more than one time vector
+                    if neuron{refPar}.params.cvode
+                        if neuron{refPar}.params.use_local_dt  % if yes, dt was different for each cell, so there is more than one time vector
                             if numel(out{readfiles{f}{2}}.t) < readfiles{f}{3} || isempty(out{readfiles{f}{2}}.t{readfiles{f}{3}})
                                 out{readfiles{f}{2}}.t{readfiles{f}{3}} = load(fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),sprintf('cell%d_tvec.dat', find(readfiles{f}{3} == neuron{n}.tree)-1)),'-ascii');    %loading of one time vector file per cell (sufficient)
                             end
