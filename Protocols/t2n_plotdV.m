@@ -80,6 +80,7 @@ tprint(fullfile(targetfolder_results,sprintf('%s-PhasePlotModel2',ostruct.savena
 figure(fig(2))
 errorbar(cstepsSpikingModel*1000,mean(maxdv{2},1),std(maxdv{2},[],1),'Color',modelcol);%/sqrt(size(maxdv{2},1)) )
 FontResizer
+ylim([0 700])
 if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
     FigureResizer(ostruct.figureheight,ostruct.figurewidth,ostruct)
 end

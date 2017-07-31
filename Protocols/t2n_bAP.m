@@ -4,6 +4,12 @@ neuron.params.v_init = -85.4;
 if ~isfield(ostruct,'cstep')
     ostruct.cstep = 1.3; % nA
 end
+if ~isfield(ostruct,'simple')
+    ostruct.simple = 0;
+end
+if ~isfield(ostruct,'reduce')
+    ostruct.reduce = 0;
+end
 
 neuron.params.tstop = 1000;
 neuron.params.dt=0.025;

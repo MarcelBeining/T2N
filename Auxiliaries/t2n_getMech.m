@@ -103,13 +103,15 @@ for n = 1:numel(neuron) % go through all neuron definitions
             else
                 tname = sprintf('tree %d',t);
             end
-            title(sprintf('Neuron Simulation: %d, tree: "%s", variable "%s"',n,tname,strrep(var,'_','\_')))
+            title(sprintf('Neuron Simulation: %d, tree: "%s", variable "%s"',n,strrep(tname,'_','\_'),strrep(var,'_','\_')))
             plot_tree(tree{t},varVec{n,t});
             lims = [min(varVec{n,t}),max(varVec{n,t})];
             if diff(lims) == 0  % limits HAVE to be different from each other
                 lims = [lims(1)-1e-9,lims(1)+1e-9];
             end
-            set(gca,'CLim',lims)
+            if ~all(isnan(lims))
+                set(gca,'CLim',lims)
+            end
         end
     end
 end

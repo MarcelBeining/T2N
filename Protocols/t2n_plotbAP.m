@@ -148,9 +148,9 @@ for n = 1:numel(nneuron)
         mveloc_farax(t) = mean(veloc_farax); % mean of velocity
         mveloc_nearax(t) = mean(veloc_nearax); % mean of velocity
     end
-    if nargout == 0 || nargout > 4
+    if (nargout == 0 || nargout > 4) && exist('targetfolder_results','var') && ~isempty(targetfolder_results)
         figure(fig(1))
-        if ostruct.usemorph >= 4  % rat
+        if isfield(ostruct,'usemorph') && ostruct.usemorph >= 4  % rat
             plot(data(:,1),data(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
         end
         xlim([0 400])
@@ -163,7 +163,7 @@ for n = 1:numel(nneuron)
             tprint(fullfile(targetfolder_results,sprintf('bAP-ampl_%s',nneuron{n}.experiment)),'-pdf')
         end
         figure(fig(2))
-        if ostruct.usemorph >= 4  % rat
+        if isfield(ostruct,'usemorph') && ostruct.usemorph >= 4  % rat
             if ostruct.relamp
                 plot(data2(:,1)/300,data2(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
             else
@@ -192,7 +192,7 @@ for n = 1:numel(nneuron)
     % hide p, set colorbar to border and save
     
     if ~all(spiked)
-        display('CAUTION: Not all cells spiked!')
+        disp('CAUTION: Not all cells spiked!')
     end
     fprintf('Mean voltage attenuation @ %d µm: %g +- %g %% (s.e.m.)\n',thisdist,mean(bAPrelthisdist)*100,std(bAPrelthisdist)/sqrt(numel(tree))*100)
     if (nargout == 0 || nargout > 4) && ~isnan(data(1))

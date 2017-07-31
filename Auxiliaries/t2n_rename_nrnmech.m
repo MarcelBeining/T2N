@@ -27,8 +27,7 @@ end
 
 if isempty(strfind(path,'lib_mech'))
     if ~exist(fullfile(path,'lib_mech'),'file')
-        errordlg('No folder lib_mech exists')
-        return
+        error('No folder lib_mech exists')
     else
        cd(fullfile(path,'lib_mech'))
     end

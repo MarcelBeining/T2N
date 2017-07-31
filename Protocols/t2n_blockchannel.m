@@ -10,8 +10,7 @@ end
 
 if nargin < 2 || isempty(channels)
     if isempty(channels{1})
-        errordlg('No channel to block specified')
-        return
+        error('No channel to block specified')
     end
 elseif ~iscell(channels)
     channels = {channels};
@@ -38,8 +37,7 @@ if numel(amount) == 1
         amount = repmat(amount,numel(channels),1);
     end
 elseif  numel(amount) ~= numel(channels)
-    errordlg('Number of channels to block (m) and number of relative blocking specifications are not the same. Relative blocking variable must have 1 or m elements')
-    return
+    error('Number of channels to block (m) and number of relative blocking specifications are not the same. Relative blocking variable must have 1 or m elements')
 end
 flag = false(numel(channels),1);
 for t = 1:numel(neuron.mech)
@@ -83,7 +81,7 @@ for t = 1:numel(neuron.mech)
 end
 
 if ~except && any(~flag)
-    warndlg(sprintf('Caution,channel(s) %s was not found in the mechanism definitions!\n',strcat(channels{~flag})),'Channel not found')
+    warning('Caution,channel(s) %s was not found in the mechanism definitions!\n',strcat(channels{~flag})
 end
 
 str = '';

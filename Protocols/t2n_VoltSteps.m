@@ -1,4 +1,4 @@
-function t2n_VoltSteps(vstepsModel,dur,holding_voltage,neuron,tree,targetfolder_data)
+function [currVec,out] = t2n_VoltSteps(vstepsModel,dur,holding_voltage,neuron,tree,targetfolder_data)
 % This function performs one or multiple voltage steps in the cells given
 % by "tree" and "neuron" and saves the results in a mat file named
 % according to neuron.experiment
@@ -12,21 +12,31 @@ function t2n_VoltSteps(vstepsModel,dur,holding_voltage,neuron,tree,targetfolder_
 if nargin < 3 || isempty(holding_voltage)
     holding_voltage = -80;
 end
+if nargin < 2 || isempty(dur)
+    dur = [100 100 100];
+elseif numel(dur) == 1
+    dur = repmat(dur,3,1);
+end
+
 elecnode = 1;
+
 neuron.params.tstop = sum(dur);
 
 
 nneuron = cell(numel(vstepsModel),1);
 nneuron{1} = neuron;
+
 for s = 1:numel(vstepsModel)
     amp = cat(2,holding_voltage, vstepsModel(s), holding_voltage);
     for t = 1:numel(tree)
         nneuron{s}.pp{t}.SEClamp = struct('node',elecnode,'rs',15,'dur', dur,'amp', amp);
-        nneuron{s}.record{t}.SEClamp = struct('record','i','node',elecnode);
+        if s == 1
+            nneuron{s}.record{t}.SEClamp = struct('record','i','node',elecnode);
+        end
     end
 end
 nneuron = t2n_as(1,nneuron);
-out = t2n(tree,nneuron,'-d-w');
+out = t2n(tree,nneuron,'-q-w');
 if any(cellfun(@(x) x.error,out(cellfun(@(x) isfield(x,'error'),out))))
     return
 end
@@ -41,4 +51,6 @@ for s = 1:numel(vstepsModel)
         currVec{t,s} =  [out{s}.t';out{s}.record{t}.SEClamp.i{1}' *1000];
     end
 end
-save(fullfile(targetfolder_data,sprintf('Exp_VoltSteps_%s.mat',neuron.experiment)),'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree')
+if nargin == 0
+    save(fullfile(targetfolder_data,sprintf('Exp_VoltSteps_%s.mat',neuron.experiment)),'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree')
+end

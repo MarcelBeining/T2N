@@ -143,7 +143,7 @@ if ~isempty(strfind(options,'-w'))
     close(w)
 end
 if badchars > 0
-        warndlg(sprintf('Caution! %d bad chars had to be removed or replaced from the tree names since they cause writing errors! Please be sure to not use "%%" and "." in the names',badchars),'Bad characters removed');
+    warning('Caution! %d bad chars had to be removed or replaced from the tree names since they cause writing errors! Please be sure to not use "%%" and "." in the names',badchars);
 end
 if strfind(options,'-d')
     tim = toc(tim);
@@ -151,5 +151,5 @@ if strfind(options,'-d')
 end
 
 if orderchanged && nargout == 0
-    warndlg('Caution, the node order of some trees had to be changed! Sort your trees with "sort_tree" to obtain the correct results','Node order change!')
+    warning('Caution, the node order of some trees had to be changed! Sort your trees with "sort_tree" to obtain the correct results')
 end
