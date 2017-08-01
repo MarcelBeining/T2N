@@ -372,10 +372,12 @@ for n = 1:numel(neuron)
     else
         fprintf(nfile,'io = cvode.active(0)\n');
         fprintf(nfile,sprintf('tvec = new Vector()\ntvec = tvec.indgen(%f,%f,%f)\n',neuron{refPar}.params.tstart,neuron{refPar}.params.tstop,neuron{refPar}.params.dt));
-        fprintf(nfile,'f = new File()\n');      %create a new filehandle
-        fprintf(nfile,sprintf('io = f.wopen("%s//%s//tvec.dat")\n',exchfolder,thisfolder)  );  % open file for this time vector with write perm.
-        fprintf(nfile,sprintf('io = tvec.printf(f,"%%%%-20.10g\\\\n")\n') );    % print the data of the vector into the file
-        fprintf(nfile,'io = f.close()\n');
+        if refPar == n  % only write tvec if parameters are not referenced from another sim
+            fprintf(nfile,'f = new File()\n');      %create a new filehandle
+            fprintf(nfile,sprintf('io = f.wopen("%s//%s//tvec.dat")\n',exchfolder,thisfolder)  );  % open file for this time vector with write perm.
+            fprintf(nfile,sprintf('io = tvec.printf(f,"%%%%-20.10g\\\\n")\n') );    % print the data of the vector into the file
+            fprintf(nfile,'io = f.close()\n');
+        end
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Load standard libraries *****\n');
@@ -2050,7 +2052,7 @@ if noutfiles > 0 % if output is expected
                         f = fopen(fullfile(exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
                         txt = fscanf(f,'%c');
                         fclose(f);
-                        errordlg(sprintf('There was an error in Simulation %d:\n******************************\n%s\n******************************\nDue to that t2n has no output to that Simulation.',s(ss),txt(1:min(numel(txt),2000))));
+                        errordlg(sprintf('There was an error in Simulation %d (and maybe others):\n******************************\n%s\n******************************\nDue to that t2n has no output to that Simulation.',s(ss),txt(1:min(numel(txt),2000))),'Error in NEURON','replace');
                         simids(s(ss)) = 3;
                         r = find(simids==0,1,'first');  % find next not runned simid
                         if ~isempty(r)
@@ -2132,8 +2134,12 @@ if noutfiles > 0 % if output is expected
     for s = 1:numel(simids)
         refPar = t2n_getref(s,neuron,'params');
         if ~neuron{refPar}.params.cvode
-            fn = fullfile(exchfolder,sprintf('sim%d',s),'tvec.dat');
-            out{s}.t = load(fn,'-ascii');
+            if s~=refPar && isfield(out{refPar},'t')
+                out{s}.t = out{refPar}.t;   % just use tvec of simulation with same parameters
+            else
+                fn = fullfile(exchfolder,sprintf('sim%d',s),'tvec.dat');
+                out{s}.t = load(fn,'-ascii');
+            end
         end
     end
     
