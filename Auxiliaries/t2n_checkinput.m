@@ -161,7 +161,7 @@ for n = 1:numel(neuron)
         if ~isfield(neuron{n}.params,'prerun')
             neuron{n}.params.prerun = false;
         end
-        if neuron{n}.params.cvode && isnumeric(neuron{n}.params.dt)
+        if neuron{n}.params.cvode && isnumeric(neuron{n}.params.dt) && (~isnan(neuron{n}.params.dt) || ~isempty(neuron{n}.params.dt))
             warning ('t2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
         end
     end

@@ -12,6 +12,9 @@ function [currVec,out] = t2n_VoltSteps(vstepsModel,dur,holding_voltage,neuron,tr
 if nargin < 3 || isempty(holding_voltage)
     holding_voltage = -80;
 end
+if numel(holding_voltage) < 2
+    holding_voltage = repmat(holding_voltage,1,2);
+end
 if nargin < 2 || isempty(dur)
     dur = [100 100 100];
 elseif numel(dur) == 1
@@ -27,7 +30,7 @@ nneuron = cell(numel(vstepsModel),1);
 nneuron{1} = neuron;
 
 for s = 1:numel(vstepsModel)
-    amp = cat(2,holding_voltage, vstepsModel(s), holding_voltage);
+    amp = cat(2,holding_voltage(1), vstepsModel(s), holding_voltage(2));
     for t = 1:numel(tree)
         nneuron{s}.pp{t}.SEClamp = struct('node',elecnode,'rs',15,'dur', dur,'amp', amp);
         if s == 1
@@ -41,9 +44,13 @@ if any(cellfun(@(x) x.error,out(cellfun(@(x) isfield(x,'error'),out))))
     return
 end
 
-ind = vstepsModel == holding_voltage;
-for t = 1:numel(tree)
-    mholding_current(t) = mean(out{ind}.record{t}.SEClamp.i{1}(find(out{ind}.t>=dur(1)+dur(2)*0.9,1,'first'):find(out{ind}.t>=sum(dur(1:2)),1,'first')) *1000);  % get steady state voltage (electrode current at 90-100% of step duration)
+ind = vstepsModel == holding_voltage(1);
+if ~any(ind)
+   mholding_current = NaN(numel(tree),1); 
+else
+    for t = 1:numel(tree)
+        mholding_current(t) = mean(out{ind}.record{t}.SEClamp.i{1}(find(out{ind}.t>=dur(1)+dur(2)*0.9,1,'first'):find(out{ind}.t>=sum(dur(1:2)),1,'first')) *1000);  % get steady state voltage (electrode current at 90-100% of step duration)
+    end
 end
 for s = 1:numel(vstepsModel)
     for t = 1:numel(tree)

@@ -40,7 +40,7 @@ interf_file = 'neuron_runthis.hoc'; % the name of the main hoc file which will b
 t2npath = fileparts(which('t2n.m'));
 modelFolder = pwd;
 
-if nargin < 4 || isempty(options)
+if nargin < 3 || isempty(options)
     options = '';
 end
 if ~isempty(strfind(options,'-d'))
@@ -50,10 +50,10 @@ else
 end
 
 %% check input
-if nargin < 1 || isempty(tree)
+if ~exist('tree','var')
     error('No tree specified in input')
 end
-if nargin < 3 || isempty(neuron) % if no neuron structure was given, create standard parameter set
+if ~exist('neuron','var') % if no neuron structure was given, create standard parameter set
     warning('No input about what to do was given! Standard test (HH + rectangle somatic stimulation) is used')
     neuron.pp{1}.IClamp = struct('node', 1, 'del',100,'dur',50,'amp',0.05);
     neuron.record{1}.cell = struct('node',1 ,'record', 'v');
@@ -186,9 +186,9 @@ end
 
 
 %% check for standard hoc files in the model folder and copy them if not existing
-if ~exist(fullfile(modelFolder,'lib_genroutines'),'file')
+if ~exist(fullfile(modelFolder,'lib_genroutines'),'dir')
     mkdir(modelFolder,'lib_genroutines')
-    disp('non-existent folder lib_genroutines created')
+    warning('non-existent folder lib_genroutines created')
 end
 if ~exist(fullfile(modelFolder,'lib_genroutines/fixnseg.hoc'),'file')
     copyfile(fullfile(t2npath,'src','fixnseg.hoc'),fullfile(modelFolder,'lib_genroutines/fixnseg.hoc'))
@@ -2158,8 +2158,7 @@ if noutfiles > 0 % if output is expected
                             if numel(out{readfiles{f}{2}}.t) < readfiles{f}{3} || isempty(out{readfiles{f}{2}}.t{readfiles{f}{3}})
                                 out{readfiles{f}{2}}.t{readfiles{f}{3}} = load(fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),sprintf('cell%d_tvec.dat', find(readfiles{f}{3} == neuron{n}.tree)-1)),'-ascii');    %loading of one time vector file per cell (sufficient)
                             end
-                        elseif ~ isfield(out{readfiles{f}{2}},'t')       % if it has been loaded in a previous loop
-                            %                             out{readfiles{f}{2}}.t = load(strcat(fn(1:end-4),'_tvec',fn(end-3:end)),'-ascii');    %loading of one time vector file at all (sufficient)
+                        elseif ~isfield(out{readfiles{f}{2}},'t')       % if it has not been loaded in a previous loop
                             out{readfiles{f}{2}}.t = load(fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),'tvec.dat'),'-ascii');    %loading of one time vector file at all (sufficient)
                         end
                         out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) = out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) + 1e-10;  % add tiny time step to tvec to avoid problems with step functions
@@ -2188,12 +2187,6 @@ if noutfiles > 0 % if output is expected
             
         end
     end
-    
-    %     if ~params.cvode
-    %         for n = 1:numel(neuron)
-    %             out{n}.t = load(fullfile(exchfolder,sprintf('sim%d',n),'tvec.dat'));
-    %         end
-    %     end
     
     if isempty(strfind(options,'-q'))
         disp('data sucessfully loaded')

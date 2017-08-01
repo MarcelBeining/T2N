@@ -1,5 +1,29 @@
 function [maxdv,fig] = t2n_plotdV(targetfolder_data,targetfolder_results,neuron,ostruct)
-checkthis = 90;
+
+% This function creates a phase plot (dV/dt) of the current steps that were done with t2n_currsteps 
+%
+% INPUTS
+% targetfolder_data     folder which was given to t2n_currsteps, where the data
+%                       of the simulation lie
+% targetfolder_results  folder where pdfs from figures should be saved. If
+%                       not provided, figures will only be plotted
+% neuron                t2n neuron structure (see documentation)
+% ostruct               structure with fields defining some output
+%                           figurewidth     width of figure to be created
+%                           figureheigth    height of figure to be created
+%                           savename        prefix filename of figures when saved
+%                           ampprop         amplitude for which an extra
+%                                           figure will be made and the maximal dV is
+%                                           calculated
+%
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
+
+
+
 load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment,'.mat'))
 
 modelcol = [1 0 0];
@@ -34,7 +58,7 @@ for ss = 1:size(voltVec,2)
         if ind ~=1
             p(f) = plot(thisv(2:ind),diff(thisv(1:ind),1,1)./neuron.params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle','-');
         end
-        if cstepsSpikingModel(ss) == checkthis/1000
+        if cstepsSpikingModel(ss) == ostruct.ampprop
             plot(ax(5),thisv(ind+1:end),diff(thisv(ind:end),1,1)./neuron.params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle',linstyl);%,'Color',colorme(tree{f}.col{1},'brighter'))
             if ind ~=1
                 p(f) = plot(ax(4),thisv(2:ind),diff(thisv(1:ind),1,1)./neuron.params.dt,'LineWidth',1.5,'Color',tree{f}.col{1},'LineStyle','-');
