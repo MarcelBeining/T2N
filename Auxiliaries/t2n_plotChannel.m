@@ -27,7 +27,7 @@ end
 channel = strsplit(mcond_channel,'_'); mcond = channel{1};channel = channel{2};
 cond_channel = strrep(mcond_channel,'bar','');
 
-tree{1} = t2n_testComp;
+tree{1} = t2n_testComp;   % get the test compartment morphology
 
 neuron.params = neuron_orig.params;
 neuron.params.nseg = 1;
@@ -35,9 +35,9 @@ neuron.params.cvode = 0;
 neuron.params.dt = 0.025;
 neuron.mech{1}.all.(channel) = struct(mcond,0.1);
 
-if exist('region','var') && ~isempty(region)
+if exist('region','var') && ~isempty(region)  % get the ion channel specification from the region
     neuron.mech{1}.all.(channel) = neuron_orig.mech{1}.(region).(channel);
-else
+else   % else get it from the first region which incorporates the ion channel
     fields = fieldnames(neuron_orig.mech{1});
     for f = 1:numel(fields)
         if isfield(neuron_orig.mech{1}.(fields{f}),channel)
@@ -70,7 +70,7 @@ for a = 1:numel(amp)
         ft = [NaN NaN];
     end
     plot(out{a}.t,thisVec)
-    plot(out{a}.t(indStart:indmaxG),-exp(ft(1)*out{a}.t(indStart:indmaxG)+ft(2))+thisVec(indmaxG))
+    plot(out{a}.t(indStart:indmaxG),-exp(ft(1)*out{a}.t(indStart:indmaxG)+ft(2))+thisVec(indmaxG),'r--')
     
     tauA(a) = -1/ft(1);
 end
@@ -86,14 +86,17 @@ scatter(ampHalf,0.5,'xr')
 xlabel('Voltage [mV]')
 ylabel('Norm. max. Conductance')
 title('Activation curve')
+xlim([amp(1) amp(end)])
 ylim([0 1])
 FontResizer
 FigureResizer(5,5)
 tprint(fullfile(outputFolder,sprintf('ActivCurve_%s_%+.3g',mcond_channel,ampHalf)),'-pdf-R')
 
+tauA(maxG <= 0.0005) = NaN;    % delete nonsense fittings
 figure;plot(amp,tauA)
 xlabel('Voltage [mV]')
 ylabel('activation time constant [ms]')
+xlim([amp(1) amp(end)])
 title('Activation time constant')
 FontResizer
 FigureResizer(5,5)
@@ -152,14 +155,17 @@ scatter(ampHalf,0.5,'xr')
 xlabel('Voltage [mV]')
 ylabel('Norm. max. Conductance')
 title('Inactivation curve')
+xlim([amp(1) amp(end)])
 ylim([0 1])
 FontResizer
 FigureResizer(5,5)
 tprint(fullfile(outputFolder,sprintf('InactivCurve_%s_%+.3g',mcond_channel,ampHalf)),'-pdf-R')
 
+tauI(maxG >= 0.999) = NaN;   % delete nonsense fittings
 figure;plot(amp,tauI)
 xlabel('Voltage [mV]')
 ylabel('Inactivation time constant [ms]')
+xlim([amp(1) amp(end)])
 title('Inactivation time constant')
 FontResizer
 FigureResizer(5,5)
