@@ -58,6 +58,6 @@ for s = 1:numel(vstepsModel)
         currVec{t,s} =  [out{s}.t';out{s}.record{t}.SEClamp.i{1}' *1000];
     end
 end
-if nargin == 0
+if nargout == 0
     save(fullfile(targetfolder_data,sprintf('Exp_VoltSteps_%s.mat',neuron.experiment)),'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree')
 end

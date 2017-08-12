@@ -8,13 +8,11 @@ if ~isfield(ostruct,'subtract_hv')
 end
 load(t2n_catName(targetfolder_data,'Exp_VoltSteps',neuron.experiment,'.mat'),'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree');
 
-% load(loadingfile,'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree')
-
 amp = [-10,10];
 capm = zeros(2,numel(tree));
 for a = 1:2
     for t = 1:numel(tree)
-        ind = find(vstepsModel == holding_voltage+amp(a));
+        ind = find(vstepsModel == holding_voltage(1)+amp(a));
         %         I0 = mean(currVec{t,ind}(2,currVec{t,ind}(1,:)<104));
         if ~any(currVec{t,ind}(1,:)>190 & currVec{t,ind}(1,:)<204)
             is(t) = mean(currVec{t,ind}(2,currVec{t,ind}(1,:)>175 & currVec{t,ind}(1,:)<204));
@@ -26,16 +24,16 @@ for a = 1:2
         capm(a,t) = trapz(x,y)/amp(a);
     end
 end
-if  any(cellfun(@(x) ~any(x(1,:)>190&x(1,:)<204),currVec(:,vstepsModel==holding_voltage+amp(1))))
-    Rin = 1000*(-10)./cellfun(@(x) mean(x(2,(x(1,:)>175&x(1,:)<204)))-mean(x(2,(x(1,:)<104))),currVec(:,vstepsModel==holding_voltage+amp(1)));
+if  any(cellfun(@(x) ~any(x(1,:)>190&x(1,:)<204),currVec(:,vstepsModel==holding_voltage(1)+amp(1))))
+    Rin = 1000*(-10)./cellfun(@(x) mean(x(2,(x(1,:)>175&x(1,:)<204)))-mean(x(2,(x(1,:)<104))),currVec(:,vstepsModel==holding_voltage(1)+amp(1)));
 else
-    Rin = 1000*(-10)./cellfun(@(x) mean(x(2,(x(1,:)>190&x(1,:)<204)))-mean(x(2,(x(1,:)<104))),currVec(:,vstepsModel==holding_voltage+amp(1)));
+    Rin = 1000*(-10)./cellfun(@(x) mean(x(2,(x(1,:)>190&x(1,:)<204)))-mean(x(2,(x(1,:)<104))),currVec(:,vstepsModel==holding_voltage(1)+amp(1)));
 end
-fprintf('\nMean Rin in Model(@%gmV) is %g +- %g MOhm (s.e.m., -10mV)\n',holding_voltage+amp(1),mean(Rin),std(Rin)/sqrt(numel(Rin)))
-Rin = 1000*(+10)./cellfun(@(x) mean(x(2,(x(1,:)>190&x(1,:)<204)))-mean(x(2,(x(1,:)<104))),currVec(:,vstepsModel==holding_voltage+amp(2)));
-fprintf('Mean Rin in Model(@%gmV) is %g +- %g MOhm (s.e.m., +10mV)\n',holding_voltage+amp(2),mean(Rin),std(Rin)/sqrt(numel(Rin)))
-fprintf('\nMean capacitance in Model(@%gmV) is %g +- %g pF (s.e.m. -10mV)',holding_voltage+amp(1),mean(capm(1,:)),std(capm(1,:))/sqrt(numel(capm(1,:))))
-fprintf('\nMean capacitance in Model(@%gmV) is %g +- %g pF (s.e.m. +10mV)\n',holding_voltage+amp(2),mean(capm(2,:)),std(capm(2,:))/sqrt(numel(capm(2,:))))
+fprintf('\nMean Rin in Model(@%gmV) is %g +- %g MOhm (s.e.m., -10mV)\n',holding_voltage(1)+amp(1),mean(Rin),std(Rin)/sqrt(numel(Rin)))
+Rin = 1000*(+10)./cellfun(@(x) mean(x(2,(x(1,:)>190&x(1,:)<204)))-mean(x(2,(x(1,:)<104))),currVec(:,vstepsModel==holding_voltage(1)+amp(2)));
+fprintf('Mean Rin in Model(@%gmV) is %g +- %g MOhm (s.e.m., +10mV)\n',holding_voltage(1)+amp(2),mean(Rin),std(Rin)/sqrt(numel(Rin)))
+fprintf('\nMean capacitance in Model(@%gmV) is %g +- %g pF (s.e.m. -10mV)',holding_voltage(1)+amp(1),mean(capm(1,:)),std(capm(1,:))/sqrt(numel(capm(1,:))))
+fprintf('\nMean capacitance in Model(@%gmV) is %g +- %g pF (s.e.m. +10mV)\n',holding_voltage(1)+amp(2),mean(capm(2,:)),std(capm(2,:))/sqrt(numel(capm(2,:))))
 
 if isfield(ostruct,'handles') && ~isempty(ostruct.handles) && ishandle(ostruct.handles(1))
     fig(1) = ostruct.handles(1);

@@ -81,7 +81,7 @@ for t = 1:numel(neuron.mech)
 end
 
 if ~except && any(~flag)
-    warning('Caution,channel(s) %s was not found in the mechanism definitions!\n',strcat(channels{~flag})
+    warning('Caution,channel(s) %s was not found in the mechanism definitions!\n',strcat(channels{~flag}))
 end
 
 str = '';
