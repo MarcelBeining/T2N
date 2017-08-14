@@ -1,8 +1,30 @@
-function  [GIDs,neuron,mindelay] = t2n_getGIDs(neuron,trees,thesetrees)
+function  [GIDs,neuron,mindelay] = t2n_getGIDs(neuron,tree,thesetrees)
+% t2n ("Trees toolbox to Neuron") is to generate and execute a NEURON
+
+% INPUTS
+% neuron            t2n neuron structure with already defined mechanisms (see documentation)
+% tree              tree cell array with morphologies (see documentation)
+% thesetrees        (optional) if not all trees of 'tree' are used, this is
+%                   the index array to the used ones
+%
+% OUTPUTS
+% GIDs              global IDs of each tree for initializing NEURON in
+%                   parallel
+% neuron            complemented neuron structure ready for parallel NEURON
+% mindelay          minimum delay and time step of parallel network
+%                   (calculated from minimal delay between synapses)
+%
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 
 mindelay = 10;  % default minimum delay and time step of parallel network
-
+if ~exist('thesetrees','var') || isempty(thesetrees)
+    thesetrees = 1:numel(tree);
+end
 for t = 1:numel(thesetrees)
     GIDs(t) = struct('gid',t-1,'pp',[],'watch','v','node',1,'cell',thesetrees(t));
 end
@@ -36,7 +58,7 @@ if isfield(neuron,'con')
             end
         else
             if ~isfield(neuron.con(c).source,'watch')
-                if isfield(trees(thesetrees==neuron.con(c).source.cell),'artificial')
+                if isfield(tree(thesetrees==neuron.con(c).source.cell),'artificial')
                     neuron.con(c).source.watch = 'on';
                 else
                     neuron.con(c).source.watch = 'v';

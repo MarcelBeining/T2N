@@ -22,7 +22,7 @@ if ischar(par.nseg)
     len = len_tree(tree);
     idpar = idpar_tree(tree);
     
-    if strcmpi(par.nseg,'dlambda')
+    if strcmpi(par.nseg,'dlambda') || strcmpi(par.nseg,'d_lambda')
         dodlambda = 1;
         
         D =  tree.D;

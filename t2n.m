@@ -437,7 +437,8 @@ for n = 1:numel(neuron)
     fprintf(nfile, sprintf('io = xopen("lib_genroutines/pasroutines.hoc")\n') );
     fprintf(nfile,'\n\n');
     if neuron{refPar}.params.parallel
-        [GIDs,neuron,mindelay] = t2n_getGIDs(neuron{n},trees,neuron{n}.tree);
+        [GIDs,neuron,mindelay] = t2n_getGIDs(neuron{n},tree,neuron{n}.tree);
+        mindelay = max(mindelay,neuron{refPar}.dt);  % make mindelay at least the size of dt
         fprintf(nfile,'// ***** Initialize parallel manager *****\n');
         fprintf(nfile,'pnm = new ParallelNetManager(%d)\npc = pnm.pc\n\n\n',numel(GIDs));
         for in = 1:numel(GIDs)

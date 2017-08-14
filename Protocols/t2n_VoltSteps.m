@@ -49,12 +49,12 @@ if ~any(ind)
    mholding_current = NaN(numel(tree),1); 
 else
     for t = 1:numel(tree)
-        mholding_current(t) = mean(out{ind}.record{t}.SEClamp.i{1}(find(out{ind}.t>=dur(1)+dur(2)*0.9,1,'first'):find(out{ind}.t>=sum(dur(1:2)),1,'first')) *1000);  % get steady state voltage (electrode current at 90-100% of step duration)
+        mholding_current(t) = mean(out{ind}.record{t}.SEClamp.i{1}(find(out{ind}.t>=dur(1)+dur(2)*0.9,1,'first'):find(out{ind}.t<sum(dur(1:2)),1,'last')) *1000);  % get steady state voltage (electrode current at 90-100% of step duration)
     end
 end
 for s = 1:numel(vstepsModel)
     for t = 1:numel(tree)
-        steadyStateCurrVec(s,t) =  mean(out{s}.record{t}.SEClamp.i{1}(find(out{s}.t>=dur(1)+dur(2)*0.9,1,'first'):find(out{s}.t>=sum(dur(1:2)),1,'first')) *1000); % get steady state voltage (electrode current at 90-100% of step duration)
+        steadyStateCurrVec(s,t) =  mean(out{s}.record{t}.SEClamp.i{1}(find(out{s}.t>=dur(1)+dur(2)*0.9,1,'first'):find(out{s}.t<sum(dur(1:2)),1,'last')) *1000); % get steady state voltage (electrode current at 90-100% of step duration)
         currVec{t,s} =  [out{s}.t';out{s}.record{t}.SEClamp.i{1}' *1000];
     end
 end

@@ -132,9 +132,11 @@ for n = 1:numel(neuron)
         if ~isfield(neuron{n}.params,'use_local_dt')
             neuron{n}.params.use_local_dt = 0;
         end
-        if ~isfield(neuron{n}.params,'nseg') || strcmpi(neuron{n}.params.nseg,'d_lambda')
+        if ~isfield(neuron{n}.params,'nseg')
             neuron{n}.params.nseg = 'dlambda';
             disp('Number of segments or nseg rule not set in neuron{n}.params.nseg. Dlambda rule will be applied')
+        elseif strcmpi(neuron{n}.params.nseg,'d_lambda')
+            neuron{n}.params.nseg = 'dlambda';
         end
         if ~isfield(neuron{n}.params,'tstart')
             neuron{n}.params.tstart = 0;
