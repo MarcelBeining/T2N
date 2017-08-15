@@ -128,22 +128,15 @@ end
 
 %% check for exchange folder (folder where files between Matlab and NEURON
 % are exchanged)
-if exist('exchfolder','var')
-    exchfolder = fullfile(modelFolder,exchfolder);
-    if strfind(options,'-cl')
-        nrn_exchfolder = fullfile(server.modelfolder,exchfolder);
-    else
-        nrn_exchfolder = exchfolder;
-    end
-else
-    exchfolder = fullfile(modelFolder,'t2n_exchange');
-    if strfind(options,'-cl')
-        nrn_exchfolder = fullfile(server.modelfolder,'t2n_exchange');
-    else
-        nrn_exchfolder = exchfolder;
-    end
+if ~exist('exchfolder','var')
     exchfolder = 't2n_exchange';
 end
+if strfind(options,'-cl')
+    nrn_exchfolder = fullfile(server.modelfolder,exchfolder);
+else
+    nrn_exchfolder = fullfile(modelFolder,exchfolder);
+end
+
 nrn_exchfolder = regexprep(nrn_exchfolder,'\\','/');
 
 
