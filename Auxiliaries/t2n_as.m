@@ -4,8 +4,8 @@ function neuron = t2n_as(x,neuron)
 % the xth neuron structure in this array. Alternatively it fills up missing
 % definitions in a single t2n structure. Useful if many neuron simulations 
 % that should be run in parallel use partly the same definitions (e.g. same 
-% mechanisms or recordings). Apply this function after everything that
-% should be defined is defined.
+% mechanisms or recordings). Apply this function after everything that is
+% different from the first neuron instance is defined.
 %
 % INPUTS
 % x                 index to the neuron instance to use missing definitions from

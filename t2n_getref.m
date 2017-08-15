@@ -1,4 +1,24 @@
 function n = t2n_getref(n,neuron,field)
+% This function returns the neuron instance that is referenced in neuron
+% instance 'n' at field 'field'. If the neuron instance has own definitions 
+% at 'field', n itsself is returned. The function t2n_as produces such references.
+%
+% INPUTS
+% n              	index of the neuron instance, which reference is
+%                   searched for
+% neuron            t2n neuron structure with already defined mechanisms (see documentation)
+% field           	the field for which reference is searched for, e.g. params, mech, pp etc.
+%
+% OUTPUTS
+% n                 reference to the neuron instance comprising the
+%                   definitions of 'field'
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
+
+
 if isfield(neuron{n},field)
     if strcmp(field,'tree')
         if isnumeric(neuron{n}.tree)        % n is already correct ref

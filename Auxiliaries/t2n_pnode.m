@@ -1,6 +1,7 @@
 function prop = t2n_pnode(tree,neuron,node)
 % This function returns all properties (mechanisms and point processes)
 % that have been set at a specific node.
+%
 % INPUT
 % tree      TREES toolbox tree structure or cell array of tree structures
 % neuron    t2n neuron structure (see documentation)
@@ -9,6 +10,11 @@ function prop = t2n_pnode(tree,neuron,node)
 % OUTPUT
 % prop      structure or cell array of structures with all properties at 
 %           the specified node of the tree(s)
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 
 if isstruct(tree)

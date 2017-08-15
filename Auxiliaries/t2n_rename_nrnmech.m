@@ -1,13 +1,17 @@
-function rename_nrnmech(newname,path)
+function t2n_rename_nrnmech(newname,path)
 % renames the nrnmech dll file  to the name specified in newname. Also
 % deletes all .o and .c files created during dll compilation by NEURON
+%
 % INPUT
 % newname: string with new name for dll file
 % path (optional): path too the main folder of the model (containing the
 % folder lib_mech)
 %
-% this function is part of the T2N package
-% Copyright by Marcel Beining <marcel.beining@gmail.com>
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
+
 
 if nargin < 1
     newname = 'nrnmech.dll';

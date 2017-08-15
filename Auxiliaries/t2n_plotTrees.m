@@ -1,7 +1,7 @@
 function h = t2n_plotTrees(tree,targetfolder,col,ostruct)
 % this function plots and saves each tree in a nice way, eg for using in Adobe
 % Illustrator
-% this function is part of the T2N package
+%
 % INPUT
 % tree: TREES toolbox tree cell array
 % targetfolder: target folder for output files
@@ -9,10 +9,15 @@ function h = t2n_plotTrees(tree,targetfolder,col,ostruct)
 % ostruct (optional): option structure with possible fields 'show' (1 = colored plotting
 % but not good for putting in Illustrator; 2 = noncolored plotting),
 % 'savename' (prefix name for image files).
+%
 % OUTPUT
 % h: figure handles to the figures
 %
-% Copyright by Marcel Beining <marcel.beining@gmail.com>
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 if nargin < 4 || ~isfield(ostruct,'show')
     ostruct.show = 2;

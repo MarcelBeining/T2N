@@ -1,4 +1,25 @@
 function [nsyn,synids] = t2n_getSynNum(tree,syn_dens,regions)
+% This function calculates the number and location of synapses at a given
+% morphology given a synaptic density 'syn_dens'.
+%
+% INPUTS
+% tree              one morphology structure (see documentation)
+% syn_dens          single scalar with the desired synaptic density 
+%                   [#/length unit of morphologies]. If multiple regions
+%                   are given (see next input), this can also be a vector
+%                   with one entry for each region.
+% regions           regions for which the synapse number should be
+%                   calculated for. These can be anything from the 'rnames'
+%                   field of the tree structure
+%
+% OUTPUTS
+% nsyn              number of synapses at each node index of 'tree'
+% synids            index to the node for each synapse to be implemented
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 if nargin < 3
     regions = tree.rnames;
@@ -12,7 +33,12 @@ end
 if numel(syn_dens) == 1 && numel(regions) > 1
     syn_dens = repmat(syn_dens,numel(regions),1);
 end
-
+if iscell(tree)
+    if numel(tree)>1
+        warning('Multiple trees as input detected. Using first one, ignoring others')
+    end
+    tree = tree{1};
+end
 nsyn = zeros(numel(tree.X),1);
 synids = [];
 for r = 1:numel(regions)

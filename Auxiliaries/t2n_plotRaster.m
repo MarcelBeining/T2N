@@ -1,4 +1,19 @@
 function [] = t2n_plotRaster(varargin)
+% This function creates a raster plot of a spike train. 
+%
+% INPUTS
+% spikeMat      logical matrix with Ones where a spike occurs
+%               alternatively it can be a vector with spiking times, or for
+%               multiple spike trains, a cell array with each cell comprising
+%               the spike time vectors
+% tVec          corresponding time vector [ms]
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
+
+
 switch nargin
     case 1
         % not used right now
