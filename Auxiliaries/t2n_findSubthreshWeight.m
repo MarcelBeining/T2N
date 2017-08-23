@@ -3,17 +3,21 @@ function [weight] = t2n_findSubthreshWeight(neuron_orig,tree,weight,freq,tim)
 % have the neurons defined in "neuron" and "tree" at a sub-spiking threshold level
 % this function is part of the T2N package
 % INPUT
-% neuron: T2N neuron structure (already containing all synapses for which
-% the weight should be searched
-% tree: TREES toolbox tree cell array
-% weight: starting weight for the synapses
-% freq: frequency of the netstim input
+% neuron	T2N neuron structure (already containing all synapses for which
+%           the weight should be searched
+% tree      TREES toolbox tree cell array
+% weight	starting weight for the synapses
+% freq      frequency of the netstim input
 % tim (optional): time [ms] after which simulation stops (default five
 % rounds of stimulation)
-% OUTPUT
-% weight: synaptic weight for each neuron to reach subthreshold state
 %
-% Copyright by Marcel Beining <marcel.beining@gmail.com>
+% OUTPUT
+% weight	synaptic weight for each neuron to reach subthreshold state
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 if nargin < 5 || isempty(weight)
     weight = ones(numel(tree),1) * 0.001;

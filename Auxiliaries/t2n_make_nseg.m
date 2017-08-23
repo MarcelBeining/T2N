@@ -4,14 +4,14 @@ function minterf = t2n_make_nseg(tree,minterf,par,mech)
 % necessary to find nearest segment which will be calculated
 %
 % INPUT
-% tree: TREES toolbox tree cell array
-% minterf: Nx3 mapping matrix created by neuron_template_tree (in morphology
+% tree      TREES toolbox tree cell array
+% minterf	Nx3 mapping matrix created by neuron_template_tree (in morphology
 % folder)
-% par: T2N neuron.params structure
-% mech: T2N mech structure from the T2N neuron structure
+% par       T2N neuron.params structure
+% mech      T2N mech structure from the T2N neuron structure
 %
 % OUTPUT
-% minterf: updated mapping matrix with 4th column showing the real segment node locations
+% minterf	updated mapping matrix with 4th column showing the real segment node locations
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
