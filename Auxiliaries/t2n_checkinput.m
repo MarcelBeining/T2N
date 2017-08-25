@@ -1,4 +1,4 @@
-function [tree,neuron,usestreesof,nocell] = t2n_checkinput(tree,neuron,options)
+function [tree,neuron,usestreesof,nocell,exchfolder] = t2n_checkinput(tree,neuron,options)
 % This function checks the neuron structure for correct definition of the
 % used morphologies and returns info about it
 
@@ -12,6 +12,10 @@ function [tree,neuron,usestreesof,nocell] = t2n_checkinput(tree,neuron,options)
 % neuron            corrected neuron structure
 % usestreesof       points to the neuron entry/instance from which the tree
 %                   definitions are taken from
+% nocell            boolean if neuron input was a structure or cell array
+% exchfolder        name for exchfolder that was possibly found in the
+%                   neuron structure
+%
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
@@ -116,6 +120,12 @@ switch sum(bool)
 end
 if flag
     error('Error in neuron{%d}.tree, please check\n',n)
+end
+
+if isfield(neuron{1}.params,'exchfolder')
+    exchfolder = neuron{1}.params.exchfolder;
+else
+    exchfolder = [];
 end
 for n = 1:numel(neuron)
     neuron{n}.tree = thesetrees{n};

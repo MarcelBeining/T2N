@@ -62,8 +62,14 @@ if ~exist('neuron','var') % if no neuron structure was given, create standard pa
     neuron.mech.soma.hh = [];
     neuron.mech.axon.hh = [];
 end
-[tree,neuron,usestreesof,nocell] = t2n_checkinput(tree,neuron);
-
+[tree,neuron,usestreesof,nocell,nexchfolder] = t2n_checkinput(tree,neuron);
+if ~exist('exchfolder','var')
+    if ~isempty(nexchfolder)
+        exchfolder = nexchfolder;
+    else
+        exchfolder = 't2n_exchange';
+    end
+end
 
 if ~isempty(strfind(options,'-cl')) % server mode
     nrn_path = server.modelfolder;
@@ -128,9 +134,7 @@ end
 
 %% check for exchange folder (folder where files between Matlab and NEURON
 % are exchanged)
-if ~exist('exchfolder','var')
-    exchfolder = 't2n_exchange';
-end
+
 if strfind(options,'-cl')
     nrn_exchfolder = fullfile(server.modelfolder,exchfolder);
 else
@@ -628,14 +632,13 @@ for n = 1:numel(neuron)
                 templates = cat(1,templates,tree{neuron{n}.tree(tt)}.NID);
             end
             fprintf(ofile,'cell = new %s()\n', tree{neuron{n}.tree(tt)}.NID );
-            if isfield( tree{neuron{n}.tree(tt)},'params')
-                fields = fieldnames( tree{neuron{n}.tree(tt)}.params);
-                for f = 1:numel(fields)
-                    if ischar(tree{neuron{n}.tree(tt)}.params.(fields{f})) && regexpi(tree{neuron{n}.tree(tt)}.params.(fields{f}),'^(.*)$')  % check if this is a class/value pair, then use the () instead of =
-                        fprintf(ofile, 'cell.cell.%s%s\n',fields{f}, tree{neuron{n}.tree(tt)}.params.(fields{f}));
-                    else
-                        fprintf(ofile, 'cell.cell.%s = %g\n',fields{f}, tree{neuron{n}.tree(tt)}.params.(fields{f}));
-                    end
+            fields = fieldnames( tree{neuron{n}.tree(tt)});
+            fields = setdiff(fields,{'NID','artificial'});  % get all fields that are not "NID" or "artificial". These should be parameters to define
+            for f = 1:numel(fields)
+                if ischar(tree{neuron{n}.tree(tt)}.(fields{f})) && regexpi(tree{neuron{n}.tree(tt)}.(fields{f}),'^(.*)$')  % check if this is a class/value pair, then use the () instead of =
+                    fprintf(ofile, 'cell.cell.%s%s\n',fields{f}, tree{neuron{n}.tree(tt)}.(fields{f}));
+                else
+                    fprintf(ofile, 'cell.cell.%s = %g\n',fields{f}, tree{neuron{n}.tree(tt)}.(fields{f}));
                 end
             end
             if neuron{refPar}.params.parallel

@@ -53,7 +53,7 @@ end
 if isfield(neuron,'con')
     neuron = rmfield(neuron,'con'); % delete all connections since this is not desired here
 end
-tree{end+1} = struct('artificial','NetStim','params',struct('start',10,'interval',1/freq*1000,'number',10));
+tree{end+1} = struct('artificial','NetStim','start',10,'interval',1/freq*1000,'number',10);
         
 treeind = 1:numel(tree);
 while ~flag && counter <= counterthresh

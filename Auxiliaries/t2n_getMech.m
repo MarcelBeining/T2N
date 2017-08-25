@@ -28,6 +28,10 @@ end
 if isstruct(neuron)
     neuron = {neuron};
 end
+% add passive mechanism label to cm/Ra
+if any(strcmp(var,{'cm','Ra'}))
+    var = strcat(var,'_pas');
+end
 varSplit = regexp(var,'_','split');  % split variable into mechanism name and variable name
 varVec = cell(numel(neuron),numel(tree));
 
