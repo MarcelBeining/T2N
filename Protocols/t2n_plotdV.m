@@ -1,9 +1,9 @@
-function [maxdv,fig] = t2n_plotdV(targetfolder_data,targetfolder_results,neuron,ostruct)
+function [maxdv,fig] = t2n_plotdV(targetfolder_data,neuron,ostruct,targetfolder_results)
 
-% This function creates a phase plot (dV/dt) of the current steps that were done with t2n_currsteps 
+% This function creates a phase plot (dV/dt) of the current steps that were done with t2n_currSteps
 %
 % INPUTS
-% targetfolder_data     folder which was given to t2n_currsteps, where the data
+% targetfolder_data     folder which was given to t2n_currSteps, where the data
 %                       of the simulation lie
 % targetfolder_results  folder where pdfs from figures should be saved. If
 %                       not provided, figures will only be plotted
@@ -72,9 +72,10 @@ for ss = 1:size(voltVec,2)
     uistack(setdiff(p,0),'top')
 end
 
-figure(fig(1))
-tprint(fullfile(targetfolder_results,sprintf('%s-PhasePlotAll',ostruct.savename)),'-pdf')
-
+if exist('targetfolder_results','var')
+    figure(fig(1))
+    tprint(fullfile(targetfolder_results,sprintf('%s-PhasePlotAll',ostruct.savename)),'-pdf')
+end
 
 figure(fig2(1))
 xlim([-80 80])
@@ -87,7 +88,9 @@ if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
     FigureResizer(ostruct.figureheight,ostruct.figurewidth,ostruct)
 end
 ylabel('')
-tprint(fullfile(targetfolder_results,sprintf('%s-PhasePlotModel',ostruct.savename)),'-pdf')
+if exist('targetfolder_results','var')
+    tprint(fullfile(targetfolder_results,sprintf('%s-PhasePlotModel',ostruct.savename)),'-pdf')
+end
 figure(fig2(2))
 xlim([-80 80])
 set(gca,'XTick',-80:40:80)
@@ -99,7 +102,9 @@ FontResizer
 if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
     FigureResizer(ostruct.figureheight,ostruct.figurewidth,ostruct)
 end
-tprint(fullfile(targetfolder_results,sprintf('%s-PhasePlotModel2',ostruct.savename)),'-pdf')
+if exist('targetfolder_results','var')
+    tprint(fullfile(targetfolder_results,sprintf('%s-PhasePlotModel2',ostruct.savename)),'-pdf')
+end
 
 figure(fig(2))
 errorbar(cstepsSpikingModel*1000,mean(maxdv{2},1),std(maxdv{2},[],1),'Color',modelcol);%/sqrt(size(maxdv{2},1)) )
@@ -111,7 +116,8 @@ if isfield(ostruct,'figureheight') && isfield(ostruct,'figurewidth')
 end
 ylabel('Maximal dV/dt [mV/ms]')
 xlabel('current steps [pA]')
-tprint(fullfile(targetfolder_results,sprintf('%s-MaxdV',ostruct.savename)),'-pdf')
-
+if exist('targetfolder_results','var')
+    tprint(fullfile(targetfolder_results,sprintf('%s-MaxdV',ostruct.savename)),'-pdf')
+end
 
 fprintf('Max dv of model: %g +- %g mV/ms (s.e.m.)\n',mean(maxdv{2}(:,ostruct.ampprop==cstepsSpikingModel )),std(maxdv{2}(:,ostruct.ampprop==cstepsSpikingModel))/sqrt(size(maxdv{2},1)) )

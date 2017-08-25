@@ -1,7 +1,8 @@
 function strct = t2n_changemech(strct,change,mode)
 % this function changes parameters in the T2N neuron mech structure according to argument "change".
 % INPUT
-% strct: neuron structure containing ion channel densities
+% strct: neuron structure containing ion channel densities or alternatively only the mech
+% field of the neuron structure
 % change: structure with field names according to mechanism parameter names that should be changed and values either describing the factor by which it should be changed or an absolute value
 % mode: how parameters should be changed: 1 or 'relative': (DEFAULT) values in change are relative factors (e.g. 0.5 for 50% decrease)
 %                                         2 or 'absolute': values are absolute values that overwrite the values in strct

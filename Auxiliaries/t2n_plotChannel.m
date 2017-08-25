@@ -90,7 +90,7 @@ else
     holding_voltage = -120;
     amp = -120:5:50;
 end
-[~,out] = t2n_VoltSteps(amp,[dur actdur dur],holding_voltage,neuron,tree);
+[~,out] = t2n_voltSteps(neuron,tree,amp,[dur actdur dur],holding_voltage);
 maxG = zeros(numel(amp),1);
 tauA = maxG;
 figure;hold all;
@@ -198,7 +198,7 @@ end
 if ~isempty(strfind(options,'-sa'))
     dur = dur * 5 * afac;
 end
-[~,out] = t2n_VoltSteps(amp,[predur dur actdur],holding_voltage,neuron,tree);
+[~,out] = t2n_voltSteps(neuron,tree,amp,[predur dur actdur],holding_voltage);
 maxG = zeros(numel(amp),1);
 tauI = maxG;
 

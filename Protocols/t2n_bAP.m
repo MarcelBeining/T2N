@@ -1,14 +1,31 @@
-function t2n_bAP(neuron,tree,targetfolder_data,ostruct)
+function t2n_bAP(neuron,tree,amp,targetfolder_data,simplicity)
+% This function performs an experiment on backpropagating action potentials 
+% (bAPs) by "zapping" the cell(s) with a short high current and recording the
+% membrane potential at all locations of the cell(s). The results are saved
+% in a mat file named Exp_bap and the specification in neuron.experiment
+% and can then be analyzed with t2n_plotbAP.
+%
+% INPUTS
+% neuron            t2n neuron structure with already defined mechanisms
+% tree              tree cell array with morphologies
+% amp               amplitude [nA] of zap. Default is 1.3 nA
+% targetfolder_data destination of temporary results file
+% simplicity        0 (DEFAULT) measure voltage over whole dendritic tree
+%                   1 only record from every second node
+%                   2 only record voltages from the first primary dendrite
+% 
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
+
 
 neuron.params.v_init = -85.4;
-if ~isfield(ostruct,'cstep')
-    ostruct.cstep = 1.3; % nA
+if ~exist('amp','var')
+    amp = 1.3; % nA
 end
-if ~isfield(ostruct,'simple')
-    ostruct.simple = 0;
-end
-if ~isfield(ostruct,'reduce')
-    ostruct.reduce = 0;
+if ~exist('simplicity','var')
+    simplicity = 0;
 end
 
 neuron.params.tstop = 1000;
@@ -31,7 +48,7 @@ for t = 1:numel(tree)
     ipar{t} = ipar{t}(T_tree(tree{t}),:);  % only paths from termination points
     ipar{t}(ipar{t}==0) = 1;
     
-    if ostruct.simple
+    if simplicity >= 2
         nodes{t} = unique(ipar(1,:));
     else
         nodes{t} = unique(ipar{t});
@@ -48,12 +65,12 @@ for t = 1:numel(tree)
     end
     [~,ia] = unique(minterf(inode,[2,4]),'rows');
     nodes{t} = sort(nodes{t}(ia));
-    if ostruct.reduce  % reduce number of real recorded nodes to every third.
+    if simplicity == 1   % reduce number of real recorded nodes to every second node.
         nodes{t} = nodes{t}(1:3:end);
     end
     
     neuron.record{t}.cell = struct('node',nodes{t},'record','v');
-    neuron.pp{t}.IClamp = struct('node',1,'times',[-200 30,32.5],'amp', [hstep(t) hstep(t)+ostruct.cstep hstep(t)]); %n,del,dur,amp
+    neuron.pp{t}.IClamp = struct('node',1,'times',[-200 30,32.5],'amp', [hstep(t) hstep(t)+amp hstep(t)]); %n,del,dur,amp
     eucl{t} = eucl_tree(tree{t});
 end
 [out, ~] = t2n(tree,neuron,'-w-q-d');

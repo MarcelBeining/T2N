@@ -1,4 +1,4 @@
-function [currVec,out] = t2n_VoltSteps(vstepsModel,dur,holding_voltage,neuron,tree,targetfolder_data)
+function [currVec,out] = t2n_voltSteps(neuron,tree,vstepsModel,dur,holding_voltage,targetfolder_data)
 % This function performs one or multiple voltage steps in the cells given
 % by "tree" and "neuron" and saves the results in a mat file named
 % according to neuron.experiment
@@ -9,16 +9,16 @@ function [currVec,out] = t2n_VoltSteps(vstepsModel,dur,holding_voltage,neuron,tr
 % *****************************************************************************************************
 
 
-if nargin < 3 || isempty(holding_voltage)
+if ~exist('holding_voltage','var')
     holding_voltage = -80;
 end
 if numel(holding_voltage) < 2
     holding_voltage = repmat(holding_voltage,1,2);
 end
-if nargin < 2 || isempty(dur)
+if ~exist('dur','var')
     dur = [100 100 100];
 elseif numel(dur) == 1
-    dur = repmat(dur,3,1);
+    dur = [100 dur 100];
 end
 
 elecnode = 1;

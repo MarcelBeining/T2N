@@ -1,4 +1,4 @@
-function [Rin, tau, cap, Vrest] = t2n_passTests(neuron,tree,targetfolder,ostruct)
+function [Rin, tau, cap, Vrest] = t2n_passTests(neuron,tree,targetfolder_results,ostruct)
 % caution! ostruct.recordnode is vector giving each tree the location where
 % to record!
 
@@ -162,6 +162,6 @@ if ~isempty(strfind(options,'-s'))
     xlim([0 2000])
     FontResizer
     FigureResizer(ostruct.figureheight,ostruct.figurewidth,[],ostruct)
-    tprint(fullfile(targetfolder,strcat(sprintf('PassMeasure_%s_',ostruct.passtest),neuron.experiment)),'-pdf');
+    tprint(fullfile(targetfolder_results,strcat(sprintf('PassMeasure_%s_',ostruct.passtest),neuron.experiment)),'-pdf');
 end
 

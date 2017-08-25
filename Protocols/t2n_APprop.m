@@ -1,7 +1,7 @@
 function [props, fig, figname] = t2n_APprop(targetfolder_data,neuron,currstep,tree,dataset,askfile)
 
 % This function analyzes and optionally plots various action potential (AP) 
-% characteristics at a current injection step previously simulated with t2n_currsteps
+% characteristics at a current injection step previously simulated with t2n_currSteps
 %
 % INPUTS
 % targetfolder_data destination of temporary results file
@@ -27,14 +27,14 @@ function [props, fig, figname] = t2n_APprop(targetfolder_data,neuron,currstep,tr
 % *****************************************************************************************************
 
 ap = -10; % minimum AP amplitude threshold for detection [mV]
-if nargin < 6 
+if ~exist('askfile','var')
     askfile = 0;
 end
 newrate = 0.005; %ms
-if nargin < 3
+if ~exist('currstep','var')
     currstep = 0.09;
 end
-if nargin < 4
+if ~exist('tree','var')
     tree = [];
 end
 

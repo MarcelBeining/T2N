@@ -1,4 +1,4 @@
-function t2n_currsteps(neuron,tree,targetfolder_data,ostruct)
+function t2n_currSteps(neuron,tree,targetfolder_data,ostruct)
 % This function performs one or multiple current steps in the cells given
 % by "tree" and "neuron" and saves the results in a mat file named
 % according to neuron.experiment.
@@ -35,8 +35,8 @@ end
 if ~isfield(ostruct,'duration')
     ostruct.duration = 200;  % standard duration 200 ms
 end
-if ~isfield(ostruct,'find_freq')
-    ostruct.find_freq = 0;
+if ~isfield(ostruct,'numAP')
+    ostruct.numAP = 0;
 end
 if ~isfield(ostruct,'spikeThresh')
     ostruct.spikeThresh = -15;
@@ -87,8 +87,8 @@ for s = 1:numel(cstepsSpikingModel)
 end
 nneuron = t2n_as(1,nneuron);
 
-if ostruct.find_freq > 0
-    amp = t2n_findFreq(tree,nneuron{1},ostruct.find_freq,'-q-d');
+if ostruct.numAP > 0
+    amp = t2n_findFreq(tree,nneuron{1},ostruct.numAP,'-q-d');
     for t = 1:numel(tree)
         nneuron{1}.pp{t}.IClamp.amp = [hstep(t) amp(t) hstep(t)]; %n,del,dur,amp  %WICHTIG! nur amp da hstep nicht abgezogen
     end

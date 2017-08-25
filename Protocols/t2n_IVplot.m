@@ -65,8 +65,6 @@ if ostruct.single
     for t =1:size(steadyStateCurrVec,2)
         set(p(t),'color',tree{t}.col{1})
     end
-elseif  isfield(ostruct,'usemorph') && any(ostruct.usemorph == [2,3,5,6])  % artificial cells
-    errorbar(vstepsModel,mean(steadyStateCurrVec,2),std(steadyStateCurrVec,[],2)/sqrt(size(steadyStateCurrVec,2)),'Color',[0 1 0],'LineWidth',1);
 else
     errorbar(vstepsModel,mean(steadyStateCurrVec,2),std(steadyStateCurrVec,[],2)/sqrt(size(steadyStateCurrVec,2)),'Color',[0 0 1],'LineWidth',1);
 end

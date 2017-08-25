@@ -1,5 +1,8 @@
-function fig = t2n_FIplot(targetfolder_data,targetfolder_results,neuron,ostruct)
+function fig = t2n_FIplot(targetfolder_data,neuron,ostruct,targetfolder_results)
 %
+if ~exist('targetfolder_results','var')
+    targetfolder_results = [];
+end
 if ~isfield(ostruct,'duration') && ostruct.dataset < 7
     ostruct.duration = 200;
 end

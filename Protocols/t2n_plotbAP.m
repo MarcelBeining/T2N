@@ -1,6 +1,6 @@
-function [bAPdisthm,mveloc_dend,mveloc_farax,mveloc_nearax,fig] = t2n_plotbAP(targetfolder_data,targetfolder_results,nneuron,ostruct)
-if ~iscell(nneuron)
-    nneuron = {nneuron};
+function [bAPdisthm,mveloc_dend,mveloc_farax,mveloc_nearax,fig] = t2n_plotbAP(targetfolder_data,neuron,ostruct,targetfolder_results)
+if ~iscell(neuron)
+    neuron = {neuron};
 end
 thisdist = 185; % dist in µm where bAP is measured
 if ~isfield(ostruct,'dist')
@@ -43,14 +43,14 @@ if nargout == 0 || nargout > 4
     ylabel('Delay [ms]')
     FontResizer
     % bAP{t} 2nd dim: nodes_ind, time of max amp, PL to root, Eucl to root, max Voltage, baseline voltage before AP];
-    for n = 1:numel(nneuron)
+    for n = 1:numel(neuron)
         fig(n+2) = figure;clf,hold all
         axis off
     end
 end
 
-for n = 1:numel(nneuron)
-    load(t2n_catName(targetfolder_data,'Exp_bAP',nneuron{n}.experiment,'.mat'),'bAP','plotvals','nodes','neuron','tree','tim')
+for n = 1:numel(neuron)
+    load(t2n_catName(targetfolder_data,'Exp_bAP',neuron{n}.experiment,'.mat'),'bAP','plotvals','nodes','tree','tim')%,'neuron'
     
     spiked = cellfun(@(x) any(x(:,5)>0),bAP);
 
@@ -157,10 +157,10 @@ for n = 1:numel(nneuron)
         FigureResizer(5,8)
         if ostruct.relamp
             ylim([0 1])
-            tprint(fullfile(targetfolder_results,sprintf('bAP-rel-ampl_%s',nneuron{n}.experiment)),'-pdf')
+            tprint(fullfile(targetfolder_results,sprintf('bAP-rel-ampl_%s',neuron{n}.experiment)),'-pdf')
         else
             ylim([0 150])
-            tprint(fullfile(targetfolder_results,sprintf('bAP-ampl_%s',nneuron{n}.experiment)),'-pdf')
+            tprint(fullfile(targetfolder_results,sprintf('bAP-ampl_%s',neuron{n}.experiment)),'-pdf')
         end
         figure(fig(2))
         if isfield(ostruct,'usemorph') && ostruct.usemorph >= 4  % rat
@@ -174,7 +174,7 @@ for n = 1:numel(nneuron)
         xlim([0 400])
         FigureResizer(5,8)
         
-        tprint(fullfile(targetfolder_results,sprintf('bAP-del_%s',nneuron{n}.experiment)),'-pdf')
+        tprint(fullfile(targetfolder_results,sprintf('bAP-del_%s',neuron{n}.experiment)),'-pdf')
         figure(fig(n+2))
         ylim(ylims)
         xlim(xlims)
@@ -184,7 +184,7 @@ for n = 1:numel(nneuron)
         c.Limits =[-80,80];
         set(c,'Position',[0.93 0.35 0.02 0.4],'fontweight','bold','fontname','Arial')
         set(c,'YTick',[-80,0,80])
-        tprint(t2n_catName(targetfolder_results,'bAP-trees',nneuron{n}.experiment),'-SHR-tif')
+        tprint(t2n_catName(targetfolder_results,'bAP-trees',neuron{n}.experiment),'-SHR-tif')
     end
     fprintf('Dendritic Velocity cell %d: %f µm/ms (time to max amp)\n',reshape(cat(1,(1:numel(mveloc_dend)),mveloc_dend),1,numel(mveloc_dend)*2))
     fprintf('Far Axonal Velocity cell %d: %f µm/ms (time to half-max amp)\n',reshape(cat(1,(1:numel(mveloc_farax)),mveloc_farax),1,numel(mveloc_farax)*2))
