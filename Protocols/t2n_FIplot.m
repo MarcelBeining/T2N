@@ -1,5 +1,29 @@
 function fig = t2n_FIplot(targetfolder_data,neuron,ostruct,targetfolder_results)
+% This function checks the neuron structure for correct definition of the
+% used morphologies and returns info about it
+
+% INPUTS
+% targetfolder_data     folder which was given to t2n_currSteps, where the 
+%                       data of the simulation lies
+% neuron                t2n neuron structure (see documentation)
+% ostruct               structure with fields defining some output
+%                           figurewidth     width of figure to be created
+%                           figureheigth    height of figure to be created
+%                           savename        prefix filename of figures when saved
+%                           ampprop         amplitude for which an extra
+%                                           figure will be made and the maximal dV is
+%                                           calculated
+% targetfolder_results  folder where pdfs from figures should be saved. If
+%                       not provided, figures will only be plotted
 %
+% OUTPUTS
+% fig           figure handles to the output figures
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
+
 if ~exist('targetfolder_results','var')
     targetfolder_results = [];
 end

@@ -1,11 +1,11 @@
-function [amp, Vrest] = t2n_findCurr(tree,neuron,desv,amp,options)
+function [amp, Vrest] = t2n_findCurr(neuron,tree,desv,amp,options)
 % This function finds the current necessary to keep the neurons defined in
 % "neuron" and "tree" at a desired voltage or alternatively finds the
 % spiking threshold.
 % 
 % INPUTS
-% tree              tree cell array with morphologies (see documentation)
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
+% tree              tree cell array with morphologies (see documentation)
 % desv              desired voltage (mV) or 'spike' if spiking threshold is searched
 % amp               (optional) starting values of the current amplitudes (one for each
 %                   neuron defined in tree)
@@ -74,7 +74,7 @@ while ~flag && counter <= counterthresh
             ready(treeind(t)) = true;
         end
     end
-    [out] = t2n(tree,neuron,options);
+    [out] = t2n(neuron,tree,options);
 
     for t = 1:numel(tree)
         if ~isfield(tree{t},'artificial')

@@ -27,7 +27,7 @@ if numel(node) == 1
     node = repmat(node,numel(tree),1);
 end
 prop = cell(numel(neuron),numel(tree));
-[tree,~,neuron] = t2n_checkinput(tree,[],neuron);
+[neuron,tree] = t2n_checkinput(neuron,tree);
 for n = 1:numel(neuron)
     for tt = 1:numel(neuron{n}.tree)
         t = neuron{n}.tree(tt);

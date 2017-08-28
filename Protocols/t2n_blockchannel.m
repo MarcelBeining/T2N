@@ -1,11 +1,39 @@
-function  [neuron, flag] = t2n_blockchannel(neuron,channels,amount,regions,specify)
+function  [neuron] = t2n_blockchannel(neuron,channels,amount,regions,specify)
+% This function manipulates the neuron structure to reduce specific channel
+% conductances defined by "channels" in specific regions of the cell(s)
+% defined by "regions" by a certain amount defined by "amount"
+%
+% INPUTS
+% neuron            t2n neuron structure with already defined mechanisms
+% channels          string or cell array of strings which channels should
+%                   be blocked (i.e. its conductance reduced)
+% amount            amount of blockade (0-100) [%]. This could also be used 
+%                   to increase conductances if a negative percentage is
+%                   given, however it is recommended to rather use
+%                   t2n_changemech.
+% regions           (optional) allows to select only specific regions of 
+%                   cell for blockade. Can be string or cell array of 
+%                   strings. The region name has to be defined in the tree 
+%                   regions, too.
+% specify           (optional) allows to select only specific conductances 
+%                   of a channel, eg. gabkbar_BK
+%
+% OUTPUTS
+% neuron            manipulated t2n neuron structure
+%
+% 
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
-% specify : allows to select only specific conductances of a channel, eg.
-%           gabkbar_BK
 
 
 if nargin < 3 || isempty(amount)
     amount = 100;
+end
+if any(amount > 100)
+    error('Values above 100 are not allowed for "amount"')
 end
 
 if nargin < 2 || isempty(channels)
@@ -22,7 +50,7 @@ elseif ischar(specify) % allows to select only specific conductances of a channe
 end
 if nargin < 4 || isempty(regions)
     regions = {};
-elseif ischar(regions) % allows to select only specific conductances of a channel
+elseif ischar(regions) % allows to select only specific regions of cell
     regions = {regions};
 end
 
@@ -81,7 +109,7 @@ for t = 1:numel(neuron.mech)
 end
 
 if ~except && any(~flag)
-    warning('Caution,channel(s) %s was not found in the mechanism definitions!\n',strcat(channels{~flag}))
+    warning('Caution,channel(s) %s was/were not found in the mechanism definitions!\n',strcat(channels{~flag}))
 end
 
 str = '';

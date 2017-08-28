@@ -1,12 +1,12 @@
-function [out, origminterf,tree] = t2n(tree,neuron,options,exchfolder,server)
+function [out, origminterf,tree] = t2n(neuron,tree,options,exchfolder,server)
 % t2n ("Trees toolbox to Neuron") is to generate and execute a NEURON
 % simulation with the morphologies in tree, and parameters in the structure
 % neuron. This is the main function.
 % The output-file(s) of the NEURON function are read and transferred
 % into the output variable out
 % INPUTS
-% tree              tree cell array with morphologies (see documentation)
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
+% tree              tree cell array with morphologies (see documentation)
 % options           string with optional arguments (can be concatenated):
 %                   -w waitbar
 %                   -d Debug mode (NEURON is opened and some parameters are set)
@@ -62,7 +62,7 @@ if ~exist('neuron','var') % if no neuron structure was given, create standard pa
     neuron.mech.soma.hh = [];
     neuron.mech.axon.hh = [];
 end
-[tree,neuron,usestreesof,nocell,nexchfolder] = t2n_checkinput(tree,neuron);
+[neuron,tree,usestreesof,nocell,nexchfolder] = t2n_checkinput(neuron,tree);
 if ~exist('exchfolder','var')
     if ~isempty(nexchfolder)
         exchfolder = nexchfolder;

@@ -1,7 +1,7 @@
-function [weight] = t2n_findSubthreshWeight(neuron_orig,tree,weight,freq,tim)
-% this function finds the synaptic weight of Exp2Syn synapses necessary to 
+function [weight] = t2n_findSubthreshWeight(neuron,tree,weight,freq,tim)
+% This function finds the synaptic weight of Exp2Syn synapses necessary to 
 % have the neurons defined in "neuron" and "tree" at a sub-spiking threshold level
-% this function is part of the T2N package
+% 
 % INPUT
 % neuron	T2N neuron structure (already containing all synapses for which
 %           the weight should be searched
@@ -47,8 +47,8 @@ flag = false;
 
 counter = 0;
 sflag = true(numel(tree),1);
-if iscell(neuron_orig)
-    neuron = neuron_orig{1};
+if iscell(neuron)
+    neuron = neuron{1};
 end
 if isfield(neuron,'con')
     neuron = rmfield(neuron,'con'); % delete all connections since this is not desired here
@@ -69,7 +69,7 @@ while ~flag && counter <= counterthresh
             ready(treeind(t)) = 2;
         end
     end
-    [out] = t2n(tree,neuron,'-q-d');
+    [out] = t2n(neuron,tree,'-q-d');
     if out.error
         weight = NaN;
         return

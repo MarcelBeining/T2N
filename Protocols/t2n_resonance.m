@@ -20,14 +20,14 @@ ylabel('Impedance [M\Omega]')
 
 
 
-hstep = t2n_findCurr(tree,neuron,holding_voltage,[],'-q-d');
+hstep = t2n_findCurr(neuron,tree,holding_voltage,[],'-q-d');
 for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',-200,'amp',hstep(t)); %n,del,dur,amp
     neuron.play{t}.IClamp = struct('node',1,'play','amp','times',tvec,'value',hstep(t)+vec); %n,del,dur,amp
     neuron.record{t}.cell = struct('node',1,'record','v');
 end
 % neuron_orig = neuron;
-out = t2n(tree,neuron,'-q-d-w');
+out = t2n(neuron,tree,'-q-d-w');
 if any(cellfun(@(x) any(x.cell.v{1}>-30),out.record))
     warning('Caution! Spike was elicited!')
 end

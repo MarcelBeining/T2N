@@ -1,10 +1,10 @@
-function [tree,neuron,usestreesof,nocell,exchfolder] = t2n_checkinput(tree,neuron,options)
+function [neuron,tree,usestreesof,nocell,exchfolder] = t2n_checkinput(neuron,tree,options)
 % This function checks the neuron structure for correct definition of the
 % used morphologies and returns info about it
 
 % INPUTS
-% tree              tree cell array with morphologies (see documentation)
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
+% tree              tree cell array with morphologies (see documentation)
 % options           (optional) option string of t2n
 %
 % OUTPUTS

@@ -38,7 +38,7 @@ plotvals = nodes;
 bAP = nodes;
 ipar = nodes;
 
-hstep = t2n_findCurr(tree,neuron,neuron.params.v_init); %assuming a HP of xxx mV
+hstep = t2n_findCurr(neuron,tree,neuron.params.v_init); %assuming a HP of xxx mV
 
 
 for t = 1:numel(tree)
@@ -73,7 +73,7 @@ for t = 1:numel(tree)
     neuron.pp{t}.IClamp = struct('node',1,'times',[-200 30,32.5],'amp', [hstep(t) hstep(t)+amp hstep(t)]); %n,del,dur,amp
     eucl{t} = eucl_tree(tree{t});
 end
-[out, ~] = t2n(tree,neuron,'-w-q-d');
+[out, ~] = t2n(neuron,tree,'-w-q-d');
 tim = out.t;
 for t = 1:numel(tree)
     plotvals{t} = NaN(numel(tree{t}.X),1);
