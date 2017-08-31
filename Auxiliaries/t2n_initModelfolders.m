@@ -1,6 +1,6 @@
 function t2n_initModelfolders(folder)
 % This function initializes a new folder in which all necessary files and
-% folders are created to create a compartmental model featuring T2N
+% folders are created to start a new a compartmental model featuring T2N
 %
 % INPUTS
 % folder                 (optional) path to the folder which should be

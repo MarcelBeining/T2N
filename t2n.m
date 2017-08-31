@@ -297,7 +297,7 @@ for n = 1:numel(neuron)
     end
     for tt = 1:numel(tree(neuron{n}.tree))
         if ~isfield(tree{neuron{n}.tree(tt)},'artificial')
-            minterf{neuron{n}.tree(tt)} = t2n_make_nseg(tree{neuron{n}.tree(tt)},origminterf{neuron{n}.tree(tt)},neuron{refPar}.params,neuron{refM}.mech{neuron{n}.tree(tt)});
+            minterf{neuron{n}.tree(tt)} = t2n_makeNseg(tree{neuron{n}.tree(tt)},origminterf{neuron{n}.tree(tt)},neuron{refPar}.params,neuron{refM}.mech{neuron{n}.tree(tt)});
         end
     end
     access = [find(~cellfun(@(y) isfield(y,'artificial'),tree(neuron{n}.tree)),1,'first'), 1];      % std accessing first non-artificial tree at node 1

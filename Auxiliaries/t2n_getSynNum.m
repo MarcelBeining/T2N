@@ -1,6 +1,7 @@
 function [nsyn,synids] = t2n_getSynNum(tree,syn_dens,regions)
 % This function calculates the number and location of synapses at a given
-% morphology given a synaptic density 'syn_dens'.
+% morphology given a synaptic density 'syn_dens'. The output synids can 
+% then be used to place location-specific synapse mechanisms such as Exp2Syn.
 %
 % INPUTS
 % tree              one morphology structure (see documentation)
@@ -8,7 +9,7 @@ function [nsyn,synids] = t2n_getSynNum(tree,syn_dens,regions)
 %                   [#/length unit of morphologies]. If multiple regions
 %                   are given (see next input), this can also be a vector
 %                   with one entry for each region.
-% regions           regions for which the synapse number should be
+% regions           (optional) regions for which the synapse number should be
 %                   calculated for. These can be anything from the 'rnames'
 %                   field of the tree structure
 %

@@ -1,4 +1,23 @@
 function [imp,freq] = t2n_resonance(neuron,tree,amp,holding_voltage,doerrorbar)
+% Perform a resonance test (impedance measurement using oscillating current
+% injections) on each cell and plot the result.
+%
+% INPUTS
+% neuron            t2n neuron structure with already defined mechanisms
+% tree              tree cell array with morphologies (see documentation)
+% amp               amplitude [nA] of the oscillating current injection
+% holding_voltage   holding potential [mV] before current injection
+% doerrorbar        (optional) Boolean if error bar should be added to plot
+%
+% OUTPUTS
+% imp               matrix with impedances [MOhm] of each cell at all frequencies
+% freq              frequency vector [Hz] same size as imp
+% 
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
+
 if ~exist(doerrorbar,'var')
     doerrorbar = 0;
 end

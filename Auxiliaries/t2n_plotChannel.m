@@ -1,22 +1,22 @@
-function t2n_plotChannel(neuron_orig,mcond_channel,region,outputFolder,options)
+function t2n_plotChannel(neuron,mcondChannel,region,outputFolder,options)
 % This function plots the activation and inactivation dynamics of an voltage- 
 % dependent ion channel. The fits on the activation and inactivation time are
 % mono-exponential, hence they should be handled with care in cases the
 % channel has more complex kinetics.
 %
-%
 % INPUTS
-% neuron_orig       t2n neuron structure with already defined mechanisms
-% mcond_channel     the name of the maximum conductance parameter of a
+% neuron            t2n neuron structure with already defined mechanisms
+% mcondChannel     the name of the maximum conductance parameter of a
 %                   channel, as it is in NEURON and NMODL (e.g. gbar_hh)
 % region            name of the region in neuron_orig from which
 %                   specifications for the channel should be taken from. If
 %                   not provided, t2n takes the first specification it can
 %                   find within a region
 % outputFolder      (optional) folder where pdfs should be saved to
-% options           -h if channel is hyperpolarization activated
-%                   -si or -sa if channel inactivation or activation is very slow (dt and duration increased)
-%                   -fi or -fa if channel inactivation or activation is very fast (dt and duration decreased)
+% options           string with more options that can be concatenated:
+%                   -h          set if channel is hyperpolarization activated
+%                   -si or -sa  set if channel inactivation or activation is very slow (dt and duration increased)
+%                   -fi or -fa  set if channel inactivation or activation is very fast (dt and duration decreased)
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
@@ -33,39 +33,39 @@ if ~exist(outputFolder,'dir')
 end
 height = 4;
 width = 4;
-channel = strsplit(mcond_channel,'_'); mcond = channel{1};channel = channel{2};
-cond_channel = strrep(mcond_channel,'bar','');
+channel = strsplit(mcondChannel,'_'); mcond = channel{1};channel = channel{2};
+cond_channel = strrep(mcondChannel,'bar','');
 
 tree{1} = t2n_testComp;   % get the test compartment morphology
 
-neuron.params = neuron_orig.params;
-neuron.params.nseg = 1;
-neuron.params.cvode = 0;
-neuron.mech{1}.all.(channel) = struct(mcond,0.1); % put the channel in all (so the one) compartments
+neuronTest.params = neuron.params;
+neuronTest.params.nseg = 1;
+neuronTest.params.cvode = 0;
+neuronTest.mech{1}.all.(channel) = struct(mcond,0.1); % put the channel in all (so the one) compartments
 
 if exist('region','var') && ~isempty(region)  % get the ion channel specification from the region
-    neuron.mech{1}.all.(channel) = neuron_orig.mech{1}.(region).(channel);
+    neuronTest.mech{1}.all.(channel) = neuron.mech{1}.(region).(channel);
 else   % else get it from the first region which incorporates the ion channel
-    fields = fieldnames(neuron_orig.mech{1});
+    fields = fieldnames(neuron.mech{1});
     for f = 1:numel(fields)
-        if isfield(neuron_orig.mech{1}.(fields{f}),channel)
-            neuron.mech{1}.all.(channel) = neuron_orig.mech{1}.(fields{f}).(channel);
+        if isfield(neuron.mech{1}.(fields{f}),channel)
+            neuronTest.mech{1}.all.(channel) = neuron.mech{1}.(fields{f}).(channel);
             region = fields{f};
             break
         end
     end
 end
 
-neuron.record{1}.cell = struct('node',1,'record',cond_channel);
+neuronTest.record{1}.cell = struct('node',1,'record',cond_channel);
 
-neuron.params.cvode = 0;
+neuronTest.params.cvode = 0;
 
 if ~isempty(strfind(options,'-sa'))
     afac = double(cell2mat(textscan(options,'-sa%d')));
     if isempty(afac)
         afac = 1;
     end
-    neuron.params.dt = 0.25*afac;
+    neuronTest.params.dt = 0.25*afac;
     dur = 50;
     actdur =  5000*afac;
 elseif ~isempty(strfind(options,'-fa'))
@@ -73,11 +73,11 @@ elseif ~isempty(strfind(options,'-fa'))
     if isempty(afac)
         afac = 1;
     end
-    neuron.params.dt = 0.005/afac;
+    neuronTest.params.dt = 0.005/afac;
     dur = 10;
     actdur =  25/afac;
 else
-    neuron.params.dt = 0.025;
+    neuronTest.params.dt = 0.025;
     dur = 50;
     actdur = 100;
 end
@@ -90,7 +90,7 @@ else
     holding_voltage = -120;
     amp = -120:5:50;
 end
-[~,out] = t2n_voltSteps(neuron,tree,amp,[dur actdur dur],holding_voltage);
+[~,out] = t2n_voltSteps(neuronTest,tree,amp,[dur actdur dur],holding_voltage);
 maxG = zeros(numel(amp),1);
 tauA = maxG;
 figure;hold all;
@@ -151,7 +151,7 @@ xlim([amp(1) amp(end)])
 ylim([0 1])
 FontResizer
 FigureResizer(height,width)
-tprint(fullfile(outputFolder,sprintf('ActivCurve_%s_%s_%+.3g',mcond_channel,region,ampHalf)),'-pdf-R')
+tprint(fullfile(outputFolder,sprintf('ActivCurve_%s_%s_%+.3g',mcondChannel,region,ampHalf)),'-pdf-R')
 
 tauA(maxG <= 0.0005) = NaN;    % delete nonsense fittings
 figure;plot(amp,tauA)
@@ -163,7 +163,7 @@ ylim([0 10^ceil(log10(yl(2)))/(1+(yl(2)<10^ceil(log10(yl(2)))/2)+2*(yl(2)<10^cei
 % title('Activation time constant')
 FontResizer
 FigureResizer(height,width)
-tprint(fullfile(outputFolder,sprintf('ActivTime_%s_%s',mcond_channel,region)),'-pdf-R')
+tprint(fullfile(outputFolder,sprintf('ActivTime_%s_%s',mcondChannel,region)),'-pdf-R')
 
 
 %% inactivation
@@ -179,7 +179,7 @@ if ~isempty(strfind(options,'-si'))
     if isempty(fac)
         fac = 1;
     end
-    neuron.params.dt = 0.25*fac;
+    neuronTest.params.dt = 0.25*fac;
     predur = 50;
     dur = 10000*fac;
 elseif ~isempty(strfind(options,'-fi'))
@@ -187,18 +187,18 @@ elseif ~isempty(strfind(options,'-fi'))
     if isempty(fac)
         fac = 1;
     end
-    neuron.params.dt = 0.05/fac;
+    neuronTest.params.dt = 0.05/fac;
     predur = 10;
     dur = 100/fac;
 else
-    neuron.params.dt = 0.025;
+    neuronTest.params.dt = 0.025;
     predur = 50;
     dur = 1000;
 end
 if ~isempty(strfind(options,'-sa'))
     dur = dur * 5 * afac;
 end
-[~,out] = t2n_voltSteps(neuron,tree,amp,[predur dur actdur],holding_voltage);
+[~,out] = t2n_voltSteps(neuronTest,tree,amp,[predur dur actdur],holding_voltage);
 maxG = zeros(numel(amp),1);
 tauI = maxG;
 
@@ -260,7 +260,7 @@ xlim([amp(1) amp(end)])
 ylim([0 1])
 FontResizer
 FigureResizer(height,width)
-tprint(fullfile(outputFolder,sprintf('InactivCurve_%s_%s_%+.3g',mcond_channel,region,ampHalf)),'-pdf-R')
+tprint(fullfile(outputFolder,sprintf('InactivCurve_%s_%s_%+.3g',mcondChannel,region,ampHalf)),'-pdf-R')
 
 tauI(maxG >= 0.99) = NaN;   % delete nonsense fittings
 figure;plot(amp,tauI)
@@ -272,5 +272,5 @@ ylim([0 10^ceil(log10(yl(2)))/(1+(yl(2)<10^ceil(log10(yl(2)))/2)+2*(yl(2)<10^cei
 % title('Inactivation time constant')
 FontResizer
 FigureResizer(height,width)
-tprint(fullfile(outputFolder,sprintf('InactivTime_%s_%s',mcond_channel,region)),'-pdf-R')
+tprint(fullfile(outputFolder,sprintf('InactivTime_%s_%s',mcondChannel,region)),'-pdf-R')
 

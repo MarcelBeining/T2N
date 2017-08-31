@@ -1,13 +1,27 @@
 function [ vec, tvecout ] = t2n_get(out,par,arg,typ)
-% get a parameter at a specific time point/period
-% INPUT :   out     is the output structure of t2n
-%           par     is the parameter to obtain (string)
-%           arg     is either a time point [ms] or a start and end time
-%                   point [ms] or the string name of a function that should be
-%                   applied on the recorded values at each node
-%           typ     specifies if the parameter is from the cell ('cell',
-%                   default) or a point process (e.g. 'IClamp')
-% currently not supporting local_dt
+% This function can be used to obtain a recorded parameter during a specific 
+% time point/period of the simulation.
+%
+% INPUTS
+% out     the output structure of the t2n main function
+% par     string of the the parameter to obtain
+% arg     can be either
+%         - a scalar defining time point [ms] at which the parameter should be returned
+%         - a 1x2 vector with the start and end time point [ms] between which the parameter should be returned
+%         - the string name of a function that should be applied on the recorded parameter values at each node
+% typ     string that specifies if the recorded parameter is from the cell ('cell',default) or from a point process (e.g. 'IClamp')
+%
+% OUTPUTS
+% vec       cell array or vector returning the desired parameter at simulation (first level) and node (second level)  
+% tvecout   time vector [ms] if arg was no string
+%
+% NOTE
+% This function is currently not supporting NEURON's local_dt feature
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 if nargin < 4 || isempty(typ)
     typ = 'cell';

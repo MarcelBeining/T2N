@@ -1,6 +1,38 @@
 function [Rin, tau, cap, Vrest] = t2n_passTests(neuron,tree,targetfolder_results,ostruct)
-% caution! ostruct.recordnode is vector giving each tree the location where
-% to record!
+% This function applies protocols to extract passive properties (input
+% resistance, membrane time constant, capacitance and resting membrane
+% potential) from each cell.
+%
+% INPUTS
+% neuron                t2n neuron structure (see documentation)
+% tree                  tree cell array with morphologies (see documentation)
+% targetfolder_results  folder where pdfs from figures should be saved. If
+%                       not provided, figures will only be plotted
+% ostruct               structure with fields defining some parameters
+%                       passtest Exact passive test that will be applied.
+%                       These were extracted from several papers:
+%                       'Mongiat', 'Mongiat2', 'Mehranfahrd', 'SH' and a
+%                       standard protocol 'Std'
+%                       figureheight (optional) height of figure in cm
+%                       figurewidth (optional) width of figure in cm
+%                       recordnode (optional) node index at which the
+%                       current/voltage will be recorded. Default is root.
+%                       stimnode (optional) node index at which the
+%                       current/voltage will be injected. Default is root.
+%
+% OUTPUTS
+% Rin                   input resistance [MOhm] of all cells
+% tau                   membrane time constant [ms] of all cells
+% cap                   capacitance [pF] of all cells
+% Vrest                 resting membrane potential [mV] of all cells
+%
+% NOTE
+% If output is defined, no plot will be generated.
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
+
 
 Rin = NaN(1,numel(tree));
 tau = NaN(1,numel(tree));
@@ -24,7 +56,7 @@ end
 if ~isfield(ostruct,'passtest')
     ostruct.passtest = 'Mongiat';
 end
-if isfield(ostruct,'show') && ~any(ostruct.show == 0)
+if nargout == 0
     options = '-s';
 else
     options = '';
@@ -77,14 +109,6 @@ switch ostruct.passtest
             neuron.pp{t}.IClamp = struct('node',stimnode(t),'del',del,'dur', dur,'amp', amp); %n,del,dur,amp
             neuron.record{t}.cell = struct('record','v','node',recordnode(t));
         end
-    case 'Brenner'
-        dur = 1000;
-        amp = -0.02  ;      % -20pA Brenner 2005 from holding pot of -80mV
-        [hstep, Vrest] = t2n_findCurr(neuron,tree,-80);
-        for t = 1:numel(tree)
-            neuron.pp{t}.IClamp = struct('node',stimnode(t),'times',[-400,del,del+dur],'amp', [hstep(t), hstep(t)+amp hstep(t)]); %n,del,dur,amp
-            neuron.record{t}.cell = struct('record','v','node',recordnode(t));
-        end
 end
 neuron.params.tstop = 500+2*dur;
 neuron.params.dt = 2;
@@ -119,7 +143,7 @@ switch ostruct.passtest
         end
                     
 
-    case {'SH','Mongiat2','Brenner','Mehranfard','Std'}
+    case {'SH','Mongiat2','Mehranfard','Std'}
         for t = 1:numel(tree)
             V0 = mean(out.record{t}.cell.v{recordnode(t)}(1:del/neuron.params.dt+1));  %mV  only works with prerun
             v0(t) = V0;
@@ -158,7 +182,7 @@ switch ostruct.passtest
         end
         
 end
-if ~isempty(strfind(options,'-s'))
+if ~isempty(strfind(options,'-s')) && exist('targetfolder_results','var')
     xlim([0 2000])
     FontResizer
     FigureResizer(ostruct.figureheight,ostruct.figurewidth,[],ostruct)

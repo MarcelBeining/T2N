@@ -12,7 +12,7 @@ function [neuron,tree,usestreesof,nocell,exchfolder] = t2n_checkinput(neuron,tre
 % neuron            corrected neuron structure
 % usestreesof       points to the neuron entry/instance from which the tree
 %                   definitions are taken from
-% nocell            boolean if neuron input was a structure or cell array
+% nocell            Boolean if neuron input was a structure or cell array
 % exchfolder        name for exchfolder that was possibly found in the
 %                   neuron structure
 %
@@ -64,7 +64,7 @@ if doit || ~all(cellfun(@(x) exist(fullfile(pwd,'morphos','hocs',strcat(x,'.hoc'
         if ~all(ind)
             ind(~ind) = ~cellfun(@(x) exist(fullfile(pwd,'morphos','hocs',strcat(x.NID,'.hoc')),'file'),tree(~ind));
         end
-        tree(ind) = t2n_writeTrees(tree(ind),[],'',options);
+        tree(ind) = t2n_writeTrees(tree(ind));
     else
         error('Aborted');
     end

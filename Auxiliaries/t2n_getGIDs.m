@@ -1,6 +1,9 @@
 function  [GIDs,neuron,mindelay] = t2n_getGIDs(neuron,tree,thesetrees)
-% t2n ("Trees toolbox to Neuron") is to generate and execute a NEURON
-
+% This function prepares the neuron structure to be used for the parallel
+% NEURON environment. Also it returns the global IDs, which are necessary
+% for the parallel environment. The parallel NEURON feature is not yet
+% implemented completely!
+%
 % INPUTS
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
 % tree              tree cell array with morphologies (see documentation)

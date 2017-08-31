@@ -4,7 +4,7 @@ function strct = t2n_catStruct(varargin)
 % INPUTS
 % varargin          several structures with same field names
 %
-% OUTPUTs
+% OUTPUT
 % strct             concatenated structure
 %
 %

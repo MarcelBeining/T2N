@@ -1,21 +1,25 @@
 function [maxdv,fig] = t2n_plotdV(targetfolder_data,neuron,ostruct,targetfolder_results)
-
-% This function creates a phase plot (dV/dt) of the current steps that were done with t2n_currSteps
+% This function creates a phase plot (dV/dt) of the current steps that were 
+% simulated with t2n_currSteps.
 %
 % INPUTS
 % targetfolder_data     folder which was given to t2n_currSteps, where the data
 %                       of the simulation lie
-% targetfolder_results  folder where pdfs from figures should be saved. If
-%                       not provided, figures will only be plotted
 % neuron                t2n neuron structure (see documentation)
 % ostruct               structure with fields defining some output
 %                           figurewidth     width of figure to be created
 %                           figureheigth    height of figure to be created
 %                           savename        prefix filename of figures when saved
-%                           ampprop         amplitude for which an extra
+%                           ampprop         amplitude [nA] for which an extra
 %                                           figure will be made and the maximal dV is
 %                                           calculated
+% targetfolder_results  folder where pdfs from figures should be saved. If
+%                       not provided, figures will only be plotted
 %
+% OUTPUTS
+% maxdv                 maximal rate of change of the membrane voltages for
+%                       each cell (mV/ms)
+% fig                   figure handles to the plotted figure
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *

@@ -112,5 +112,5 @@ for s = 1:numel(cstepsSpikingModel)
         end
     end
 end
-
-save(fullfile(targetfolder_data,sprintf('Exp_Spiking_%s.mat',neuron.experiment)),'voltVec','timeVec','numspikes','cstepsSpikingModel','tree','nneuron')
+simDef = ostruct;
+save(fullfile(targetfolder_data,sprintf('Exp_Spiking_%s.mat',neuron.experiment)),'voltVec','timeVec','numspikes','cstepsSpikingModel','tree','nneuron','simDef')

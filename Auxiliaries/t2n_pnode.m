@@ -1,10 +1,11 @@
-function prop = t2n_pnode(tree,neuron,node)
+function prop = t2n_pnode(neuron,tree,node)
 % This function returns all properties (mechanisms and point processes)
-% that have been set at a specific node.
+% that have been set at a specific node. This is similar to psection() in 
+% NEURON and useful for validation of set parameters.
 %
-% INPUT
-% tree      TREES toolbox tree structure or cell array of tree structures
+% INPUTS
 % neuron    t2n neuron structure (see documentation)
+% tree      TREES toolbox tree structure or cell array of tree structures
 % node      index (or indices if multiple trees) to the node of interest in the tree
 %
 % OUTPUT

@@ -1,9 +1,11 @@
 function t2n_plotCurrSteps(targetfolder_data,neuron,steps)
-% This function plots one or multiple previously simulated and saved current steps
-% according to the file defined by neuron.experiment.
+% This function plots one or multiple current steps, which had been 
+% previously simulated and saved with t2n_currSteps. The exact loaded simulation
+% is defined by neuron.experiment.
+%
 % INPUTS
-% neuron                t2n neuron structure with already defined mechanisms
 % targetfolder_data     destination of temporary results file
+% neuron                t2n neuron structure with already defined mechanisms
 % steps                 (optional) restrict plot on specific current steps [nA]
 % 
 % *****************************************************************************************************

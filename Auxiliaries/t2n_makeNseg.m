@@ -1,14 +1,14 @@
-function minterf = t2n_make_nseg(tree,minterf,par,mech)
-% calculates at which position of the neuron there will be a segment node in NEURON
-% dlambda does the same as the d_lambda procedure in NEURON
-% necessary to find nearest segment which will be calculated
+function minterf = t2n_makeNseg(tree,minterf,par,mech)
+% This function calculates at which position of each cell there will be a 
+% segment node in NEURON. This is necessary for T2N to correctly translate
+% TREES toolbox node information into NEURON section and segment information.
 %
-% INPUT
-% tree      TREES toolbox tree cell array
+% INPUTS
+% tree      single TREES toolbox tree morphology
 % minterf	Nx3 mapping matrix created by neuron_template_tree (in morphology
-% folder)
+%           folder)
 % par       T2N neuron.params structure
-% mech      T2N mech structure from the T2N neuron structure
+% mech      T2N mech structure that belongs to the 'tree' morphology
 %
 % OUTPUT
 % minterf	updated mapping matrix with 4th column showing the real segment node locations

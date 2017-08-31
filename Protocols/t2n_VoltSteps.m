@@ -1,7 +1,28 @@
 function [currVec,out] = t2n_voltSteps(neuron,tree,vstepsModel,dur,holding_voltage,targetfolder_data)
-% This function performs one or multiple voltage steps in the cells given
-% by "tree" and "neuron" and saves the results in a mat file named
-% according to neuron.experiment
+% This function performs one or multiple voltage steps (in the squared
+% pulse format, i.e. voltage step is surrounded by step to the baseline
+% potential) in the cells given by "tree" and "neuron" and saves the 
+% results in a mat file named according to neuron.experiment for later analysis.
+%
+% INPUTS
+% neuron            t2n neuron structure with already defined mechanisms
+% tree              tree cell array with morphologies
+% vstepsModel       vector with voltages [mV] that will be held
+% dur               duration time period of voltage step [ms]. Can be a 1x3
+%                   vector which then includes the pre and post step 
+%                   duration at which the cell is held at the holding 
+%                   potential, or a scalar with only the step duration and 
+%                   pre/post being set to 100 ms
+% holding_voltage   potential [mV] at which cell is held before and after 
+%                   the voltage step
+% targetfolder_data destination of temporary results file
+%
+% OUTPUTS
+% currVec           cell array of vectors containing the simulation time 
+%                   vector and the measured current during the simulation 
+%                   for each cell (first dim) and voltage step (second dim)
+% out               the direct output structure of t2n, necessary for some
+%                   other t2n functions
 % 
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
@@ -59,5 +80,5 @@ for s = 1:numel(vstepsModel)
     end
 end
 if nargout == 0
-    save(fullfile(targetfolder_data,sprintf('Exp_VoltSteps_%s.mat',neuron.experiment)),'mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree')
+    save(fullfile(targetfolder_data,sprintf('Exp_VoltSteps_%s.mat',neuron.experiment)),'dur','mholding_current','neuron','holding_voltage','steadyStateCurrVec','currVec','vstepsModel','tree')
 end

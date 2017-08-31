@@ -1,4 +1,46 @@
-function [bAPdisthm,mveloc_dend,mveloc_farax,mveloc_nearax,fig] = t2n_plotbAP(targetfolder_data,neuron,ostruct,targetfolder_results)
+function [bAPdistHM,mveloc_dend,mveloc_farax,mveloc_nearax,fig] = t2n_plotbAP(targetfolder_data,neuron,ostruct,targetfolder_results)
+% This function uses the resulting data from t2n_bAP and plots the 
+% backpropagating spike amplitude as well as the delay versus distance to 
+% the root. Furthermore maps of the amplitude onto each tree are generated.
+%
+% INPUTS
+% targetfolder_data     folder which was given to t2n_currSteps, where the data
+%                       of the simulation lie
+% neuron                t2n neuron structure (see documentation)
+% ostruct               structure with fields defining some output
+%                           figurewidth     width of figure to be created
+%                           figureheigth    height of figure to be created
+%                           dist            string defining how distance to
+%                                           root is measured: 'Eucl.' for 
+%                                           euclidean distance or 'PL' for 
+%                                           path length
+%                           relamp          boolean if amplitudes should be
+%                                           plotted with relative values
+%                           plotData        boolean if experimental data
+%                                           from rat DGCs should be added to the graph
+% targetfolder_results  folder where pdfs from figures should be saved. If
+%                       not provided, figures will only be plotted
+%
+% OUTPUTS
+% bAPdistHM                                 distance [um] at which the bAP
+%                                           amplitude reached half-maximum
+% mveloc_dend                               mean AP velocity at the
+%                                           dendrite [um/ms]
+% mveloc_farax                              mean AP velocity at the
+%                                           distal axon [um/ms]
+% mveloc_nearax                             mean AP velocity at the
+%                                           proximal axon [um/ms]
+% fig                                       figure handles
+%
+% NOTE
+% Figures will only be plotted if no output is defined or fig is included
+% in the output.
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
+
 if ~iscell(neuron)
     neuron = {neuron};
 end
@@ -8,6 +50,9 @@ if ~isfield(ostruct,'dist')
 end
 if ~isfield(ostruct,'relamp')
     ostruct.relamp = 0;
+end
+if ~isfield(ostruct,'plotData')
+    ostruct.plotData = 0;
 end
 if nargout == 0 || nargout > 4
     fig(1) = figure;clf,hold all
@@ -117,13 +162,13 @@ for n = 1:numel(neuron)
         ind = abs((bAP{t}(som,5)-bAP{t}(som,6))/2 - (bAP{t}(iad,5)-bAP{t}(iad,6))) <= 1; %index of half maximum
         
         if strcmp(ostruct.dist,'PL')
-            bAPdisthm(t) = mean(bAP{t}(iad(ind),3)); % distance of half maximum amplitude
+            bAPdistHM(t) = mean(bAP{t}(iad(ind),3)); % distance of half maximum amplitude
             ind = find(bAP{t}(:,3) - thisdist < 1);
             veloc = bAP{t}(:,3)./(bAP{t}(:,2)-bAP{t}(bAP{t}(:,1) == 1,2)); %L / Zeit die amp gebraucht hat von soma zu punkt (wie krueppel)
             veloc_dend = veloc(iad);
             veloc = abs(bAP{t}(:,3)-bAP{t}(spikeinitnode,3))./(bAP{t}(:,2+5)-bAP{t}(spikeinitnode,2+5)); %L / Zeit die amp gebraucht hat von spikeiniation zu punkt (wie kress)
         else
-            bAPdisthm(t) = mean(bAP{t}(iad(ind),4)); % distance of half maximum amplitude
+            bAPdistHM(t) = mean(bAP{t}(iad(ind),4)); % distance of half maximum amplitude
             ind = find(bAP{t}(:,4) - thisdist < 1);
             veloc = bAP{t}(:,4)./(bAP{t}(:,2)-bAP{t}(som,2)); %L / Zeit die amp gebraucht hat von soma zu punkt, hier maxamp als zeitpunkt  (wie krueppel)
             veloc_dend = veloc(iad);
@@ -150,7 +195,7 @@ for n = 1:numel(neuron)
     end
     if (nargout == 0 || nargout > 4) && exist('targetfolder_results','var') && ~isempty(targetfolder_results)
         figure(fig(1))
-        if isfield(ostruct,'usemorph') && ostruct.usemorph >= 4  % rat
+        if ostruct.plotData
             plot(data(:,1),data(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
         end
         xlim([0 400])
@@ -163,7 +208,7 @@ for n = 1:numel(neuron)
             tprint(fullfile(targetfolder_results,sprintf('bAP-ampl_%s',neuron{n}.experiment)),'-pdf')
         end
         figure(fig(2))
-        if isfield(ostruct,'usemorph') && ostruct.usemorph >= 4  % rat
+        if ostruct.plotData
             if ostruct.relamp
                 plot(data2(:,1)/300,data2(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
             else

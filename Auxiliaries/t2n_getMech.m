@@ -1,24 +1,29 @@
-function [varargout] = t2n_getMech(tree,neuron,var)
+function [varargout] = t2n_getMech(neuron,tree,var)
 % This function maps the values of a given NEURON variable onto each
 % morpholgy and optionally returns these values, too;
-% INPUT
-% tree      TREES toolbox morphologies
+% INPUTS
 % neuron    t2n neuron structure or cell array of structure (see
 %           documentation)
+% tree      TREES toolbox morphologies
 % var       string with valid NEURON variable name, such as 'g_pas'
 %
 % OUTPUT
 % varVec    m-by-n cell array with mapped values for m neuron
 %           specifications and n trees
+%
+% *****************************************************************************************************
+% * This function is part of the T2N software package.                                                *
+% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% *****************************************************************************************************
 
 if nargin < 3 || isempty(var)
     var = 'g_pas';
     disp('g_pas is used as mechanism')
 end
-if nargin < 2 || isempty(neuron)
+if nargin < 1 || isempty(neuron)
     error 'neuron has not been defined or is no struct'
 end
-if nargin < 1 || isempty(tree)
+if nargin < 2 || isempty(tree)
     tree = {sample_tree};
     disp('Example tree is used')
 end

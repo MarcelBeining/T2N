@@ -1,6 +1,7 @@
 function [spikeMat, tVec] = t2n_poissonSpikeGen(freq, par, nTrials)
 % This function creates Poisson spike trains at a frequency 'freq' the
-% output is a spike matrix and a 
+% output is a spike matrix and a time vector, both which can be used to
+% define a artificial NEURON VecStim that follows such a spike train.
 %
 % INPUTS
 % freq          desired frequency of the spiking [Hz]

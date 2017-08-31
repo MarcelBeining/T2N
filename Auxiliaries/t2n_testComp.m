@@ -1,6 +1,6 @@
 function tree = t2n_testComp
 % This function returns a single compartment of region "soma" in TREES 
-% toolbox format for testing purposes.
+% toolbox format, which can be used for testing purposes.
 %
 % OUTPUT
 % tree      The testing compartment tree structure

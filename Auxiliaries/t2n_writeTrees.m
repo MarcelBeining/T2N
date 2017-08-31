@@ -1,27 +1,26 @@
-function tree = t2n_writeTrees(tree,tname,savepath,options,server)
-% This transforms the tree file into hoc code and also saves a interface file
-% for correct node-section assignment
+function tree = t2n_writeTrees(tree,tname,savepath,server)
+% This function transforms the tree file into hoc code and also saves a 
+% interface file for correct node-section assignment
 %
 % INPUTS
 % tree              tree cell array with morphologies (see documentation)
-% tname             (optional) name after which all tree files will be
-%                   named (with counting)
-% savepath          (optional) if this file destination string is given, the
-%                   function does not have to ask for it via gui
-% options           string with optional arguments (can be concatenated):
-%                   -d: Debug mode. The duration of writing hocs is shown
-%                   -w: Waitbar showing the progress
-%                   %deactived for the moment: -cl: Cluster mode. Files are written to Server
-% server            (optional for cluster mode) server structure
+% tname             (optional) name after which all tree files will be 
+%                   named (with counting). If 	not provided, the tree.name
+%                   will be used, or, if not given simply 	“Tree”+number
+% savepath          (optional) if this file destination string is given, 
+%                   the function does not 	have to ask for the tree file 
+%                   name to save via dialog
+%
+%OUTPUT
+% tree              tree cell array with each tree containing a unique NEURON ID (NID)
+% server            (optional for cluster mode, not fully implemented) server structure
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
 % * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
-if nargin < 4
-    options = '';
-end
+options = '-w';
 
 
 sflag = 0;
@@ -34,7 +33,7 @@ if size(tree,1) ~= numel(tree)  % check for correct 1st dimension
 end
 morphfolder = fullfile(pwd,'morphos','hocs');
 
-if strfind(options,'-cl')
+if exist('server','var')
     nrn_morphfolder = fullfile(server.clpath,'morphos/hocs');
 
     sshfrommatlabissue(server.connect,sprintf('mkdir -p %s',nrn_morphfolder));
@@ -111,7 +110,7 @@ if any(t == indWrite)  % inly rewrite artificial trees once
     oname = treename;
     neuron_template_tree (tree{t}, fullfile(morphfolder,sprintf('%s.hoc',treename)), '-m');
     
-    if strfind(options,'-cl')   %transfer files to server
+    if exist('server','var')   %transfer files to server
         server.connect = sftpfrommatlab(server.connect,fullfile(morphfolder,sprintf('%s.hoc',oname)),sprintf('%s/%s.hoc',nrn_morphfolder,oname));
         pause(0.1)
         server.connect = sftpfrommatlab(server.connect,fullfile(morphfolder,sprintf('%s_minterf.dat',oname)),sprintf('%s/%s_minterf.dat',nrn_morphfolder,oname));
@@ -145,10 +144,8 @@ end
 if badchars > 0
     warning('Caution! %d bad chars had to be removed or replaced from the tree names since they cause writing errors! Please be sure to not use "%%" and "." in the names',badchars);
 end
-if strfind(options,'-d')
     tim = toc(tim);
     fprintf(sprintf('Tree hoc writing time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
-end
 
 if orderchanged && nargout == 0
     warning('Caution, the node order of some trees had to be changed! Sort your trees with "sort_tree" to obtain the correct results')

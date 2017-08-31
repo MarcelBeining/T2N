@@ -1,17 +1,18 @@
 function h = t2n_plotTrees(tree,targetfolder,col,ostruct)
-% this function plots and saves each tree in a nice way, eg for using in Adobe
-% Illustrator
+% This function plots each tree in a nice way and saves them as eps files, 
+% eg for using in Adobe Illustrator.
 %
-% INPUT
-% tree: TREES toolbox tree cell array
-% targetfolder: target folder for output files
-% col (optional): cell array with rgb color values for each tree
-% ostruct (optional): option structure with possible fields 'show' (1 = colored plotting
-% but not good for putting in Illustrator; 2 = noncolored plotting),
-% 'savename' (prefix name for image files).
+% INPUTS
+% tree          TREES toolbox tree cell array
+% targetfolder  target folder for output files
+% col           (optional) cell array with rgb color values for each tree
+% ostruct       (optional) option structure with possible fields 
+%               'show' 1 = colored plotting but not good for putting in Adobe 
+%                       Illustrator; 2 = noncolored plotting
+%               'savename' prefix name for image files.
 %
 % OUTPUT
-% h: figure handles to the figures
+% h             (optional) figure handles to the figures
 %
 %
 % *****************************************************************************************************
