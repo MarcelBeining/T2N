@@ -632,13 +632,15 @@ for n = 1:numel(neuron)
                 templates = cat(1,templates,tree{neuron{n}.tree(tt)}.NID);
             end
             fprintf(ofile,'cell = new %s()\n', tree{neuron{n}.tree(tt)}.NID );
-            fields = fieldnames( tree{neuron{n}.tree(tt)});
-            fields = setdiff(fields,{'NID','artificial'});  % get all fields that are not "NID" or "artificial". These should be parameters to define
-            for f = 1:numel(fields)
-                if ischar(tree{neuron{n}.tree(tt)}.(fields{f})) && regexpi(tree{neuron{n}.tree(tt)}.(fields{f}),'^(.*)$')  % check if this is a class/value pair, then use the () instead of =
-                    fprintf(ofile, 'cell.cell.%s%s\n',fields{f}, tree{neuron{n}.tree(tt)}.(fields{f}));
-                else
-                    fprintf(ofile, 'cell.cell.%s = %g\n',fields{f}, tree{neuron{n}.tree(tt)}.(fields{f}));
+            if isfield(tree{neuron{n}.tree(tt)},'artificial')
+                fields = fieldnames( tree{neuron{n}.tree(tt)});
+                fields = setdiff(fields,{'NID','artificial','col'});  % get all fields that are not "NID" or "artificial". These should be parameters to define
+                for f = 1:numel(fields)
+                    if ischar(tree{neuron{n}.tree(tt)}.(fields{f})) && regexpi(tree{neuron{n}.tree(tt)}.(fields{f}),'^(.*)$')  % check if this is a class/value pair, then use the () instead of =
+                        fprintf(ofile, 'cell.cell.%s%s\n',fields{f}, tree{neuron{n}.tree(tt)}.(fields{f}));
+                    else
+                        fprintf(ofile, 'cell.cell.%s = %g\n',fields{f}, tree{neuron{n}.tree(tt)}.(fields{f}));
+                    end
                 end
             end
             if neuron{refPar}.params.parallel
