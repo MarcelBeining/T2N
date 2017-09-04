@@ -112,7 +112,7 @@ if numel(uu) == 1
 else
     props.APt = cell(2,max([size(exp_iclamp,2),size(sim1.voltVec,1)]));
 end
-markerstyle = {'o','x','d'};
+markerstyle = {'x','o','d'};
 props.APiv = props.APt; props.APit = props.APt; props.APwidth = props.APt; props.APind = props.APt; props.APamp = props.APt;props.APampabs = props.APt;props.APISI = props.APt;props.fAHP = props.APt;props.fAHPabs = props.APt;props.APdeact = props.APt;
 props.APic = cell(numel(uu),1);props.maxDV = props.APt;
 for u = 1:numel(uu)

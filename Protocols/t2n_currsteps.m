@@ -40,7 +40,7 @@ if ~isfield(ostruct,'numAP')
     ostruct.numAP = 0;
 end
 if ~isfield(ostruct,'spikeThresh')
-    ostruct.spikeThresh = -15;
+    ostruct.spikeThresh = -10;  % std spike thresh of -10 mV
 end
 if ~isfield(ostruct,'amp')
     ostruct.amp = (0:5:90)/1000;  % standard current steps 0-90 pA
