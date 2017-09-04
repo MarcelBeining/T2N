@@ -1,4 +1,4 @@
-function [currVec,out] = t2n_voltSteps(neuron,tree,vstepsModel,dur,holding_voltage,targetfolder_data)
+function [currVec,out] = t2n_VoltSteps(neuron,tree,vstepsModel,dur,holding_voltage,targetfolder_data)
 % This function performs one or multiple voltage steps (in the squared
 % pulse format, i.e. voltage step is surrounded by step to the baseline
 % potential) in the cells given by "tree" and "neuron" and saves the 

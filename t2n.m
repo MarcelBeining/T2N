@@ -404,7 +404,7 @@ for n = 1:numel(neuron)
                     else
                         disp('nrnmech.dll compiled from mod files in folder lib_mech')
                     end
-                    t2n_rename_nrnmech()  % delete the o and c files
+                    t2n_renameNrnmech()  % delete the o and c files
                 end
                 fprintf(nfile,'nrn_load_dll("lib_mech/nrnmech.dll")\n');
             else
@@ -634,7 +634,7 @@ for n = 1:numel(neuron)
             fprintf(ofile,'cell = new %s()\n', tree{neuron{n}.tree(tt)}.NID );
             if isfield(tree{neuron{n}.tree(tt)},'artificial')
                 fields = fieldnames( tree{neuron{n}.tree(tt)});
-                fields = setdiff(fields,{'NID','artificial','col'});  % get all fields that are not "NID" or "artificial". These should be parameters to define
+                fields = setdiff(fields,{'NID','artificial','col','name'});  % get all fields that are not "NID" or "artificial". These should be parameters to define
                 for f = 1:numel(fields)
                     if ischar(tree{neuron{n}.tree(tt)}.(fields{f})) && regexpi(tree{neuron{n}.tree(tt)}.(fields{f}),'^(.*)$')  % check if this is a class/value pair, then use the () instead of =
                         fprintf(ofile, 'cell.cell.%s%s\n',fields{f}, tree{neuron{n}.tree(tt)}.(fields{f}));

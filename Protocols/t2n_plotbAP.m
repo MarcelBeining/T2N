@@ -45,7 +45,7 @@ if ~iscell(neuron)
     neuron = {neuron};
 end
 thisdist = 185; % dist in µm where bAP is measured
-if ~isfield(ostruct,'dist')
+if ~exist('ostruct','var') || ~isfield(ostruct,'dist')
     ostruct.dist = 'Eucl.';
 end
 if ~isfield(ostruct,'relamp')
