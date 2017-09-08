@@ -28,27 +28,29 @@ mindelay = 10;  % default minimum delay and time step of parallel network
 if ~exist('thesetrees','var') || isempty(thesetrees)
     thesetrees = 1:numel(tree);
 end
+% give each existing cell a unique GID and initialize some basic parameters
+% this is necessary that gid_exist works
 for t = 1:numel(thesetrees)
-    GIDs(t) = struct('gid',t-1,'pp',[],'watch','v','node',1,'cell',thesetrees(t));
+    if isfield(tree{thesetrees(t)},'artificial')
+        GIDs(t) = struct('gid',t-1,'pp',[],'watch','on','node',[],'cell',t);
+    else
+        GIDs(t) = struct('gid',t-1,'pp',[],'watch','v','node',1,'cell',t);
+    end
 end
 counter = 1+t; 
 
 if isfield(neuron,'con')
     for c = 1:numel(neuron.con)
-        if isfield(neuron.con(c).source,'pp') 
-            if ~isfield(neuron.con(c).source,'watch')
-                neuron.con(c).source.watch = 'on';
-            end
-            if ~isfield(neuron.con(c).source,'node')
-                neuron.con(c).source.node = 1;
-            end
+        if isfield(neuron.con(c).source,'pp') && ~isempty(neuron.con(c).source.pp)
+            % check for all fields and put standard values in there if not
+            % existing
             if isfield(neuron{n}.con(c).source,'ppg')  % check for an index to a PP subgroup
                 ppg = neuron{n}.con(c).source.ppg;
             else
                 ppg = 1:numel(neuron{x}.pp{neuron.con(c).source.cell}.(neuron.con(c).source.pp));  % else take all PP subgroups
             end
-                        
-            ind = find(strcmp({GIDs.pp},neuron.con(c).source.pp) & cat(1,GIDs.cell) == neuron.con(c).source.cell & cat(1,GIDs.node) == neuron.con(c).source.node & strcmp({GIDs.watch},neuron.con(c).source.watch),1,'first');
+            % add the point process which is used as a netcon as a new GID            
+            ind = find(arrayfun(@(x) strcmp(x.pp,neuron.con(c).source.pp) & x.cell  == neuron.con(c).source.cell & isequal(x.node,neuron.con(c).source.node) & strcmp(x.watch,neuron.con(c).source.watch) ,GIDs),1,'first');
             if ~isempty(ind)
                 neuron.con(c).source.gid = GIDs(ind).gid(1:numel(ppg));
             else
@@ -60,17 +62,9 @@ if isfield(neuron,'con')
                 end
             end
         else
-            if ~isfield(neuron.con(c).source,'watch')
-                if isfield(tree(thesetrees==neuron.con(c).source.cell),'artificial')
-                    neuron.con(c).source.watch = 'on';
-                else
-                    neuron.con(c).source.watch = 'v';
-                end
-            end
-            if ~isfield(neuron.con(c).source,'node')
-                neuron.con(c).source.node = 1;
-            end
-            ind = cellfun(@isempty,{GIDs.pp}) & cat(1,GIDs.cell) == neuron.con(c).source.cell & cat(1,GIDs.node) == neuron.con(c).source.node & strcmp({GIDs.watch},neuron.con(c).source.watch);
+            % check if not pp, check if GID of cell exist, check if it is
+            % about the same node, check if the same variable is watched
+            ind = arrayfun(@(x) isempty(x.pp) & x.cell  == neuron.con(c).source.cell & isequal(x.node,neuron.con(c).source.node) & strcmp(x.watch,neuron.con(c).source.watch) ,GIDs);
             if any(ind)
                 neuron.con(c).source.gid = GIDs(ind).gid;
             else
@@ -79,15 +73,15 @@ if isfield(neuron,'con')
                 counter = counter +1;
             end
         end
-            
+        % check if there is any netcon delay smaller than mindelay    
         if isfield(neuron.con(c),'delay')
             mindelay = min(mindelay,neuron.con(c).delay);
-        else
-            mindelay = min(mindelay,1); % default delay
         end
     end
 end
-
+if mindelay <= 0
+    error('The minimum delay of NetCons in parallel NEURON has to be greater than zero!')
+end
 [~,ind] = sort(cat(1,GIDs.cell));
 GIDs = GIDs(ind);
 

@@ -1,7 +1,7 @@
 function [neuron,tree,usestreesof,nocell,exchfolder] = t2n_checkinput(neuron,tree,options)
 % This function checks the neuron structure for correct definition of the
 % used morphologies and returns info about it
-
+%
 % INPUTS
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
 % tree              tree cell array with morphologies (see documentation)
@@ -177,6 +177,55 @@ for n = 1:numel(neuron)
             warning ('t2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
         end
     end
-
+    
+    if isfield(neuron{n},'con')
+        % check for all con fields and provide standard values if not
+        % existent
+        for c = 1:numel(neuron{n}.con)
+            if ~isfield(neuron{n}.con(c).source,'watch')
+                if isfield(tree{neuron{n}.tree==neuron{n}.con(c).source.cell},'artificial') || (isfield(neuron{n}.con(c).source,'pp') && ~isempty(neuron{n}.con(c).source.pp))
+                    neuron{n}.con(c).source.watch = 'on';
+                else
+                    neuron{n}.con(c).source.watch = 'v';
+                end
+            end
+            if ~isfield(neuron{n}.con(c).source,'pp')
+               neuron{n}.con(c).source.pp = [];
+            end
+            if ~isfield(neuron{n}.con(c).source,'node')
+                if isfield(tree{neuron{n}.tree==neuron{n}.con(c).source.cell},'artificial')
+                    neuron{n}.con(c).source.node = [];
+                else
+                    neuron{n}.con(c).source.node = 1;
+                end
+            end
+        end
+        % if multiple nodes/cells/pps have been defined at once in the con
+        % list, make them single
+        neuron{n}.con = detangleCon(neuron{n}.con,'source','cell');
+        neuron{n}.con = detangleCon(neuron{n}.con,'source','node');
+        neuron{n}.con = detangleCon(neuron{n}.con,'source','pp');
+        neuron{n}.con = detangleCon(neuron{n}.con,'target','cell');
+        neuron{n}.con = detangleCon(neuron{n}.con,'target','node');
+        neuron{n}.con = detangleCon(neuron{n}.con,'target','pp');
+    end
 end
+end
+
+function newcon = detangleCon(oldcon,field1,field2)
+
+newcon = cell(numel(oldcon));
+for c = 1:numel(oldcon)
+    if isfield(oldcon(c).(field1),field2) && ~ischar(oldcon(c).(field1).(field2)) && ~isempty(oldcon(c).(field1).(field2))
+        num = numel(oldcon(c).(field1).(field2));
+        newcon{c} = repmat(oldcon(c),num,1);
+        for m = 1:num
+            newcon{c}(m).(field1).(field2) = newcon{c}(m).(field1).(field2)(m);
+        end
+    else
+        newcon{c} = oldcon(c);
+    end
+end
+newcon = cat(1,newcon{:});
+
 end

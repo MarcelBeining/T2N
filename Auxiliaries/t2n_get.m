@@ -26,6 +26,7 @@ function [ vec, tvecout ] = t2n_get(out,par,arg,typ)
 if nargin < 4 || isempty(typ)
     typ = 'cell';
 end
+
 nocellflag = 0;
 if ~iscell(out)
     out = {out};
@@ -34,20 +35,25 @@ end
 vec = cell(numel(out),1);
 tvecout = vec;
 for o = 1:numel(out)
-    switch class(arg)
-        case 'char'
-            fHandle = str2func(arg);
-            numl = 1;
-        otherwise
-            switch numel(arg)
-                case 1
-                    tvec = find(out{o}.t >= arg,1,'first');
-                    numl = 1;
-                case 2
-                    tvec = out{o}.t >= arg(1) & out{o}.t <= arg(2);
-                    numl = sum(tvec);
-            end
-            fHandle = @(x) x(tvec);
+    if nargin < 3 || isempty(arg)
+        fHandle = @(x) x;
+        numl = numel(out{o}.t);
+    else
+        switch class(arg)
+            case 'char'
+                fHandle = str2func(arg);
+                numl = 1;
+            otherwise
+                switch numel(arg)
+                    case 1
+                        tvec = find(out{o}.t >= arg,1,'first');
+                        numl = 1;
+                    case 2
+                        tvec = out{o}.t >= arg(1) & out{o}.t <= arg(2);
+                        numl = sum(tvec);
+                end
+                fHandle = @(x) x(tvec);
+        end
     end
     
     %     vec{p} = NaN(numel(out.record),max(cellfun(@(x) numel(x.(typ).(par{p})),out.record)))  % initialize the matrix with N
@@ -59,7 +65,9 @@ for o = 1:numel(out)
             end
         end
     end
-    if ~isa(arg,'char')
+    if nargin < 3 || isempty(arg)
+        tvecout{o} = out{o}.t;
+    elseif ~isa(arg,'char')
         tvecout{o} = out{o}.t(tvec);
     else
         tvecout{o} = NaN;
