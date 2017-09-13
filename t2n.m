@@ -578,11 +578,7 @@ for n = 1:numel(neuron)
     
     if ~neuron{refPar}.params.skiprun
         if neuron{refPar}.params.parallel
-            
-%             fprintf(nfile,'pc.runworker\n');
-            
             fprintf(nfile,'pc.set_maxstep(%d)\nstdinit()\npc.psolve(tstop)\n',mindelay);   %!%!%!%! change this! neuron{n}.con...... %!%! also include prerun
-            fprintf(nfile,'print "hallo", pc.id()\n');
         else
             fprintf(nfile,'init()\n');  % this needs to be modified later since v_init might be restarted
             fprintf(nfile,'run()\n');         % directly run the simulation
@@ -614,7 +610,6 @@ for n = 1:numel(neuron)
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Make Matlab notice end of simulation *****\n');
     if neuron{refPar}.params.parallel
-        fprintf(nfile,'{pc.runworker()}\n{pc.done()}\n');
         fprintf(nfile,'if (pc.id()==0){\n');
     end
     fprintf(nfile,'f = new File()\n');       %create a new filehandle
@@ -1351,7 +1346,7 @@ for n = 1:numel(neuron)
                         fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
                         ocount = count;
                     end
-                    if neuron{refPar}.params.use_local_dt
+                    if neuron{refPar}.params.use_local_dt || neuron{refPar}.params.parallel
                         makenewrect = true;
                     end
                     recfields = fieldnames(neuron{refR}.record{t});
@@ -1530,7 +1525,11 @@ for n = 1:numel(neuron)
                         fprintf(ofile,'\n');
                     end
                     if neuron{refPar}.params.parallel
-                        fprintf(ofile,'}else{for (i=0;i<%d;i=i+1) {io = recList.append(eObj)}}\n',count-ocount);  %append pp to ppList
+                        if neuron{refPar}.params.cvode
+                            fprintf(ofile,'}else{io = rectList.append(eObj) for (i=0;i<%d;i=i+1) {io = recList.append(eObj)}}\n',count-ocount);  %append pp to ppList
+                        else
+                            fprintf(ofile,'}else{for (i=0;i<%d;i=i+1) {io = recList.append(eObj)}}\n',count-ocount);  %append pp to ppList
+                        end
                     end
                 end
             end
@@ -1812,7 +1811,7 @@ for n = 1:numel(neuron)
         
         for tt = 1:numel(neuron{n}.tree)
             t = neuron{n}.tree(tt);
-            if neuron{refPar}.params.use_local_dt
+            if neuron{refPar}.params.use_local_dt || neuron{refPar}.params.parallel
                 makenewrect = true;
             end
             if numel(neuron{refR}.record) >= t && ~isempty(neuron{refR}.record{t})
@@ -1858,12 +1857,18 @@ for n = 1:numel(neuron)
                                 readfiles{noutfiles} = {sprintf('%s.dat',fname), n, t , 'cell', neuron{refR}.record{t}.(recfields{f1})(r).record , 1 };
                         end
                         if neuron{refPar}.params.cvode && makenewrect  % save tvector once (or for each cell if local dt)
-                            if neuron{refPar}.params.use_local_dt
+                            if neuron{refPar}.params.use_local_dt || neuron{refPar}.params.parallel
                                 fnamet = sprintf('cell%d_tvec.dat', tt-1);
                             else
                                 fnamet = 'tvec.dat';
                             end
+%                             if neuron{refPar}.params.parallel
+%                                 fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
+%                             end
                             fprintf(ofile,'save_rect("%s",%d)\n',fnamet,neuron{refR}.record{t}.(recfields{f1})(r).idt(1));
+%                             if neuron{refPar}.params.parallel
+%                                 fprintf(ofile,'}\n');
+%                             end
                             makenewrect = false;
                         end
                     end
@@ -2178,14 +2183,19 @@ if noutfiles > 0 % if output is expected
                 otherwise
                     out{readfiles{f}{2}}.record{readfiles{f}{3}}.(readfiles{f}{4}).(readfiles{f}{5})(readfiles{f}{6}) = repmat({load(fn,'-ascii')},numel(readfiles{f}{6}),1);
                     if neuron{refPar}.params.cvode
-                        if neuron{refPar}.params.use_local_dt  % if yes, dt was different for each cell, so there is more than one time vector
-                            if numel(out{readfiles{f}{2}}.t) < readfiles{f}{3} || isempty(out{readfiles{f}{2}}.t{readfiles{f}{3}})
+                        if neuron{refPar}.params.use_local_dt || neuron{refPar}.params.parallel  % if yes, dt was different for each cell, so there is more than one time vector
+                            if ~isfield(out{readfiles{f}{2}},'t') || numel(out{readfiles{f}{2}}.t) < readfiles{f}{3} || isempty(out{readfiles{f}{2}}.t{readfiles{f}{3}})
                                 out{readfiles{f}{2}}.t{readfiles{f}{3}} = load(fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),sprintf('cell%d_tvec.dat', find(readfiles{f}{3} == neuron{n}.tree)-1)),'-ascii');    %loading of one time vector file per cell (sufficient)
+                                % add tiny time step to tvec to avoid problems with step functions
+                                out{readfiles{f}{2}}.t{readfiles{f}{3}}(find(diff(out{readfiles{f}{2}}.t{readfiles{f}{3}},1) == 0) + 1) = out{readfiles{f}{2}}.t{readfiles{f}{3}}(find(diff(out{readfiles{f}{2}}.t{readfiles{f}{3}},1) == 0) + 1) + 1e-10; 
                             end
                         elseif ~isfield(out{readfiles{f}{2}},'t')       % if it has not been loaded in a previous loop
                             out{readfiles{f}{2}}.t = load(fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),'tvec.dat'),'-ascii');    %loading of one time vector file at all (sufficient)
+                            % add tiny time step to tvec to avoid problems with step functions
+                            out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) = out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) + 1e-10; 
                         end
-                        out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) = out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) + 1e-10;  % add tiny time step to tvec to avoid problems with step functions
+                         
+                        
                     end
             end
             delete(fn)  % delete dat file after loading
