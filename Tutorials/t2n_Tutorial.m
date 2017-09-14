@@ -447,6 +447,11 @@ xlabel('Time [ms]')
 % would transform the feed-forward inhibition to a feed-back inhibition network 
 % by changing the input of the inhibitory neuron from the netstim to the real 
 % cell.
+% To speed up simulation time we furthermore enable the parallel Neuron 
+% feature (cells are distributed onto different cores) + variable time step, 
+% by setting nneuron.params.parallel to 4 cores and nneuron.params.cvode to 
+% 1. This feature becomes more powerful if the more cells are used in the 
+% network and the more cores are available to be used by T2N.
 
 trees = {};
 trees{1} = tree{1};
@@ -455,6 +460,8 @@ trees{3} = struct('artificial','IntFire2','taus',15); % add a IntFire2 as an art
 trees = t2n_writeTrees(trees,[],fullfile(pwd,'test.mtr'));                                    % tree morphologies are rewritten because this NetStim might be not written yet
 
 nneuron = neuron;                                                         % copy standard neuron structure
+nneuron.params.parallel = 4;                                              % enable parallel Neuron and set the number of used cores to 4
+nneuron.params.cvode = 1;                                                 % enable the variable time step method to fully profit from parallel Neuron (be reminded that out.t is a cell then, as time steps can be different between cells)
 plen = Pvec_tree(trees{1});                                                % get path length to soma at each node of morphology
 [~,synIDsExc] = max(plen);                                                % search for the most far away point in the morpholgy    
 nneuron.pp{1}.Exp2Syn(1) = struct('node',synIDsExc,'tau1',0.2,'tau2',2.5,'e',0);% add an Exp2Syn at this location with 0.2 ms rise and 2.5 ms decay time

@@ -138,7 +138,10 @@ for n = 1:numel(neuron)
         end
         if neuron{n}.params.parallel == 1
             warning('Neuron instance %d has params.parallel set to 1, however this variable is no boolean but defines the number of cores that should be used. Using 1 core has not advantage.',n)
+        elseif numel(neuron) > 1 && neuron{n}.params.parallel > 0
+            warning('It seems you have enabled parallel Neuron together with multiple Neuron instances. Be sure that there are %d cores available, otherwise there will be no improvement in speed and the CPUs might be overloaded.',numel(neuron)*neuron{n}.params.parallel)
         end
+        
         if ~isfield(neuron{n}.params,'cvode')
             neuron{n}.params.cvode = false;
         end

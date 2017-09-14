@@ -1,8 +1,7 @@
 function  [GIDs,neuron,mindelay] = t2n_getGIDs(neuron,tree,thesetrees)
 % This function prepares the neuron structure to be used for the parallel
 % NEURON environment. Also it returns the global IDs, which are necessary
-% for the parallel environment. The parallel NEURON feature is not yet
-% implemented completely!
+% for the parallel environment.
 %
 % INPUTS
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
@@ -11,8 +10,8 @@ function  [GIDs,neuron,mindelay] = t2n_getGIDs(neuron,tree,thesetrees)
 %                   the index array to the used ones
 %
 % OUTPUTS
-% GIDs              global IDs of each tree for initializing NEURON in
-%                   parallel
+% GIDs              structure with information on all needed global IDs 
+%                   that are initialized in parallel NEURON
 % neuron            complemented neuron structure ready for parallel NEURON
 % mindelay          minimum delay and time step of parallel network
 %                   (calculated from minimal delay between synapses)
@@ -23,8 +22,11 @@ function  [GIDs,neuron,mindelay] = t2n_getGIDs(neuron,tree,thesetrees)
 % * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
-
-mindelay = 10;  % default minimum delay and time step of parallel network
+if isfield(neuron.params,'dt') && (~isfield(neuron.params,'cvode') || ~neuron.params.cvode)
+    mindelay = min(neuron.params.dt*2,10);
+else
+    mindelay = 10;  % default minimum delay and time step of parallel network
+end
 if ~exist('thesetrees','var') || isempty(thesetrees)
     thesetrees = 1:numel(tree);
 end
