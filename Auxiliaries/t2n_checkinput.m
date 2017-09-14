@@ -134,7 +134,10 @@ for n = 1:numel(neuron)
     refP = t2n_getref(n,neuron,'params');
     if n == refP % only check if current instance has its own parameter struct
         if ~isfield(neuron{n}.params,'parallel')
-            neuron{n}.params.parallel = false;
+            neuron{n}.params.parallel = 0;
+        end
+        if neuron{n}.params.parallel == 1
+            warning('Neuron instance %d has params.parallel set to 1, however this variable is no boolean but defines the number of cores that should be used. Using 1 core has not advantage.',n)
         end
         if ~isfield(neuron{n}.params,'cvode')
             neuron{n}.params.cvode = false;

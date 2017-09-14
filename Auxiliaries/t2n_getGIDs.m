@@ -32,9 +32,9 @@ end
 % this is necessary that gid_exist works
 for t = 1:numel(thesetrees)
     if isfield(tree{thesetrees(t)},'artificial')
-        GIDs(t) = struct('gid',t-1,'pp',[],'watch','on','node',[],'cell',t);
+        GIDs(t) = struct('gid',t-1,'pp',[],'watch','on','node',[],'cell',t,'threshold',[]);
     else
-        GIDs(t) = struct('gid',t-1,'pp',[],'watch','v','node',1,'cell',t);
+        GIDs(t) = struct('gid',t-1,'pp',[],'watch','v','node',1,'cell',t,'threshold',[]);
     end
 end
 counter = 1+t; 
@@ -56,7 +56,13 @@ if isfield(neuron,'con')
             else
                 for p = 1:numel(ppg)
                     neuron.con(c).source.gid(p) = counter-1;
-                    GIDs(counter) = neuron.con(c).source;
+                    tmp = neuron.con(c).source;
+                    if isfield(neuron.con(c),'threshold')
+                        tmp.threshold = neuron.con(c).threshold;
+                    else
+                        tmp.threshold = [];
+                    end
+                    GIDs(counter) = tmp;
                     GIDs(counter).gid = counter -1;  % only one gid there..
                     counter = counter +1;
                 end
@@ -67,9 +73,16 @@ if isfield(neuron,'con')
             ind = arrayfun(@(x) isempty(x.pp) & x.cell  == neuron.con(c).source.cell & isequal(x.node,neuron.con(c).source.node) & strcmp(x.watch,neuron.con(c).source.watch) ,GIDs);
             if any(ind)
                 neuron.con(c).source.gid = GIDs(ind).gid;
+                GIDs(ind).threshold = neuron.con(c).threshold;
             else
                 neuron.con(c).source.gid = counter-1;
-                GIDs(counter) = neuron.con(c).source;
+                tmp = neuron.con(c).source;
+                if isfield(neuron.con(c),'threshold')
+                    tmp.threshold = neuron.con(c).threshold;
+                else
+                    tmp.threshold = [];
+                end
+                GIDs(counter) = tmp;
                 counter = counter +1;
             end
         end

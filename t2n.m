@@ -578,7 +578,7 @@ for n = 1:numel(neuron)
     
     if ~neuron{refPar}.params.skiprun
         if neuron{refPar}.params.parallel
-            fprintf(nfile,'pc.set_maxstep(%d)\nstdinit()\npc.psolve(tstop)\n',mindelay);   %!%!%!%! change this! neuron{n}.con...... %!%! also include prerun
+            fprintf(nfile,'pc.set_maxstep(%g)\nstdinit()\npc.psolve(tstop)\n',mindelay);   %!%!%!%! change this! neuron{n}.con...... %!%! also include prerun
         else
             fprintf(nfile,'init()\n');  % this needs to be modified later since v_init might be restarted
             fprintf(nfile,'run()\n');         % directly run the simulation
@@ -1087,12 +1087,16 @@ for n = 1:numel(neuron)
                 thiscell = GIDs(g).cell;
                 fprintf(ofile,'if (pc.gid_exists(%d)) {\n',GIDs(g).gid);
                 if isfield(tree{neuron{n}.tree(thiscell)},'artificial')
-                    fprintf(ofile,'con = new NetCon(cellList.o(%d).cell,nil)\n',thiscell-1);     % make temporary netcon for registering the cell
+                    fprintf(ofile,'{con = new NetCon(cellList.o(%d).cell,nil)\n',thiscell-1);     % make temporary netcon for registering the cell
                 else
                     inode = find(minterf{neuron{n}.tree(thiscell)}(:,1) == GIDs(g).node,1,'first');
-                    fprintf(ofile,'cellList.o(%d).allregobj.o(%d).sec {con = new NetCon(&%s(0.5),nil)}\n',thiscell-1,minterf{neuron{n}.tree(thiscell)}(inode,2),GIDs(g).watch);  % make temporary netcon for registering the cell
+                    fprintf(ofile,'cellList.o(%d).allregobj.o(%d).sec {con = new NetCon(&%s(0.5),nil)\n',thiscell-1,minterf{neuron{n}.tree(thiscell)}(inode,2),GIDs(g).watch);  % make temporary netcon for registering the cell
                 end
-                fprintf(ofile,'pc.cell(%d,con)\nobjref con\n}\n',GIDs(g).gid);  % register cell at this worker
+                if ~isempty(GIDs(g).threshold)
+                    fprintf(ofile,'con.threshold = %g\npc.cell(%d,con)}\nobjref con\n}\n',GIDs(g).threshold,GIDs(g).gid);  % register cell at this worker
+                else
+                    fprintf(ofile,'pc.cell(%d,con)}\nobjref con\n}\n',GIDs(g).gid);  % register cell at this worker
+                end
             end
         end
         fprintf(ofile,'\n\n');
@@ -1111,16 +1115,16 @@ for n = 1:numel(neuron)
                 
                 cell_source = neuron{n}.con(c).source.cell;
 %             error('In con(%d) it seems you specified a connection from a real cell (%d) without specifying a node location! Please specify under con(%d).source.node',c,t,c)
-                if isempty(cell_source)
+                if isempty(cell_source)  % empty source
                     str{1} = sprintf('con = new NetCon(nil,');
-                elseif isfield(tree{neuron{n}.con(c).source.cell},'artificial') % an artificial cell.create a NetCon for it
+                elseif isfield(tree{neuron{n}.con(c).source.cell},'artificial') % an artificial cell is the source .create a NetCon for it
                     if neuron{refPar}.params.parallel
                         str{1} = sprintf('con = pc.gid_connect(%d,',neuron{n}.con(c).source.gid);
                     else
                         str{1} = sprintf('con = new NetCon(cellList.o(%d).cell,',cell_source-1);
                     end
                 else
-                    if any(strcmp(sourcefields,'pp'))  % point process is the source
+                    if any(strcmp(sourcefields,'pp')) && ~isempty(neuron{n}.con(c).source.pp)  % point process is the source
                         if isnan(refPP)
                             error('A point process was declared as source for a NetCon no point process was declared for neuron instance %d',n)
                         end
@@ -1172,9 +1176,6 @@ for n = 1:numel(neuron)
                         end                            
                         for ii = 1:numel(iid)
                             if neuron{refPar}.params.parallel
-                                % perhaps this is needed again..but pp
-                                % should be registered before with gids
-%                                 str{ii} = sprintf('con = new NetCon(ppList.o(%d),nil)\npc.cell(%d,con)\nobjref con\n',neuron{refPP}.pp{cell_source}.(pp).id(iid{ii}),neuron{n}.con(c).source.gid(ii));
                                 str{ii} = sprintf('con = pc.gid_connect(%d,',neuron{n}.con(c).source.gid);
                             else
                                 str{ii} = sprintf('con = new NetCon(ppList.o(%d),',neuron{refPP}.pp{cell_source}.(pp).id(iid{ii}));
@@ -1185,11 +1186,10 @@ for n = 1:numel(neuron)
                         inode = find(minterf{neuron{n}.tree(cell_source)}(:,1) == node,1,'first');    %find the index of the node in minterf
                         if neuron{refPar}.params.parallel
                             str{1} = sprintf('con = pc.gid_connect(%d,',neuron{n}.con(c).source.gid);
-                            %                                 error('T2N does not (yet) implement watching anything different than voltage in netcons that span workers')
                         else
                             str{1} = sprintf('cellList.o(%d).allregobj.o(%d).sec {con = new NetCon(&%s(%f),',cell_source-1,minterf{neuron{n}.tree(cell_source)}(inode,2),neuron{n}.con(c).source.watch,minterf{neuron{n}.tree(cell_source)}(inode,3));
+                            nodeflag = true;
                         end
-                        nodeflag = true;
                     end
                     
                 end
@@ -1288,32 +1288,37 @@ for n = 1:numel(neuron)
                 for s = 1:numel(newstr)
                     if neuron{refPar}.params.parallel
                         newstr{s} = strcat(newstr{s},')');
-                        istr = {'\ncon.threshold = ','\ncon.delay = ','\ncon.weight = '};
+                        istr = {'','\ncon.delay = ','\ncon.weight = '};
                     else
                         istr = repmat({','},3,1);
                     end
-                    if isfield(neuron{n}.con(c),'threshold')
-                        newstr{s} = sprintf('%s%s%g', newstr{s},istr{1},neuron{n}.con(c).threshold);
-                    elseif neuron{refPar}.params.parallel % necessary as all inputs are expected in new NetCon(..,..,threshold,delay,weight)
-                        newstr{s} = sprintf('%s,10', newstr{s});
+                    if ~neuron{refPar}.params.parallel  % for parallel NEURON the threshold has to be defined earlier
+                        if isfield(neuron{n}.con(c),'threshold')
+                            newstr{s} = sprintf('%s%s%g', newstr{s},istr{1},neuron{n}.con(c).threshold);
+                        else % necessary as all inputs are expected in new NetCon(..,..,threshold,delay,weight)
+                            newstr{s} = sprintf('%s,10', newstr{s});
+                        end
                     end
                     if isfield(neuron{n}.con(c),'delay')
                         newstr{s} = sprintf('%s%s%g', newstr{s},istr{2},neuron{n}.con(c).delay);
-                    elseif neuron{refPar}.params.parallel % necessary as all inputs are expected in new NetCon(..,..,threshold,delay,weight)
+                    elseif ~neuron{refPar}.params.parallel % necessary as all inputs are expected in new NetCon(..,..,threshold,delay,weight)
                         newstr{s} = sprintf('%s,1', newstr{s});
                     end
                     if isfield(neuron{n}.con(c),'weight')
                         newstr{s} = sprintf('%s%s%g', newstr{s},istr{3},neuron{n}.con(c).weight);
-                    elseif neuron{refPar}.params.parallel % necessary as all inputs are expected in new NetCon(..,..,threshold,delay,weight)
+                    elseif ~neuron{refPar}.params.parallel % necessary as all inputs are expected in new NetCon(..,..,threshold,delay,weight)
                         newstr{s} = sprintf('%s,0', newstr{s});
                         disp('Caution: NetCon Weight initialized with default (0) !')
                     end
                     if neuron{refPar}.params.parallel
-                        newstr{s} = sprintf('%s}\n', newstr{s});
+                        newstr{s} = sprintf('%s\n', newstr{s});
                     else
                         newstr{s} = sprintf('%s)\n', newstr{s});
                     end
                     newstr{s} = sprintf('%sio = conList.append(con)',newstr{s});  %append con to conList
+                    if neuron{refPar}.params.parallel
+                        newstr{s} = sprintf('%s}', newstr{s});
+                    end
                     if nodeflag
                         newstr{s} = sprintf('%s}\n',newstr{s});
                     else
