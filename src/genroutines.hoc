@@ -95,3 +95,17 @@ io = f.wopen(filnam)
 io = rectList.o($2).printf(f, "%-20.20g\n")
 io = f.close()
 }
+
+
+proc set_gid2node() {//strdef filnam
+// function to read in the host id for each gid that should be set
+sprint(filnam,"%s/gid2node.dat",simfold)
+f = new File()
+io = f.ropen(filnam)
+io = thisval.scanf(f)
+io = f.close()
+for c = 0, thisval.size()-1 {
+	pc.set_gid2node(c,thisval.x(c)) // set gid for each node according to read vector
+}
+thisval.resize(0)
+}

@@ -442,9 +442,10 @@ for n = 1:numel(neuron)
         mindelay = max(mindelay,neuron{refPar}.params.dt);  % make mindelay at least the size of dt
         fprintf(nfile,'// ***** Initialize parallel manager *****\n');
         fprintf(nfile,'pc = new ParallelContext(%d)\n\n\n',neuron{refPar}.params.parallel);
-        for in = 1:numel(GIDs)
-            fprintf(nfile,'pc.set_gid2node(%d, %d)\n',GIDs(in).gid,rem(GIDs(in).cell-1,neuron{refPar}.params.parallel));  % distribute the gids in such a way that all sections/pps of one cell are on the same host, and do roundrobin for each cell
-        end
+        ofile = fopen(fullfile(exchfolder,thisfolder,'gid2node.dat') ,'wt');   %open dat file in write modus
+        fprintf(ofile,'%d\n',rem(cat(1,GIDs.cell),neuron{refPar}.params.parallel));  % distribute the gids in such a way that all sections/pps of one cell are on the same host, and do roundrobin for each cell
+        fclose(ofile);
+        fprintf(nfile,'set_gid2node()\n');
     end
     fprintf(nfile,'// ***** Load custom libraries *****\n');
     if ~isempty(neuron{n}.custom)
