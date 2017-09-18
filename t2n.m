@@ -441,13 +441,13 @@ for n = 1:numel(neuron)
         [GIDs,neuron{n},mindelay] = t2n_getGIDs(neuron{n},tree,neuron{n}.tree);
         mindelay = max(mindelay,neuron{refPar}.params.dt);  % make mindelay at least the size of dt
         fprintf(nfile,'// ***** Initialize parallel manager *****\n');
-        fprintf(nfile,'pc = new ParallelContext(%d)\n\n\n',neuron{refPar}.params.parallel);
+        fprintf(nfile,'pc = new ParallelContext(%d)\n',neuron{refPar}.params.parallel);
         ofile = fopen(fullfile(exchfolder,thisfolder,'gid2node.dat') ,'wt');   %open dat file in write modus
         fprintf(ofile,'%d\n',rem(cat(1,GIDs.cell),neuron{refPar}.params.parallel));  % distribute the gids in such a way that all sections/pps of one cell are on the same host, and do roundrobin for each cell
         fclose(ofile);
         fprintf(nfile,'set_gid2node()\n');
     end
-    fprintf(nfile,'// ***** Load custom libraries *****\n');
+    fprintf(nfile,'\n// ***** Load custom libraries *****\n');
     if ~isempty(neuron{n}.custom)
         for c = 1:size(neuron{n}.custom,1)
             if strcmpi(neuron{n}.custom{c,2},'start')
@@ -1086,17 +1086,17 @@ for n = 1:numel(neuron)
             fprintf(ofile,'// ***** Register Cells (parallel NEURON) *****\n');
             for g = 1:numel(GIDs)
                 thiscell = GIDs(g).cell;
-                fprintf(ofile,'if (pc.gid_exists(%d)) {\n',GIDs(g).gid);
-                if isfield(tree{neuron{n}.tree(thiscell)},'artificial')
-                    fprintf(ofile,'{con = new NetCon(cellList.o(%d).cell,nil)\n',thiscell-1);     % make temporary netcon for registering the cell
-                else
-                    inode = find(minterf{neuron{n}.tree(thiscell)}(:,1) == GIDs(g).node,1,'first');
-                    fprintf(ofile,'cellList.o(%d).allregobj.o(%d).sec {con = new NetCon(&%s(0.5),nil)\n',thiscell-1,minterf{neuron{n}.tree(thiscell)}(inode,2),GIDs(g).watch);  % make temporary netcon for registering the cell
-                end
-                if ~isempty(GIDs(g).threshold)
-                    fprintf(ofile,'con.threshold = %g\npc.cell(%d,con)}\nobjref con\n}\n',GIDs(g).threshold,GIDs(g).gid);  % register cell at this worker
-                else
-                    fprintf(ofile,'pc.cell(%d,con)}\nobjref con\n}\n',GIDs(g).gid);  % register cell at this worker
+                switch isfield(tree{neuron{n}.tree(thiscell)},'artificial') * 2 + ~isempty(GIDs(g).threshold)
+                    case 0
+                        inode = find(minterf{neuron{n}.tree(thiscell)}(:,1) == GIDs(g).node,1,'first');
+                        fprintf(ofile,'reg_cell(%d,%d,%d,"%s")\n',GIDs(g).gid,thiscell-1,minterf{neuron{n}.tree(thiscell)}(inode,2),GIDs(g).watch);
+                    case 1
+                        inode = find(minterf{neuron{n}.tree(thiscell)}(:,1) == GIDs(g).node,1,'first');
+                        fprintf(ofile,'reg_cell(%d,%d,%d,"%s",%g)\n',GIDs(g).gid,thiscell-1,minterf{neuron{n}.tree(thiscell)}(inode,2),GIDs(g).watch,GIDs(g).threshold);
+                    case 2
+                        fprintf(ofile,'reg_cell(%d,%d)\n',GIDs(g).gid,thiscell-1);
+                    case 3
+                        fprintf(ofile,'reg_cell(%d,%d,0,"null",%g)\n',GIDs(g).gid,thiscell-1,GIDs(g).threshold);
                 end
             end
         end

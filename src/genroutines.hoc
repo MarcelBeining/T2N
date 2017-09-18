@@ -109,3 +109,17 @@ for c = 0, thisval.size()-1 {
 }
 thisval.resize(0)
 }
+
+proc reg_cell() {
+if (pc.gid_exists($1)) {
+	if (cellList.o($2).is_artificial == 0) {
+		io = sprint(tmpstr,"cellList.o(%d).allregobj.o(%d).sec {con = new NetCon(&%s(0.5),nil)}",$2,$3,$s4)
+		io = execute(tmpstr)
+	}else{
+		con = new NetCon(cellList.o($2).cell,nil)
+	}
+	if (numarg()>4){con.threshold = $5}
+	pc.cell($1,con)
+	objref con
+}
+}
