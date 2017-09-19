@@ -1,11 +1,11 @@
 %% *T2N Tutorial*
-% *This script is to show you some applications of t2n. Tutorial 2 and 3 initialize 
+% *This script is to show you some applications of t2n. Tutorial A and B initialize 
 % the morphology and standard parameters (and need thus be run at least once before 
 % starting one of the other tutorials), whereas the other sections define the 
 % different simulations.*
 % 
 % 
-%% Tutorial 1 - initialize parameters and the neuron structure
+%% Tutorial A - initialize parameters and the neuron structure
 % now we need to initialize the t2n parameter structure which includes general 
 % NEURON settings. Most of these settings are set to a default value if not explicitly 
 % set, but you might want to control most of them
@@ -45,7 +45,7 @@ for t = 1                                                                   % pr
     neuron.mech{t}.soma.hh = struct('gnabar',0.25,'gkbar',0.036,'gl',0);     % add Hodgkin-Huxley Sodium channel only to soma
     neuron.record{t}.cell = struct('node',1,'record','v');                   % record voltage "v" from first node (i.e. the soma)
 end
-%% Tutorial 2 - loading a morphology
+%% Tutorial B - loading a morphology
 % First we need a morphology (tree), on which we can add the channels etc. We 
 % are using here a sample_tree from the TREES toolbox which loads a small tree. 
 % You can also load a different tree by using "tree = load_tree;", or load another 
@@ -64,7 +64,7 @@ axis off
 
 tree = tree(1);                                                              % for simplicity, only one tree is looked at (if several exist at all)
 tree = t2n_writeTrees(tree,[],fullfile(pwd,'test.mtr'));                 % transform tree to NEURON morphology (.hoc file). This only has to be done once for each morphology
-%% Tutorial 3 - simulation protocol: somatic current injection
+%% Tutorial C - simulation protocol: somatic current injection
 % Now we want to do a simple somatic current injection, execute neuron and plot 
 % the result. In order that we do not have to rerun the upper sections each time, 
 % we will just copy the 'neuron' structure into a new variable 'nneuron' and modify 
@@ -104,7 +104,7 @@ plot(out.t,out.record{1}.IClamp.i{1})                                       % pl
 ylim([0,1])
 xlim([0,nneuron.params.tstop])
 ylabel('Injected current [nA]')
-%% Tutorial 4 - simulation protocol: several simulations with different injected current amplitudes (f-I relationship)
+%% Tutorial D - simulation protocol: several simulations with different injected current amplitudes (f-I relationship)
 % Now we learn something about the real strength of t2n: It can execute simulations 
 % in parallel! All we have have to do is to create a cell array of neuron structures 
 % (each defining a different protocol) and hand them to t2n. Here we use this 
@@ -173,7 +173,7 @@ t2n_currSteps(neuron,tree,'tmpfolder/',ostruct); % run the current step simulati
 t2n_FIplot('tmpfolder/',neuron,ostruct); % plot an f-i-relationship from the simulation results
 rmdir('tmpfolder','s')            % remove the tmpfolder
 
-%% Tutorial 5 - simulation protocol: several voltage clamp steps (I-V relationship)
+%% Tutorial E - simulation protocol: several voltage clamp steps (I-V relationship)
 % We now want to use a voltage instead of a current clamp, apply different voltage 
 % steps and plot a so called I-V curve.
 
@@ -234,7 +234,7 @@ rmdir('tmpfolder','s')            % remove the tmpfolder
  
 % As you can see, the I-V curve is linear at these hyperpolarized steps, 
 % as only the passive channel is conducting there.
-%% Tutorial 6 - Map the backpropagating AP onto the tree and plot its distance-dependence
+%% Tutorial F - Map the backpropagating AP onto the tree and plot its distance-dependence
 % As t2n features the trees toolbox, morphological visualizations are easy. 
 % We illustrate this by mapping the membrane potential at specific times during 
 % a current injection on our morphology.
@@ -282,7 +282,7 @@ t2n_bAP(neuron,tree,cstep,'tmpfolder/',0)  % do the simulation
 
 t2n_plotbAP('tmpfolder/',neuron);
 rmdir('tmpfolder','s')            % remove the tmpfolder
-%% Tutorial 7 - Do a parameter scan or how to modify mechanism parameters
+%% Tutorial G - Do a parameter scan or how to modify mechanism parameters
 % Now we want to analyze the impact of a parameter on spiking, e.g. for optimizing 
 % the model. We simply use a for loop to create neuron instances, each being the 
 % same except for one parameter that is changed.
@@ -364,7 +364,7 @@ nneuron = t2n_changemech(neuron,struct('e_pas', 0.5),'absolute');
 t2n_getMech(nneuron,tree,'e_pas'), set(gca,'CLim',[-100 0]),colorbar
  
 % changes the passive equilibrium potential everywhere to 0.5 mV.
-%% Tutorial 8 - Synaptic stimulation, simple Alpha synapse
+%% Tutorial H - Synaptic stimulation, simple Alpha synapse
 % Now we come closer to the point of building networks. First we do a synaptic 
 % stimulation of a chosen point within the morphology using the NEURON AlphaSynapse 
 % point process which adds synaptic current at a specific time "onset" at the 
@@ -401,7 +401,7 @@ plot(out.t,out.record{1}.AlphaSynapse.i{synIDs})    % plot time vs synaptic curr
 xlim([0,50])
 ylabel('Synaptic current [nA]')
 xlabel('Time [ms]')
-%% Tutorial 9 - Synaptic stimulation, Exp2Syn synapse and a NetStim
+%% Tutorial I - Synaptic stimulation, Exp2Syn synapse and a NetStim
 % A more customizable synapse in NEURON is the Exp2Syn point process as it is 
 % activated by another cell or point process. Hence, if we use such a synapse, 
 % we have to make use of NEURON NetCon objects, which can be defined in the .con 
@@ -437,7 +437,7 @@ subplot(2,1,2)
 plot(out.t,out.record{1}.Exp2Syn.i{synIDs})  % plot time vs synaptic current
 ylabel('Synaptic current [nA]')
 xlabel('Time [ms]')
-%% Tutorial 10 - Small network with Poissonian input
+%% Tutorial J - Small network with Poissonian input
 % Our last tutorial gives an example of how to create a small network that comprises 
 % feed-forward inhibition. We use the definitions of the previous tutorial and 
 % add an inhibitory integrate-and-fire point neuron that receives input from our 
