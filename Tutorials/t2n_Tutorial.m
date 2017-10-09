@@ -4,15 +4,30 @@
 % starting one of the other tutorials), whereas the other sections define the 
 % different simulations.*
 % 
-% 
+% Note for Mac users: Matlab has to be run from a Terminal for T2N to work 
+% properly.
 %% Tutorial A - initialize parameters and the neuron structure
-% now we need to initialize the t2n parameter structure which includes general 
+% First we need to be sure that Matlab finds all necessary files located in 
+% the T2N and TREES folder. 
+%
+if ~exist('t2n','file')         % checks if T2N is not already on the Matlab path
+    if exist('t2n_Tutorial.mlx','file')  % probably you are in the t2n/Tutorials folder
+        addpath(genpath(fileparts(pwd)));
+    else
+        error('Please run the "t2n_runthisAfterUnzip.m" script in the T2N folder or add the T2N folder including subfolders to the Matlab path!')
+    end
+end
+if ~exist('load_tree','file')
+    error('Please run the "start_trees.m" script in the TREES folder or add that folder including subfolders to the Matlab path!')
+end
+% 
+% Now we need to initialize the t2n parameter structure which includes general 
 % NEURON settings. Most of these settings are set to a default value if not explicitly 
 % set, but you might want to control most of them
 
-t2n_initModelfolders(pwd);                           % initialize model folder hierarchy in current folder
+t2n_initModelfolders(pwd);                                  % initialize model folder hierarchy in current folder
 
-neuron = [];                                                                % clear neuron structure
+neuron = [];                                                % clear neuron structure
 neuron.params.v_init = -80;                                 % starting membrane potential [mV] of all cells
 neuron.params.dt = 0.025;                                   % integration time step [ms]
 neuron.params.tstop = 300;                                  % stop simulation after this (simulation) time [ms]
@@ -21,7 +36,7 @@ neuron.params.celsius = 10;                                 % temperature [celsi
 neuron.params.nseg = 'dlambda';                             % the dlambda rule is used to set the amount of segments per section. Alternatively, a fixed number can be entered or a string 'EachX' with X being the interval between segments [micron]
 neuron.params.accuracy = 0;                                 % optional argument if number of segments should be increased in the soma and axon
 
- 
+%
 % Now we set the t2n neuron structure which defines all mechanisms, point 
 % processes, synapses, connections recordings, protocols etc. that should be used 
 % in the simulation. The mechanisms and point processes can be any that is defined 
@@ -50,7 +65,7 @@ end
 % are using here a sample_tree from the TREES toolbox which loads a small tree. 
 % You can also load a different tree by using "tree = load_tree;", or load another 
 % example, e.g. "tree = {hsn_tree};"
-
+%
 tree = {sample_tree};   % load sample tree
 % this tree has no soma region yet, so it is perfectly suitable to show you
 % how new regions can be defined in TREES toolbox. 
@@ -69,7 +84,7 @@ tree = t2n_writeTrees(tree,[],fullfile(pwd,'test.mtr'));                 % trans
 % the result. In order that we do not have to rerun the upper sections each time, 
 % we will just copy the 'neuron' structure into a new variable 'nneuron' and modify 
 % only this one in each protocol.
-
+%
 nneuron = neuron;                                                           % copy standard neuron structure
 
 % now we define a 100 ms current injection of 0.6 nA that is started at 
@@ -78,7 +93,7 @@ nneuron.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[0.6 0]);     % ad
 nneuron.record{1}.IClamp = struct('node',1,'record','i');                   % record the current of the IClamp just for visualization
 
 out = t2n(nneuron,tree,'-w-q');                                      % execute t2n and receive output
- 
+%% 
 % After execution of t2n we can plot the results. T2N returns all recordings 
 % that had previously been defined. We can access them in out.record{1} where 
 % {1} accesses the recordings of the first tree/morphology. Subsequently all recordings 
@@ -111,10 +126,10 @@ ylabel('Injected current [nA]')
 % to simulate different current injections, but in principle this can be used 
 % for any different protocols (e.g. different channels, different synapses, different 
 % stimulation patterns etc).
-
+%
 amp = 0:0.12:0.6;                  % define a series of amplitudes for the electrode (here: 6 steps from 0 to 0.6 nA)
 nneuron = cell(numel(amp),1);      % initialize (clear) simulation list
- 
+%
 %  Principally, we could copy the standard neuron structure into the neuron 
 % cell array for each protocol and then add the IClamp with different amplitude 
 % which would like this: 
@@ -123,7 +138,7 @@ nneuron = cell(numel(amp),1);      % initialize (clear) simulation list
 %     nneuron{n} = neuron;                                                            % use neuron structure defined above as basis
 %     nneuron{n}.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[amp(n) 0]);   % only define what is changed in for the next simulations
 % end
- 
+%
 % However, in this case T2N would translate the complete descriptions of 
 % all mechanisms etc into hoc code for each simulation. This might be no big deal 
 % when defining only 6 simulations, but could be very time and (to lesser extent) 
@@ -137,14 +152,14 @@ for n = 1:numel(amp)
     nneuron{n}.pp{1}.IClamp = struct('node',1,'times',[50 150],'amp',[amp(n) 0]);   % now define the IClamp in all simulations (remember that all other parameters were only defined in simulation 1) and...
 end
 nneuron = t2n_as(1,nneuron);                                                        % ... use the previously defined neuron structure as basis for each other simulation
- 
+%
 % Now T2N only writes hoc code for initialization of the IClamp point  process 
 % in each simulation and uses the hoc code about morphology,  recordings and mechanisms 
 % from the first simulation
 
 out = t2n(nneuron,tree,'-w-q');                                              % execute t2n
 
- 
+%
 % Now we can plot the recorded somatic voltages for each current step
 
 figure; hold all
@@ -156,7 +171,7 @@ for n = 1:numel(amp)                                    % go through simulations
 end
 linkaxes                                                % make all axes the same size
 xlabel('Time [ms]')
- 
+%
 % Using a "findpeaks" on the voltage vectors and plotting it against the 
 % amp vector would give us a so called f-i-relationship. However, we can save 
 % a lot of typing/formatting, if we use the the t2n functions for running current 
@@ -179,7 +194,7 @@ rmdir('tmpfolder','s')            % remove the tmpfolder
 
 amp = -140:10:-60;                 % define a series of voltage amplitude steps [mV]
 nneuron = cell(numel(amp),1);      % initialize (clear) simulation list
- 
+%
 % We define the SEClamp electrode and again use the t2n_as function to fill 
 % up the rest of the neuron specification. Also, you see here how to record a 
 % parameter from a point process (current "i" of the SEClamp electrode in this 
@@ -197,7 +212,7 @@ nneuron = t2n_as(1,nneuron);                                                    
 
 out = t2n(nneuron,tree,'-w-q');                                              % execute t2n
 
- 
+%
 % Now we can plot the recorded electrode currents for each voltage step
 
 figure;
@@ -213,7 +228,6 @@ for n = 1:numel(amp)                                    % go through simulations
 end
 linkaxes                                                % make all axes the same size
 xlabel('Time [ms]')
- 
 % 
 % 
 % Plotting the steady state current during the voltage step against the applied 
@@ -231,7 +245,7 @@ mkdir('tmpfolder')                % t2n_currSteps saves the result of the simula
 t2n_VoltSteps(neuron,tree,amp,duration,holding_voltage,'tmpfolder/'); % run the current step simulations and save the results in tmpfolder
 t2n_IVplot('tmpfolder/',neuron,ostruct); % plot an f-i-relationship from the simulation results
 rmdir('tmpfolder','s')            % remove the tmpfolder
- 
+%
 % As you can see, the I-V curve is linear at these hyperpolarized steps, 
 % as only the passive channel is conducting there.
 %% Tutorial F - Map the backpropagating AP onto the tree and plot its distance-dependence
@@ -246,7 +260,7 @@ nneuron.record{1}.cell.node = 1:numel(tree{1}.X);                         % use 
 warning off 
 out = t2n(nneuron,tree,'-w-q');                                    % execute t2n
 warning on
- 
+%
 % The plot_tree function of the TREES toolbox allows handing over a vector  
 % with the same size as the number of nodes which is then mapped on the tree. 
 % This means we need to get only one value from each recorded voltage  vector. 
@@ -265,7 +279,7 @@ for tt = 1:numel(times)                                                   % loop
     axis off
     title(sprintf('Tree at time %g ms',times(tt)))
 end
- 
+%
 % Mostly, it is interesting to evaluate the maximal voltage amplitude of 
 % such an backpropagating action potential, e.g. its distance-dependence and its 
 % delay at each location of the cell. T2n features a "ready-to-use" function to 
@@ -306,7 +320,7 @@ end
 legend(arrayfun(@(x) sprintf('hh K-channel factor of %g',x),fac,'uni',0))   % add legend
 xlabel('Time [ms]')
 ylabel('Voltage [mV]')
-
+%
 % If your model is to complex or you want to write your code more compact, 
 % there are two t2n function, which help you manipulating mechanism parameters:
 % 
@@ -316,7 +330,7 @@ ylabel('Voltage [mV]')
 t2n_getMech(neuron,tree,'g_pas'), set(gca,'CLim',[0 0.0005]),colorbar
 nneuron = t2n_blockchannel(neuron,{'hh','pas'},40);
 t2n_getMech(nneuron,tree,'g_pas'), set(gca,'CLim',[0 0.0005]),colorbar
-
+%
 % decreases the maximal conductances of the hh and the passive mechanism 
 % by 40 %. 
 % 
@@ -326,7 +340,7 @@ t2n_getMech(nneuron,tree,'g_pas'), set(gca,'CLim',[0 0.0005]),colorbar
 t2n_getMech(neuron,tree,'gnabar_hh'), set(gca,'CLim',[0 0.5]),colorbar
 nneuron = t2n_blockchannel(neuron,'hh',40,'soma');
 t2n_getMech(nneuron,tree,'gnabar_hh'), set(gca,'CLim',[0 0.5]),colorbar
- 
+%
 % reduces only the somatic hh conductance by 40 % (which in this example 
 % would not make a difference as hh is only defined in the soma anyways).
 % 
@@ -334,7 +348,7 @@ t2n_getMech(nneuron,tree,'gnabar_hh'), set(gca,'CLim',[0 0.5]),colorbar
 % values. E.g.
 
 nneuron = t2n_blockchannel(neuron,'hh',-200,'soma');
- 
+%
 % increases the conductance by 200 % (i.e. a factor of 3).
 % 
 % Important note: The function assumes that maximal conductance parameters 
@@ -344,7 +358,6 @@ nneuron = t2n_blockchannel(neuron,'hh',-200,'soma');
 % e.g.
 
 nneuron = t2n_blockchannel(neuron,'hh',40,[],'gbar');
- 
 % 
 % 
 % If you want to change more parameters than just the conductance you can 
@@ -353,7 +366,7 @@ nneuron = t2n_blockchannel(neuron,'hh',40,[],'gbar');
 t2n_getMech(neuron,tree,'e_pas'), set(gca,'CLim',[-100 0]),colorbar
 nneuron = t2n_changemech(neuron,struct('e_pas', 0.5));
 t2n_getMech(nneuron,tree,'e_pas'), set(gca,'CLim',[-100 0]),colorbar
- 
+%
 % reduces the equlibrium potential of the passive channel everywhere by 
 % a factor of 50%.
 % 
@@ -362,7 +375,7 @@ t2n_getMech(nneuron,tree,'e_pas'), set(gca,'CLim',[-100 0]),colorbar
 t2n_getMech(neuron,tree,'e_pas'), set(gca,'CLim',[-100 0]),colorbar
 nneuron = t2n_changemech(neuron,struct('e_pas', 0.5),'absolute');
 t2n_getMech(nneuron,tree,'e_pas'), set(gca,'CLim',[-100 0]),colorbar
- 
+%
 % changes the passive equilibrium potential everywhere to 0.5 mV.
 %% Tutorial H - Synaptic stimulation, simple Alpha synapse
 % Now we come closer to the point of building networks. First we do a synaptic 
@@ -447,11 +460,12 @@ xlabel('Time [ms]')
 % would transform the feed-forward inhibition to a feed-back inhibition network 
 % by changing the input of the inhibitory neuron from the netstim to the real 
 % cell.
-% To speed up simulation time we furthermore enable the parallel Neuron 
-% feature (cells are distributed onto different cores) + variable time step, 
-% by setting nneuron.params.parallel to 4 cores and nneuron.params.cvode to 
-% 1. This feature becomes more powerful if the more cells are used in the 
-% network and the more cores are available to be used by T2N.
+% 
+% To speed up simulation time we furthermore enable the parallel Neuron feature 
+% (cells are distributed onto different cores) + variable time step, by setting 
+% nneuron.params.parallel to 4 cores and nneuron.params.cvode to 1. This feature 
+% becomes more powerful if the more cells are used in the network and the more 
+% cores are available to be used by T2N.
 
 trees = {};
 trees{1} = tree{1};
@@ -470,8 +484,8 @@ nneuron.pp{1}.Exp2Syn(2) = struct('node',synIDsInh,'tau1',0.5,'tau2',5,'e',-80);
 nneuron.record{1}.cell.node = cat(1,1,synIDsExc);                         % record somatic voltage and voltage at synapse
 nneuron.record{1}.Exp2Syn(1) = struct('node',synIDsExc,'record','i');        % record synaptic current
 nneuron.record{1}.Exp2Syn(2) = struct('node',synIDsInh,'record','i');        % record synaptic current
-nneuron.con(1) = struct('source',struct('cell',2),'target',struct('cell',1,'pp','Exp2Syn','node',synIDsExc),'delay',0,'threshold',0.5,'weight',0.1);  % connect the NetStim (cell 2) with the target (point process Exp2Syn of cell 1 at node specified in synIDsExc), and add threshold/weight and delay of the connection (NetStim parameters)
-nneuron.con(2) = struct('source',struct('cell',2),'target',struct('cell',3),'delay',0,'threshold',0.5,'weight',1);  % connect the NetStim (cell 2) with the inhibitory cell to create a feed-forward inhibitory loop, and add threshold/weight and delay of the connection (NetStim parameters)
+nneuron.con(1) = struct('source',struct('cell',2),'target',struct('cell',1,'pp','Exp2Syn','node',synIDsExc),'delay',0.1,'threshold',0.5,'weight',0.1);  % connect the NetStim (cell 2) with the target (point process Exp2Syn of cell 1 at node specified in synIDsExc), and add threshold/weight and delay of the connection (NetStim parameters)
+nneuron.con(2) = struct('source',struct('cell',2),'target',struct('cell',3),'delay',0.1,'threshold',0.5,'weight',1);  % connect the NetStim (cell 2) with the inhibitory cell to create a feed-forward inhibitory loop, and add threshold/weight and delay of the connection (NetStim parameters)
 % nneuron.con(2) = struct('source',struct('cell',1,'node',1),'target',struct('cell',3),'delay',0,'threshold',0.5,'weight',1);  % connect the real cell with the inhibitory cell to create a feed-back inhibitory loop, and add threshold/weight and delay of the connection (NetStim parameters)
 nneuron.con(3) = struct('source',struct('cell',3),'target',struct('cell',1,'pp','Exp2Syn','node',synIDsInh),'delay',3,'threshold',0.5,'weight',0.3);  % connect the inhibitory cell with the target (point process Exp2Syn of cell 1 at node specified in synIDsInh), and add threshold/weight and delay of the connection (NetStim parameters)
 
@@ -484,15 +498,15 @@ out = t2n(nneuron,trees,'-w-q');                                    % execute t2
 fig = figure;
 subplot(4,1,1)
 hold all
-plot(out.t,out.record{1}.cell.v{1})       % plot time vs voltage at soma
-plot(out.t,out.record{1}.cell.v{synIDsExc})  % plot time vs voltage at dendrite end
+plot(out.t{1},out.record{1}.cell.v{1})       % plot time vs voltage at soma
+plot(out.t{1},out.record{1}.cell.v{synIDsExc})  % plot time vs voltage at dendrite end
 legend('Soma (Target Inh Synapse)','Exc. Synapse','Location','northoutside')
 ylabel('Membrane potential [mV]')
 subplot(4,1,2)
-plot(out.t,out.record{1}.Exp2Syn.i{synIDsExc})  % plot time vs synaptic current
+plot(out.t{1},out.record{1}.Exp2Syn.i{synIDsExc})  % plot time vs synaptic current
 ylabel('Exc. syn. current [nA]')
 subplot(4,1,3)
-plot(out.t,out.record{1}.Exp2Syn.i{synIDsInh})  % plot time vs synaptic current
+plot(out.t{1},out.record{1}.Exp2Syn.i{synIDsInh})  % plot time vs synaptic current
 ylabel('Inh. syn. current [nA]')
 subplot(4,1,4)
 t2n_plotRaster(spikeMat,tvec)

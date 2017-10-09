@@ -201,8 +201,8 @@ if ~exist(fullfile(modelFolder,'lib_genroutines/pasroutines.hoc'),'file')
 end
 
 %% create the local and server exchange folder
-if exist(exchfolder,'dir') == 0
-    mkdir(exchfolder);
+if exist(fullfile(modelFolder,exchfolder),'dir') == 0
+    mkdir(fullfile(modelFolder,exchfolder));
 end
 if strfind(options,'-cl')
     localfilename = {};
@@ -303,37 +303,37 @@ for n = 1:numel(neuron)
     access = [find(~cellfun(@(y) isfield(y,'artificial'),tree(neuron{n}.tree)),1,'first'), 1];      % std accessing first non-artificial tree at node 1
     thisfolder = sprintf('sim%d',n);
     
-    if exist(fullfile(exchfolder,thisfolder),'dir') == 0
-        mkdir(fullfile(exchfolder,thisfolder));
+    if exist(fullfile(modelFolder,exchfolder,thisfolder),'dir') == 0
+        mkdir(fullfile(modelFolder,exchfolder,thisfolder));
     end
-    if exist(fullfile(exchfolder,thisfolder,'iamrunning'),'file')
-        answer = questdlg(sprintf('Error!\n%s seems to be run by another Matlab instance!\nOverwriting might cause errorneous output!\nIf you are sure that there is no simulation running, we can continue and overwrite. Are you sure? ',fullfile(exchfolder,thisfolder)),'Overwrite unfinished simulation','Yes to all','Yes','No (Cancel)','No (Cancel)');
+    if exist(fullfile(modelFolder,exchfolder,thisfolder,'iamrunning'),'file')
+        answer = questdlg(sprintf('Warning!\n%s seems to be run by another Matlab instance or the last T2N run in this folder was aborted unexpectedly!\nIn the first case overwriting might cause errorneous output!\nIf you are sure that there is no simulation running, we can continue and overwrite. Are you sure? ',fullfile(exchfolder,thisfolder)),'Overwrite unfinished simulation','Yes to all','Yes','No (Cancel)','No (Cancel)');
         switch answer
             case 'Yes'
                 % iamrunning file is kept and script goes on...
             case 'Yes to all'  % delete all iamrunning files in that exchfolder except from the current simulation
                 folders = dir(exchfolder);
                 for f = 1:numel(folders) % ignore first two as these are . and ..
-                    if ~isempty(strfind(folders(f).name,'sim')) && ~strcmp(folders(f).name,thisfolder) && exist(fullfile(exchfolder,folders(f).name,'iamrunning'),'file')
-                        delete(fullfile(exchfolder,folders(f).name,'iamrunning'))
+                    if ~isempty(strfind(folders(f).name,'sim')) && ~strcmp(folders(f).name,thisfolder) && exist(fullfile(modelFolder,exchfolder,folders(f).name,'iamrunning'),'file')
+                        delete(fullfile(modelFolder,exchfolder,folders(f).name,'iamrunning'))
                     end
                 end
             otherwise
                 error('T2N aborted')
         end
     else
-        ofile = fopen(fullfile(exchfolder,thisfolder,'iamrunning') ,'wt');   %open morph hoc file in write modus
+        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'iamrunning') ,'wt');   %open morph hoc file in write modus
         fclose(ofile);
     end
     % delete the readyflag and log files if they exist
-    if exist(fullfile(exchfolder,thisfolder,'readyflag'),'file')
-        delete(fullfile(exchfolder,thisfolder,'readyflag'))
+    if exist(fullfile(modelFolder,exchfolder,thisfolder,'readyflag'),'file')
+        delete(fullfile(modelFolder,exchfolder,thisfolder,'readyflag'))
     end
-    if exist(fullfile(exchfolder,thisfolder,'ErrorLogFile.txt'),'file')
-        delete(fullfile(exchfolder,thisfolder,'ErrorLogFile.txt'))
+    if exist(fullfile(modelFolder,exchfolder,thisfolder,'ErrorLogFile.txt'),'file')
+        delete(fullfile(modelFolder,exchfolder,thisfolder,'ErrorLogFile.txt'))
     end
-    if exist(fullfile(exchfolder,thisfolder,'NeuronLogFile.txt'),'file')
-        delete(fullfile(exchfolder,thisfolder,'NeuronLogFile.txt'))
+    if exist(fullfile(modelFolder,exchfolder,thisfolder,'NeuronLogFile.txt'),'file')
+        delete(fullfile(modelFolder,exchfolder,thisfolder,'NeuronLogFile.txt'))
     end
     if ~isempty(strfind(options,'-cl'))
         [server.connect,~] = sshfrommatlabissue(server.connect,sprintf('mkdir %s/%s',nrn_exchfolder,thisfolder));
@@ -341,7 +341,7 @@ for n = 1:numel(neuron)
     
     %% write interface hoc
     
-    nfile = fopen(fullfile(exchfolder,thisfolder,interf_file) ,'wt');   %open resulting hoc file in write modus
+    nfile = fopen(fullfile(modelFolder,exchfolder,thisfolder,interf_file) ,'wt');   %open resulting hoc file in write modus
     
     fprintf(nfile,'// ***** This is a NEURON hoc file automatically created by the Matlab-NEURON interface T2N. *****\n');
     fprintf(nfile,'// ***** Copyright by Marcel Beining, Clinical Neuroanatomy, Goethe University Frankfurt*****\n\n');
@@ -442,7 +442,7 @@ for n = 1:numel(neuron)
         mindelay = max(mindelay,neuron{refPar}.params.dt);  % make mindelay at least the size of dt
         fprintf(nfile,'// ***** Initialize parallel manager *****\n');
         fprintf(nfile,'pc = new ParallelContext(%d)\n',neuron{refPar}.params.parallel);
-        ofile = fopen(fullfile(exchfolder,thisfolder,'gid2node.dat') ,'wt');   %open dat file in write modus
+        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'gid2node.dat') ,'wt');   %open dat file in write modus
         fprintf(ofile,'%d\n',rem(cat(1,GIDs.cell),neuron{refPar}.params.parallel));  % distribute the gids in such a way that all sections/pps of one cell are on the same host, and do roundrobin for each cell
         fclose(ofile);
         fprintf(nfile,'set_gid2node()\n');
@@ -631,7 +631,7 @@ for n = 1:numel(neuron)
     %% write init_cells.hoc
     
     if usestreesof(n) == n  % write only if morphologies are not referenced to other sim init_cell.hoc
-        ofile = fopen(fullfile(exchfolder,thisfolder,'init_cells.hoc') ,'wt');   %open morph hoc file in write modus
+        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'init_cells.hoc') ,'wt');   %open morph hoc file in write modus
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Load cell morphology templates and create artificial cells *****\n');
         templates = cell(0);
@@ -668,15 +668,15 @@ for n = 1:numel(neuron)
         fprintf(ofile,'\n\n');
         
         fclose(ofile);
-    elseif exist(fullfile(exchfolder,thisfolder,'init_cells.hoc'),'file')
-        delete(fullfile(exchfolder,thisfolder,'init_cells.hoc'));
+    elseif exist(fullfile(modelFolder,exchfolder,thisfolder,'init_cells.hoc'),'file')
+        delete(fullfile(modelFolder,exchfolder,thisfolder,'init_cells.hoc'));
     end
     
     %% write init_mech.hoc
     
     if t2n_getref(n,neuron,'mech') == n     %rewrite only if mechanism is not taken from previous sim
         rangestr = '';
-        ofile = fopen(fullfile(exchfolder,thisfolder,'init_mech.hoc') ,'wt');   %open morph hoc file in write modus
+        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'init_mech.hoc') ,'wt');   %open morph hoc file in write modus
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Insert mechanisms *****\n');
         if isfield(neuron{n},'mech')
@@ -720,7 +720,7 @@ for n = 1:numel(neuron)
                                         if ~isempty(strfind(mechs{m},'_ion')) && strcmpi(mechpar{p},'style')
                                             if numel(neuron{n}.mech{t}.all.(mechs{m}).(mechpar{p})) ~= 5
                                                 for nn = 1:numel(neuron)
-                                                    delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                                    delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                 end
                                                 error('Error! Style specification of ion "%s" should be 5 numbers (see NEURON or t2n documentation)',mechs{m})
                                             end
@@ -766,7 +766,7 @@ for n = 1:numel(neuron)
                                                 if ~isempty(strfind(mechs{m},'_ion')) && strcmpi(mechpar{p},'style')
                                                     if numel(neuron{n}.mech{t}.all.(mechs{m}).(mechpar{p})) ~= 5
                                                         for nn = 1:numel(neuron)
-                                                            delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                                            delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                         end
                                                         error('Error! Style specification of ion "%s" should be 5 numbers (see NEURON or t2n documentation)',mechs{m})
                                                     end
@@ -781,7 +781,7 @@ for n = 1:numel(neuron)
                                                     str = sprintf('%s%s_%s = %g\n',str,mechpar{p},mechs{m},neuron{n}.mech{t}.(regs{r}).(mechs{m}).(mechpar{p}));   %neuron: define values
                                                 else
                                                     for nn = 1:numel(neuron)
-                                                        delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                                        delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                     end
                                                     error('Parameter %s of mechanism %s in region %s has more than one value, please check.',mechpar{p},mechs{m},regs{r})
                                                 end
@@ -818,15 +818,15 @@ for n = 1:numel(neuron)
                                         
                                         %                                         thesevars = sprintf('%s"%s_%s",',thesevars,vars{r},mechs{m});
                                         secname = sprintf('range_%s_%s_%s_sec.dat',tree{neuron{n}.tree(tt)}.NID,vars{r},mechs{m});
-                                        f = fopen(fullfile(exchfolder,thisfolder,secname) ,'Wt');
+                                        f = fopen(fullfile(modelFolder,exchfolder,thisfolder,secname) ,'Wt');
                                         fprintf(f,'%g\n',allvals(1,:));
                                         fclose(f);
                                         segname = sprintf('range_%s_%s_%s_seg.dat',tree{neuron{n}.tree(tt)}.NID,vars{r},mechs{m});
-                                        f = fopen(fullfile(exchfolder,thisfolder,segname) ,'Wt');
+                                        f = fopen(fullfile(modelFolder,exchfolder,thisfolder,segname) ,'Wt');
                                         fprintf(f,'%g\n',allvals(2,:));
                                         fclose(f);
                                         valname = sprintf('range_%s_%s_%s_val.dat',tree{neuron{n}.tree(tt)}.NID,vars{r},mechs{m});
-                                        f = fopen(fullfile(exchfolder,thisfolder,valname) ,'Wt');
+                                        f = fopen(fullfile(modelFolder,exchfolder,thisfolder,valname) ,'Wt');
                                         fprintf(f,'%g\n',allvals(3,:));
                                         fclose(f);
                                         if any(strcmp({'cm','Ra'},vars{r}))  % if variable is cm or Ra, do not write _"mech"  behind it
@@ -836,7 +836,7 @@ for n = 1:numel(neuron)
                                         end
                                     else
                                         for nn = 1:numel(neuron)
-                                            delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                            delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                         end
                                         error('Range variable definition should be a vector with same number of elements as tree has nodes')
                                         %                                         return
@@ -846,7 +846,7 @@ for n = 1:numel(neuron)
                             
                         else
                             for nn = 1:numel(neuron)
-                                delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                             end
                             error('Setting range variables for artificial cells is invalid')
                         end
@@ -961,14 +961,14 @@ for n = 1:numel(neuron)
             end
         end
         fclose(ofile);          %close file
-    elseif exist(fullfile(exchfolder,thisfolder,'init_mech.hoc'),'file')
-        delete(fullfile(exchfolder,thisfolder,'init_mech.hoc'));
+    elseif exist(fullfile(modelFolder,exchfolder,thisfolder,'init_mech.hoc'),'file')
+        delete(fullfile(modelFolder,exchfolder,thisfolder,'init_mech.hoc'));
     end
     
     %% write init_pp.hoc
     
     if t2n_getref(n,neuron,'pp') == n     %rewrite only if PP def is not taken from previous sim
-        ofile = fopen(fullfile(exchfolder,thisfolder,'init_pp.hoc') ,'wt');   %open morph hoc file in write modus
+        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'init_pp.hoc') ,'wt');   %open morph hoc file in write modus
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Place synapses, electrodes or other point processes *****\n');
         if isfield(neuron{n},'pp')
@@ -1045,7 +1045,7 @@ for n = 1:numel(neuron)
                                                 end
                                             else
                                                 for nn = 1:numel(neuron)
-                                                    delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                                    delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                 end
                                                 error('Caution: "%s" vector of PP "%s" has wrong size!\n It has to be equal 1 or equal the number of nodes where the PP is inserted,',fields{f2},ppfield{f1})
                                             end
@@ -1080,7 +1080,7 @@ for n = 1:numel(neuron)
     %% write init_con.hoc
     
     if t2n_getref(n,neuron,'con') == n     %rewrite only if connections are not taken from previous sim
-        ofile = fopen(fullfile(exchfolder,thisfolder,'init_con.hoc') ,'wt');   %open morph hoc file in write modus
+        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'init_con.hoc') ,'wt');   %open morph hoc file in write modus
         if neuron{refPar}.params.parallel
             fprintf(ofile,'\n\n');
             fprintf(ofile,'// ***** Register Cells (parallel NEURON) *****\n');
@@ -1161,7 +1161,7 @@ for n = 1:numel(neuron)
                                             iid{n1} = cat (1,iid{n1},ind);
                                         else
                                             for nn = 1:numel(neuron)
-                                                delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                                delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                             end
                                             error('Error cell %d. %d connections are declared to start from from %d %ss at node %d. Making a connection from PP at a node where multiple of these PPs exist is not allowed. Probably you messed something up',cell_source,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc)) % give an error if more connections were declared than PPs exist at that node
                                         end
@@ -1248,7 +1248,7 @@ for n = 1:numel(neuron)
                                                 fprintf('Warning cell %d. More connections to same %s declared than %ss at that node. All connections target now that %s.',cell_target,pp,pp,pp) % give a warning if more connections were declared than PPs exist at that node
                                             else
                                                 for nn = 1:numel(neuron)
-                                                    delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                                    delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                 end
                                                 error('Error cell %d. %d connections are declared to %d %ss at node %d. Probably you messed something up',cell_target,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc)) % give an error if more connections were declared than PPs exist at that node
                                             end
@@ -1332,14 +1332,14 @@ for n = 1:numel(neuron)
         end
         fprintf(ofile,'\n\n');
         fclose(ofile);
-    elseif exist(fullfile(exchfolder,thisfolder,'init_con.hoc'),'file')
-        delete(fullfile(exchfolder,thisfolder,'init_con.hoc'));
+    elseif exist(fullfile(modelFolder,exchfolder,thisfolder,'init_con.hoc'),'file')
+        delete(fullfile(modelFolder,exchfolder,thisfolder,'init_con.hoc'));
     end
     
     
     %% write init_rec.hoc
     if (~isnan(refR) || ~isnan(refAP)) && (refR==n || refAP==n || refAP~=refR)     %rewrite only if one or both of record/APCount are not taken from previous sim or if both are taken from another sim but from different ones (not possible because both are in one hoc)
-        ofile = fopen(fullfile(exchfolder,thisfolder,'init_rec.hoc') ,'wt');   %open record hoc file in write modus
+        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'init_rec.hoc') ,'wt');   %open record hoc file in write modus
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Define recording sites *****\n');
         if ~isnan(refR)
@@ -1583,15 +1583,15 @@ for n = 1:numel(neuron)
             %             end
         end
         fclose(ofile);
-    elseif exist(fullfile(exchfolder,thisfolder,'init_rec.hoc'),'file')
-        delete(fullfile(exchfolder,thisfolder,'init_rec.hoc'));
+    elseif exist(fullfile(modelFolder,exchfolder,thisfolder,'init_rec.hoc'),'file')
+        delete(fullfile(modelFolder,exchfolder,thisfolder,'init_rec.hoc'));
     end
     
     
     %% write init_play.hoc
     
     if (~isnan(refP)) && refP==n      %rewrite only if one or both of play/APCount are not taken from previous sim or if both are taken from another sim but from different ones (not possible because both are in one hoc)
-        ofile = fopen(fullfile(exchfolder,thisfolder,'init_play.hoc') ,'wt');   %open play hoc file in write modus
+        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'init_play.hoc') ,'wt');   %open play hoc file in write modus
         fprintf(ofile,'\n\n');
         fprintf(ofile,'// ***** Define play sites *****\n');
         count = 0;  % counter for playing vector List
@@ -1666,7 +1666,7 @@ for n = 1:numel(neuron)
                                     %print the whole vector into the hoc file. alternatively i
                                     %could give a file name where the vector lies so it is not
                                     %written each time cn is called...
-                                    f = fopen(fullfile(exchfolder,thisfolder,sprintf('plt_%s_at_%d_cell_%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play , ic(in) ,tt-1)),'w');
+                                    f = fopen(fullfile(modelFolder,exchfolder,thisfolder,sprintf('plt_%s_at_%d_cell_%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play , ic(in) ,tt-1)),'w');
                                     fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).times(1:end-1));
                                     fprintf(f,'%g\n', neuron{n}.play{t}.(playfields{f1})(r).times(end));
                                     fclose(f);
@@ -1677,7 +1677,7 @@ for n = 1:numel(neuron)
                                     fprintf(ofile,'io = playtList.append(playt)\n\n' );  %append playing time vector to playtList
                                     
                                     fprintf(ofile,sprintf('play = new Vector(%f)\n',length(neuron{n}.play{t}.(playfields{f1})(r).value) ) );    % create new playing vector
-                                    f = fopen(fullfile(exchfolder,thisfolder,sprintf('pl_%s_at_%d_cell_%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play , ic(in) ,tt-1)),'w');
+                                    f = fopen(fullfile(modelFolder,exchfolder,thisfolder,sprintf('pl_%s_at_%d_cell_%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play , ic(in) ,tt-1)),'w');
                                     fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).value(1:end-1));
                                     fprintf(f,'%g\n', neuron{n}.play{t}.(playfields{f1})(r).value(end));
                                     fclose(f);
@@ -1707,14 +1707,14 @@ for n = 1:numel(neuron)
                                         %print the whole vector into the hoc file. alternatively i
                                         %could give a file name where the vector lies so it is not
                                         %written each time cn is called...
-                                        f = fopen(fullfile(exchfolder,thisfolder,sprintf('plt_%s_%s_at_%d_cell_%d.dat', playfields{f1}, neuron{n}.play{t}.(playfields{f1})(r).play , ic(in) ,tt-1)),'w');
+                                        f = fopen(fullfile(modelFolder,exchfolder,thisfolder,sprintf('plt_%s_%s_at_%d_cell_%d.dat', playfields{f1}, neuron{n}.play{t}.(playfields{f1})(r).play , ic(in) ,tt-1)),'w');
                                         if ~any(size(neuron{n}.play{t}.(playfields{f1})(r).times)==1) % it's a matrix
                                             if size(neuron{n}.play{t}.(playfields{f1})(r).times,1) == numel(inode)
                                                 fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).times(in,1:end-1));
                                                 fprintf(f,'%g\n', neuron{n}.play{t}.(playfields{f1})(r).times(in,end));
                                             else
                                                 for nn = 1:numel(neuron)
-                                                    delete(fullfile(exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                                    delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                                 end
                                                 error('Times vector of play feature has wrong size')
                                             end
@@ -1730,7 +1730,7 @@ for n = 1:numel(neuron)
                                         fprintf(ofile,'io = playtList.append(playt)\n\n' );  %append playing time vector to playtList
                                         
                                         fprintf(ofile,sprintf('play = new Vector(%f)\n',length(neuron{n}.play{t}.(playfields{f1})(r).value) ) );    % create new playing vector
-                                        f = fopen(fullfile(exchfolder,thisfolder,sprintf('pl_%s_%s_at_%d_cell_%d.dat', playfields{f1}, neuron{n}.play{t}.(playfields{f1})(r).play , ic(in) ,tt-1)),'w');
+                                        f = fopen(fullfile(modelFolder,exchfolder,thisfolder,sprintf('pl_%s_%s_at_%d_cell_%d.dat', playfields{f1}, neuron{n}.play{t}.(playfields{f1})(r).play , ic(in) ,tt-1)),'w');
                                         fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).value(1:end-1));
                                         fprintf(f,'%g\n', neuron{n}.play{t}.(playfields{f1})(r).value(end));
                                         fclose(f);
@@ -1760,7 +1760,7 @@ for n = 1:numel(neuron)
                                     neuron{n}.play{t}.(playfields{f1})(r).times(neuron{n}.play{t}.(playfields{f1})(r).times < 0) = [];
                                     disp('Warning, VecStim should not receive negative play times. These are deleted now')
                                 end
-                                f = fopen(fullfile(exchfolder,thisfolder,sprintf('plt_%s_of_art_%s_cell%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play, playfields{f1}, tt-1)),'w');
+                                f = fopen(fullfile(modelFolder,exchfolder,thisfolder,sprintf('plt_%s_of_art_%s_cell%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play, playfields{f1}, tt-1)),'w');
                                 fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).times(1:end-1));
                                 fprintf(f,'%g\n', neuron{n}.play{t}.(playfields{f1})(r).times(end));
                                 fclose(f);
@@ -1771,7 +1771,7 @@ for n = 1:numel(neuron)
                                 fprintf(ofile,'io = playtList.append(playt)\n\n' );  %append playing time vector to playtList
                                 if ~strcmp(neuron{n}.play{t}.(playfields{f1})(r).play,'spike') && ~strcmp(playfields{f1},'VecStim')
                                     fprintf(ofile,sprintf('play = new Vector(%f)\n',length(neuron{n}.play{t}.(playfields{f1})(r).value) ) );    % create new playing vector
-                                    f = fopen(fullfile(exchfolder,thisfolder,sprintf('plt_%s_of_art_%s_cell%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play, playfields{f1}, tt-1)),'w');
+                                    f = fopen(fullfile(modelFolder,exchfolder,thisfolder,sprintf('plt_%s_of_art_%s_cell%d.dat', neuron{n}.play{t}.(playfields{f1})(r).play, playfields{f1}, tt-1)),'w');
                                     fprintf(f,'%g ', neuron{n}.play{t}.(playfields{f1})(r).value(1:end-1));
                                     fprintf(f,'%g\n', neuron{n}.play{t}.(playfields{f1})(r).value(end));
                                     fclose(f);
@@ -1803,13 +1803,13 @@ for n = 1:numel(neuron)
         fprintf(ofile, 'objref playt\n');
         %
         fclose(ofile);
-    elseif exist(fullfile(exchfolder,thisfolder,'init_play.hoc'),'file')
-        delete(fullfile(exchfolder,thisfolder,'init_play.hoc'));
+    elseif exist(fullfile(modelFolder,exchfolder,thisfolder,'init_play.hoc'),'file')
+        delete(fullfile(modelFolder,exchfolder,thisfolder,'init_play.hoc'));
     end
     
     %% write save_rec.hoc
     
-    ofile = fopen(fullfile(exchfolder,thisfolder,'save_rec.hoc') ,'wt');   %open record hoc file in write modus
+    ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'save_rec.hoc') ,'wt');   %open record hoc file in write modus
     fprintf(ofile,'// * Write Recordings to Files *\n');
     if ~isnan(refR)
         makenewrect = true;
@@ -1920,44 +1920,44 @@ for n = 1:numel(neuron)
     if ~isempty(strfind(options,'-cl')) %transfer files to server
         filenames = {interf_file,'init_cells.hoc','init_mech.hoc','init_pp.hoc','init_con.hoc','init_rec.hoc','save_rec.hoc','init_play.hoc'}; %'init_pas.hoc','init_stim.hoc'
         m = 1;
-        localfilename{m} = fullfile(exchfolder,thisfolder,filenames{1});
+        localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,filenames{1});
         remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{1});
         m = m + 1;
         if usestreesof(n) == n
-            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{2});
+            localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,filenames{2});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{2});
             m = m + 1;
         end
         if  t2n_getref(n,neuron,'mech') == n
-            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{3});
+            localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,filenames{3});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{3});
             m = m + 1;
         end
         if t2n_getref(n,neuron,'pp') == n
-            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{4});
+            localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,filenames{4});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{4});
             m = m + 1;
         end
         if t2n_getref(n,neuron,'con') == n
-            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{5});
+            localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,filenames{5});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{5});
             m = m + 1;
         end
         if t2n_getref(n,neuron,'record') == n
-            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{6});
+            localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,filenames{6});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{6});
             m = m + 1;
-            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{7});
+            localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,filenames{7});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{7});
             m = m + 1;
         end
         if t2n_getref(n,neuron,'play') == n
-            localfilename{m} = fullfile(exchfolder,thisfolder,filenames{8});
+            localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,filenames{8});
             remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,filenames{8});
             m = m + 1;
         end
         %create job
-        ofile = fopen(fullfile(exchfolder,thisfolder,'start_nrn.pbs') ,'wt');
+        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'start_nrn.pbs') ,'wt');
         fprintf(ofile,'#!/bin/tcsh\n');
         fprintf(ofile,'# set job variables\n');
         fprintf(ofile,'#$ -S /bin/tcsh\n');
@@ -1975,7 +1975,7 @@ for n = 1:numel(neuron)
         fprintf(ofile,'# start program\n');
         fprintf(ofile,sprintf('nrniv -nobanner -nogui -dll "%s" "%s/%s/%s"\n',server.nrnmech,nrn_exchfolder,thisfolder,interf_file));
         fclose(ofile);
-        localfilename{m} = fullfile(exchfolder,thisfolder,'start_nrn.pbs');
+        localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,'start_nrn.pbs');
         remotefilename{m} = sprintf('%s/%s/%s',nrn_exchfolder,thisfolder,'start_nrn_pre.pbs');
         sftpfrommatlab(server.user,server.host,server.pw,localfilename,remotefilename);
         [server.connect,~] = sshfrommatlabissue(server.connect,sprintf('tr -d ''\r'' < %s/%s/start_nrn_pre.pbs > %s/%s/start_nrn.pbs',nrn_exchfolder,thisfolder,nrn_exchfolder,thisfolder)); % delete carriage returns (windows)
@@ -2065,7 +2065,7 @@ if noutfiles > 0 % if output is expected
         else
             s = find(simids==1);
             for ss = 1:numel(s)
-                r = exist(fullfile(exchfolder,sprintf('sim%d',s(ss)),'readyflag'),'file');  % becomes 1 (still running) if not existing, or 2 (finished)
+                r = exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'readyflag'),'file');  % becomes 1 (still running) if not existing, or 2 (finished)
                 if r == 2
                     simids(s(ss)) = 2;              % mark that simulation as finished
                     r = find(simids==0,1,'first');  % find next not runned simid
@@ -2074,10 +2074,10 @@ if noutfiles > 0 % if output is expected
                         [jobid(r),tim] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
                         simids(r) = 1;          % mark this as running
                     end
-                elseif exist(fullfile(exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'),'file') == 2
-                    finfo = dir(fullfile(exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
+                elseif exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'),'file') == 2
+                    finfo = dir(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
                     if finfo.bytes > 0      % because error file log is always built
-                        f = fopen(fullfile(exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
+                        f = fopen(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
                         txt = fscanf(f,'%c');
                         fclose(f);
                         errordlg(sprintf('There was an error in Simulation %d (and maybe others):\n******************************\n%s\n******************************\nDue to that t2n has no output to that Simulation.',s(ss),txt(1:min(numel(txt),2000))),'Error in NEURON','replace');
@@ -2166,7 +2166,7 @@ if noutfiles > 0 % if output is expected
             if s~=refPar && isfield(out{refPar},'t')
                 out{s}.t = out{refPar}.t;   % just use tvec of simulation with same parameters
             else
-                fn = fullfile(exchfolder,sprintf('sim%d',s),'tvec.dat');
+                fn = fullfile(modelFolder,exchfolder,sprintf('sim%d',s),'tvec.dat');
                 out{s}.t = load(fn,'-ascii');
             end
         end
@@ -2179,7 +2179,7 @@ if noutfiles > 0 % if output is expected
     for f = 1:noutfiles
         refPar = t2n_getref(readfiles{f}{2},neuron,'params');
         if simids(readfiles{f}{2}) == 2    % if there was no error during simulation
-            fn = fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),readfiles{f}{1});
+            fn = fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),readfiles{f}{1});
             if numel(readfiles{f}{6}) > 1
                 warning('Recording of %s in %s has %d redundant values since nodes are in same segment.\n',readfiles{f}{5},readfiles{f}{4},numel(readfiles{f}{6}))
             end
@@ -2191,12 +2191,12 @@ if noutfiles > 0 % if output is expected
                     if neuron{refPar}.params.cvode
                         if neuron{refPar}.params.use_local_dt || neuron{refPar}.params.parallel  % if yes, dt was different for each cell, so there is more than one time vector
                             if ~isfield(out{readfiles{f}{2}},'t') || numel(out{readfiles{f}{2}}.t) < readfiles{f}{3} || isempty(out{readfiles{f}{2}}.t{readfiles{f}{3}})
-                                out{readfiles{f}{2}}.t{readfiles{f}{3}} = load(fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),sprintf('cell%d_tvec.dat', find(readfiles{f}{3} == neuron{n}.tree)-1)),'-ascii');    %loading of one time vector file per cell (sufficient)
+                                out{readfiles{f}{2}}.t{readfiles{f}{3}} = load(fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),sprintf('cell%d_tvec.dat', find(readfiles{f}{3} == neuron{n}.tree)-1)),'-ascii');    %loading of one time vector file per cell (sufficient)
                                 % add tiny time step to tvec to avoid problems with step functions
                                 out{readfiles{f}{2}}.t{readfiles{f}{3}}(find(diff(out{readfiles{f}{2}}.t{readfiles{f}{3}},1) == 0) + 1) = out{readfiles{f}{2}}.t{readfiles{f}{3}}(find(diff(out{readfiles{f}{2}}.t{readfiles{f}{3}},1) == 0) + 1) + 1e-10; 
                             end
                         elseif ~isfield(out{readfiles{f}{2}},'t')       % if it has not been loaded in a previous loop
-                            out{readfiles{f}{2}}.t = load(fullfile(exchfolder,sprintf('sim%d',readfiles{f}{2}),'tvec.dat'),'-ascii');    %loading of one time vector file at all (sufficient)
+                            out{readfiles{f}{2}}.t = load(fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),'tvec.dat'),'-ascii');    %loading of one time vector file at all (sufficient)
                             % add tiny time step to tvec to avoid problems with step functions
                             out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) = out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) + 1e-10; 
                         end
@@ -2220,7 +2220,7 @@ if noutfiles > 0 % if output is expected
                 end
                 fclose all;
                 for n = 1:numel(neuron)
-                    delete(fullfile(exchfolder,sprintf('sim%d',n),'iamrunning'));   % delete the running mark
+                    delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',n),'iamrunning'));   % delete the running mark
                 end
                 return
             end
@@ -2244,7 +2244,7 @@ if nocell
     out = out{1};
 end
 for n = 1:numel(neuron)
-    delete(fullfile(exchfolder,sprintf('sim%d',n),'iamrunning'));   % delete the running mark
+    delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',n),'iamrunning'));   % delete the running mark
 end
 
     function [jobid,tim] = exec_neuron(simid,exchfolder,nrn_exchfolder,interf_file,options,parallel)
@@ -2254,7 +2254,7 @@ end
         
         if ~isempty(simid)
             % execute the file in neuron:
-            fname = regexprep(fullfile(exchfolder,sprintf('sim%d',simid),interf_file),'\\','/');
+            fname = regexprep(fullfile(modelFolder,exchfolder,sprintf('sim%d',simid),interf_file),'\\','/');
             if ~isempty(strfind(options,'-cl'))
                 [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('%s%sqsub -p 0 %s/%s/%s',server.envstr,server.qfold,nrn_exchfolder,sprintf('sim%d',simid),'start_nrn.pbs'));
                 fprintf(sprintf('Answer server after submitting:\n%s\n%s\nExtracing Job Id and wait..\n',answer.StdOut,answer.StdErr))

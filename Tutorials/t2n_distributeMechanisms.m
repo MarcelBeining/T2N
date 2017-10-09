@@ -7,7 +7,21 @@
 % expects that NEURON knows this mechanism, so be sure to have the corresponding 
 % .mod files compiled, if it is a different mechanism than the standard 'pas' 
 % and 'hh' mechanism.
+% 
+% First we need to be sure that Matlab finds all necessary files located 
+% in the T2N and TREES folder. Caution, this code assumes that you are currently 
+% in the T2N/Tutorials folder!
 
+if ~exist('t2n','file')         % checks if T2N is not already on the Matlab path
+    if exist('t2n_Tutorial.mlx','file')  % probably you are in the t2n/Tutorials folder
+        addpath(genpath(fileparts(pwd)));
+    else
+        error('Please run the "t2n_runthisAfterUnzip.m" script in the T2N folder or add the T2N folder including subfolders to the Matlab path!')
+    end
+end
+if ~exist('load_tree','file')
+    error('Please run the "start_trees.m" script in the TREES folder or add this folder including subfolders to the Matlab path!')
+end
 tree = load_tree(strrep(which('t2n'),'t2n.m','src/L5_Pyramid.mtr'));        % load an example L5 pyramidal cell from the T2N folder
 %% add a channel everywhere
 % The first possibility how to distribute a mechanism, is to put it in all sections, 
@@ -19,7 +33,8 @@ tree = load_tree(strrep(which('t2n'),'t2n.m','src/L5_Pyramid.mtr'));        % lo
 % a mechanism parameter (here g_pas).
 
 neuron.mech{1}.all.pas = struct('g',0.0003,'e',-80,'Ra',100,'cm',1);
-t2n_getMech(neuron,tree,'g_pas'); set(gca,'CLim',[0 0.0005]);colorbar
+t2n_getMech(tree,neuron,'g_pas'); set(gca,'CLim',[0 0.0005]);colorbar
+
 %% add them by their region name
 % The next and most commonly used option is to distribute the mechanism in a 
 % region-specific way using the region names of your TREES morphology. In the 
@@ -31,19 +46,20 @@ t2n_getMech(neuron,tree,'g_pas'); set(gca,'CLim',[0 0.0005]);colorbar
 
 neuron.mech{1}.dendrite.hh = struct('gnabar',0.05,'gkbar',0.036,'gl',0);
 neuron.mech{1}.soma.hh = struct('gnabar',0.15,'gkbar',0.036,'gl',0);
-t2n_getMech(neuron,tree,'gnabar_hh'), colorbar
-%% 
+t2n_getMech(tree,neuron,'gnabar_hh'), colorbar
+%
 % if these three regions are the only regions, the upper code can also be 
 % simpified by:
 
 
 neuron.mech{1}.all.hh = struct('gnabar',0.05,'gkbar',0.036,'gl',0);
 neuron.mech{1}.soma.hh = struct('gnabar',0.15);
-%% 
+%
 % This is possible because regional distribution has a higher priority than 
 % global distribution, meaning the 'gnabar' parameter of the globally  inserted 
 % hh mechanism gets subsequently overwritten by the region-specific specification, 
 % while all other set parameters of the  channel are left untouched
+
 %% applying a distance-dependent function on a channel parameter
 % There is one type of distribution, which has an even higher priority: the 
 % range distribution. With this feature it is possible to set a parameter of a 
@@ -60,8 +76,8 @@ isdendritic = tree.R == isdendritic;                            % get the nodes 
 vec(~isdendritic) = NaN;                                        % let only the dendritic regions be exponentially decaying and keep the standard value(s) for the rest by setting their range entry to NaN
 neuron.mech{1}.range.hh = struct('gnabar',vec);                 % set the range variable
 
-t2n_getMech(neuron,tree,'gnabar_hh'), colorbar
-%% 
+t2n_getMech(tree,neuron,'gnabar_hh'), colorbar
+%
 % T2N then sets the variable at each location on the morphology where it 
 % is non-NaN in the vector. Generally, this feature should only be used when it 
 % is really necessary and not doable by a finer specification of regions (e.g. 
