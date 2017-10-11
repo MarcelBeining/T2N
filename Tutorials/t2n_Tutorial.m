@@ -4,6 +4,7 @@
 % starting one of the other tutorials), whereas the other sections define the 
 % different simulations.*
 % 
+% Note: T2N requires NEURON and TREES to be installed! See Documentation for further information.
 % Note for Mac users: Matlab has to be run from a Terminal for T2N to work 
 % properly.
 %% Tutorial A - initialize parameters and the neuron structure
@@ -81,9 +82,8 @@ tree = tree(1);                                                              % f
 tree = t2n_writeTrees(tree,[],fullfile(pwd,'test.mtr'));                 % transform tree to NEURON morphology (.hoc file). This only has to be done once for each morphology
 %% Tutorial C - simulation protocol: somatic current injection
 % Now we want to do a simple somatic current injection, execute neuron and plot 
-% the result. In order that we do not have to rerun the upper sections each time, 
-% we will just copy the 'neuron' structure into a new variable 'nneuron' and modify 
-% only this one in each protocol.
+% the result. By copying the 'neuron' structure into a new variable 'nneuron' and modify 
+% only this one in each protocol, we do not have to rerun the upper sections each time.
 %
 nneuron = neuron;                                                           % copy standard neuron structure
 

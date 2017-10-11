@@ -158,12 +158,14 @@ elseif ispc
         fclose(fid);
         if exist(nrnivPath,'file') ~= 2
             askflag = 1;
+            nrnivPath = strcat(' under "',nrnivPath,'"');
         end
     else
+        nrnivPath  = '';
         askflag = 1;
     end
     if askflag
-        [filename,pathname] = uigetfile('.exe',sprintf('No NEURON software found under "%s"! Please give enter path to nrniv.exe',nrnivPath));
+        [filename,pathname] = uigetfile('.exe',sprintf('No NEURON software found%s! Please provide path to nrniv.exe',nrnivPath));
         nrnivPath = fullfile(pathname,filename);
         fid = fopen(fullfile(t2npath,'nrniv_win.txt'),'w');
         fprintf(fid,strrep(nrnivPath,'\','/'));
@@ -418,6 +420,10 @@ for n = 1:numel(neuron)
                     if ~isempty(regexp(outp,'Successfully','ONCE'))
                         disp('nrn mechanisms compiled from mod files in folder lib_mech')
                     else
+                        mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
+                        for  m = 1:numel(mechfold)
+                            rmdir(fullfile(modelFolder,'lib_mech',mechfold(m).name),'s');
+                        end
                         error('There was an error during compiling of mechanisms:\n\n%s',outp)
                     end
                 end
