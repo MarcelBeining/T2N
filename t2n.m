@@ -1388,7 +1388,11 @@ for n = 1:numel(neuron)
                                 tmpstruct = neuron{refR}.record{t}.(recfields{f1})([]);
                                 for u = 1:numel(uniqrecs)  % go through variable groups
                                     unodes = unique(cat(1,neuron{refR}.record{t}.(recfields{f1})(indrecgroups==u).node));  % get the unique nodes for that recorded variable
-                                    tmpstruct(u) = struct('record',uniqrecs{u},'node',unodes);  % save these in a temporary structure
+                                    try
+                                        tmpstruct(u) = struct('record',uniqrecs{u},'node',unodes);  % save these in a temporary structure
+                                    catch  % damn workaround for earlier Matlab versions
+                                        tmpstruct(u) = struct('node',unodes,'record',uniqrecs{u});  % save these in a temporary structure
+                                    end
                                 end
                                 neuron{refR}.record{t}.(recfields{f1}) = tmpstruct;  % overwrite old record defiition with new record structure
                             else
