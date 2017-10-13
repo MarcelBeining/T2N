@@ -33,7 +33,7 @@ tree = load_tree(strrep(which('t2n'),'t2n.m','src/L5_Pyramid.mtr'));        % lo
 % a mechanism parameter (here g_pas).
 
 neuron.mech{1}.all.pas = struct('g',0.0003,'e',-80,'Ra',100,'cm',1);
-t2n_getMech(tree,neuron,'g_pas'); set(gca,'CLim',[0 0.0005]);colorbar
+t2n_getMech(neuron,tree,'g_pas'); set(gca,'CLim',[0 0.0005]);colorbar
 
 %% add them by their region name
 % The next and most commonly used option is to distribute the mechanism in a 
@@ -46,7 +46,7 @@ t2n_getMech(tree,neuron,'g_pas'); set(gca,'CLim',[0 0.0005]);colorbar
 
 neuron.mech{1}.dendrite.hh = struct('gnabar',0.05,'gkbar',0.036,'gl',0);
 neuron.mech{1}.soma.hh = struct('gnabar',0.15,'gkbar',0.036,'gl',0);
-t2n_getMech(tree,neuron,'gnabar_hh'), colorbar
+t2n_getMech(neuron,tree,'gnabar_hh'), colorbar
 %
 % if these three regions are the only regions, the upper code can also be 
 % simpified by:
@@ -76,7 +76,7 @@ isdendritic = tree.R == isdendritic;                            % get the nodes 
 vec(~isdendritic) = NaN;                                        % let only the dendritic regions be exponentially decaying and keep the standard value(s) for the rest by setting their range entry to NaN
 neuron.mech{1}.range.hh = struct('gnabar',vec);                 % set the range variable
 
-t2n_getMech(tree,neuron,'gnabar_hh'), colorbar
+t2n_getMech(neuron,tree,'gnabar_hh'), colorbar
 %
 % T2N then sets the variable at each location on the morphology where it 
 % is non-NaN in the vector. Generally, this feature should only be used when it 

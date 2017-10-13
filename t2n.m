@@ -406,7 +406,7 @@ for n = 1:numel(neuron)
                     tstr = sprintf('cd "%s" && %s/mingw/bin/sh "%s/mknrndll.sh" %s',[nrn_path,'/lib_mech'],nrn_installfolder, regexprep(t2npath,'\\','/'), ['/',regexprep(nrn_installfolder,':','')]);
                     [~,cmdout] = system(tstr);
                     if isempty(strfind(cmdout,'nrnmech.dll was built successfully'))
-                        error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually')
+                        error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually\n Log of compiling:\n%s',cmdout)
                     else
                         disp('nrnmech.dll compiled from mod files in folder lib_mech')
                     end
