@@ -578,7 +578,7 @@ for n = 1:numel(neuron)
         end
     end
     if neuron{refPar}.params.parallel
-%         fprintf(nfile,'pc.barrier()\n');
+        %         fprintf(nfile,'pc.barrier()\n');
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Run NEURON *****\n');
@@ -1115,13 +1115,13 @@ for n = 1:numel(neuron)
             for c = 1:numel(neuron{n}.con)
                 if neuron{refPar}.params.parallel
                     fprintf(ofile,'if (pc.gid_exists(%d)) {\n',GIDs(find(arrayfun(@(x) x.cell == neuron{n}.con(c).target.cell ,GIDs),1,'first')).gid);
-                end                    
+                end
                 str = cell(0);
                 nodeflag = false;
                 sourcefields = setdiff(fieldnames(neuron{n}.con(c).source),{'cell','watch'});
                 
                 cell_source = neuron{n}.con(c).source.cell;
-%             error('In con(%d) it seems you specified a connection from a real cell (%d) without specifying a node location! Please specify under con(%d).source.node',c,t,c)
+                %             error('In con(%d) it seems you specified a connection from a real cell (%d) without specifying a node location! Please specify under con(%d).source.node',c,t,c)
                 if isempty(cell_source)  % empty source
                     str{1} = sprintf('con = new NetCon(nil,');
                 elseif isfield(tree{neuron{n}.con(c).source.cell},'artificial') % an artificial cell is the source .create a NetCon for it
@@ -1180,7 +1180,7 @@ for n = 1:numel(neuron)
                         end
                         if numel(iid) >1
                             error('too much iids?')
-                        end                            
+                        end
                         for ii = 1:numel(iid)
                             if neuron{refPar}.params.parallel
                                 str{ii} = sprintf('con = pc.gid_connect(%d,',neuron{n}.con(c).source.gid);
@@ -1279,12 +1279,12 @@ for n = 1:numel(neuron)
                         if numel(unique(cat(1,iid{:}))) ~= numel(cat(1,iid{:}))
                             fprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(refPP).target(y).ppg = z" to connect only to the zth group of PP %s.',neuron{n}.con(c).target.cell,c,pp,pp,pp)
                         end
-                            for n1 = 1:numel(iid)
-                                for ii = 1:numel(iid{n1})
-                                    newstr{count} = sprintf('%sppList.o(%d)',str{1},neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).id(iid{n1}(ii)));
-                                    count = count +1;
-                                end
+                        for n1 = 1:numel(iid)
+                            for ii = 1:numel(iid{n1})
+                                newstr{count} = sprintf('%sppList.o(%d)',str{1},neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).id(iid{n1}(ii)));
+                                count = count +1;
                             end
+                        end
                         
                     else
                         warning('No target specified as connection')
@@ -1878,13 +1878,13 @@ for n = 1:numel(neuron)
                             else
                                 fnamet = 'tvec.dat';
                             end
-%                             if neuron{refPar}.params.parallel
-%                                 fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
-%                             end
+                            %                             if neuron{refPar}.params.parallel
+                            %                                 fprintf(ofile,'if (pc.gid_exists(%d)) {\n',tt-1);
+                            %                             end
                             fprintf(ofile,'save_rect("%s",%d)\n',fnamet,neuron{refR}.record{t}.(recfields{f1})(r).idt(1));
-%                             if neuron{refPar}.params.parallel
-%                                 fprintf(ofile,'}\n');
-%                             end
+                            %                             if neuron{refPar}.params.parallel
+                            %                                 fprintf(ofile,'}\n');
+                            %                             end
                             makenewrect = false;
                         end
                     end
@@ -2036,120 +2036,128 @@ if noutfiles > 0 % if output is expected
         w = waitbar(0,'Neuron Simulations are running, please wait');
     end
     timm = tic;
-    while ~all(simids>1)
-        if ~isempty(strfind(options,'-cl'))
-            pause(30); % wait for 30 seconds
-            [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('%s %sqstat -u %s',server.envstr,server.qfold,server.user));
-            if isempty(answer.StdOut)
-                answer = {{''}};
-            else
-                answer = textscan(answer.StdOut,'%s','Delimiter','\n');
-            end
-            currjobs = find(simids==1);
-            for ss = 1:numel(currjobs)
-                s = currjobs(ss);
-                if any(~cellfun(@isempty,regexp(answer{1},num2str(jobid(s)),'ONCE')))     %job not finished yet
-                    ind = ~cellfun(@isempty,regexp(answer{1},num2str(jobid(s)),'ONCE'));
-                    jobanswer = textscan(answer{1}{ind},'%s','Delimiter',' ');%[ qw]');%'[qw|r|t] ');
-                    jobanswer = jobanswer{1}(~cellfun(@isempty,jobanswer{1}));
-                    jobstate = jobanswer{5};
-                    switch jobstate
-                        case 'r'
-                            jobstate = 'running';
-                        otherwise
-                            jobstate = 'waiting';
-                    end
-                    fprintf('Simulation %d is still %s on cluster, since %s %s',s,jobstate,jobanswer{6},jobanswer{7})
-                    
-                else   % job is finished
-                    fprintf('Simulation %d has finished',s)
-                    simids(s) = 2;              % mark that simulation as finished
-                    r = find(simids==0,1,'first');  % find next not runned simid
-                    if ~isempty(r)
-                        refPar = t2n_getref(r,neuron,'params');
-                        jobid(r) = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);          % start new simulation
-                        simids(r) = 1;          % mark this as running
+    try
+        while ~all(simids>1)
+            if ~isempty(strfind(options,'-cl'))
+                pause(30); % wait for 30 seconds
+                [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('%s %sqstat -u %s',server.envstr,server.qfold,server.user));
+                if isempty(answer.StdOut)
+                    answer = {{''}};
+                else
+                    answer = textscan(answer.StdOut,'%s','Delimiter','\n');
+                end
+                currjobs = find(simids==1);
+                for ss = 1:numel(currjobs)
+                    s = currjobs(ss);
+                    if any(~cellfun(@isempty,regexp(answer{1},num2str(jobid(s)),'ONCE')))     %job not finished yet
+                        ind = ~cellfun(@isempty,regexp(answer{1},num2str(jobid(s)),'ONCE'));
+                        jobanswer = textscan(answer{1}{ind},'%s','Delimiter',' ');%[ qw]');%'[qw|r|t] ');
+                        jobanswer = jobanswer{1}(~cellfun(@isempty,jobanswer{1}));
+                        jobstate = jobanswer{5};
+                        switch jobstate
+                            case 'r'
+                                jobstate = 'running';
+                            otherwise
+                                jobstate = 'waiting';
+                        end
+                        fprintf('Simulation %d is still %s on cluster, since %s %s',s,jobstate,jobanswer{6},jobanswer{7})
+                        
+                    else   % job is finished
+                        fprintf('Simulation %d has finished',s)
+                        simids(s) = 2;              % mark that simulation as finished
+                        r = find(simids==0,1,'first');  % find next not runned simid
+                        if ~isempty(r)
+                            refPar = t2n_getref(r,neuron,'params');
+                            jobid(r) = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);          % start new simulation
+                            simids(r) = 1;          % mark this as running
+                        end
                     end
                 end
-            end
-        else
-            s = find(simids==1);
-            for ss = 1:numel(s)
-                r = exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'readyflag'),'file');  % becomes 1 (still running) if not existing, or 2 (finished)
-                if r == 2
-                    simids(s(ss)) = 2;              % mark that simulation as finished
-                    r = find(simids==0,1,'first');  % find next not runned simid
-                    if ~isempty(r)
-                        refPar = t2n_getref(r,neuron,'params');
-                        [jobid(r),tim] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
-                        simids(r) = 1;          % mark this as running
-                    end
-                elseif exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'),'file') == 2
-                    finfo = dir(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
-                    if finfo.bytes > 0      % because error file log is always built
-                        f = fopen(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
-                        txt = fscanf(f,'%c');
-                        fclose(f);
-                        errordlg(sprintf('There was an error in Simulation %d (and maybe others):\n******************************\n%s\n******************************\nDue to that t2n has no output to that Simulation.',s(ss),txt(1:min(numel(txt),2000))),'Error in NEURON','replace');
-                        simids(s(ss)) = 3;
+            else
+                s = find(simids==1);
+                for ss = 1:numel(s)
+                    r = exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'readyflag'),'file');  % becomes 1 (still running) if not existing, or 2 (finished)
+                    if r == 2
+                        simids(s(ss)) = 2;              % mark that simulation as finished
                         r = find(simids==0,1,'first');  % find next not runned simid
                         if ~isempty(r)
                             refPar = t2n_getref(r,neuron,'params');
                             [jobid(r),tim] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
                             simids(r) = 1;          % mark this as running
                         end
-                    end
-                end
-            end
-            pause(0.1);
-        end
-        if ~isempty(strfind(options,'-w'))
-            if ishandle(w)
-                if any(simids>1)
-                    waitbar(sum(simids>1)/numel(simids),w);
-                end
-            else
-                answer = questdlg(sprintf('Waitbar was closed, t2n stopped continuing. Only finished data is returned. If accidently, retry.\nClose all NEURON instances?\n (Caution if several Matlab instances are running)'),'Close NEURON instances?','Close','Ignore','Ignore');
-                if strcmp(answer,'Close')
-                    if isempty(strfind(options,'-cl'))
-                        if ispc
-                            system('taskkill /F /IM nrniv.exe');
-                        else
-                            system('pkill -9 "nrniv"');
+                    elseif exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'),'file') == 2
+                        finfo = dir(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
+                        if finfo.bytes > 0      % because error file log is always built
+                            f = fopen(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
+                            txt = fscanf(f,'%c');
+                            fclose(f);
+                            errordlg(sprintf('There was an error in Simulation %d (and maybe others):\n******************************\n%s\n******************************\nDue to that t2n has no output to that Simulation.',s(ss),txt(1:min(numel(txt),2000))),'Error in NEURON','replace');
+                            simids(s(ss)) = 3;
+                            r = find(simids==0,1,'first');  % find next not runned simid
+                            if ~isempty(r)
+                                refPar = t2n_getref(r,neuron,'params');
+                                [jobid(r),tim] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
+                                simids(r) = 1;          % mark this as running
+                            end
                         end
-                    else
-                        
                     end
                 end
-                simids(simids<2) = 4;
-                fclose all;
+                pause(0.1);
             end
-        end
-    end
-    
-    if ~isempty(strfind(options,'-cl'))
-        s = find(simids==2);
-        
-        for ss = 1:numel(s)
-            [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('ls %s/%s/readyflag',nrn_exchfolder,sprintf('sim%d',s(ss))));
-            if isempty(answer.StdOut)    % then there was an error during executing NEURON
-                [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('cat %s/%s/ErrorLogFile.txt',nrn_exchfolder,sprintf('sim%d',s(ss))));
-                if ~isempty(answer.StdOut)
-                    error('There was an error during NEURON simulation #%d:\n%s\n',s(ss),answer.StdOut)
+            if ~isempty(strfind(options,'-w'))
+                if ishandle(w)
+                    if any(simids>1)
+                        waitbar(sum(simids>1)/numel(simids),w);
+                    end
                 else
-                    error('There was an unknown error during job execution of simulation #%d. Probably job got deleted?',s(ss))
+                    answer = questdlg(sprintf('Waitbar was closed, t2n stopped continuing. Only finished data is returned. If accidently, retry.\nClose all NEURON instances?\n (Caution if several Matlab instances are running)'),'Close NEURON instances?','Close','Ignore','Ignore');
+                    if strcmp(answer,'Close')
+                        if isempty(strfind(options,'-cl'))
+                            if ispc
+                                system('taskkill /F /IM nrniv.exe');
+                            else
+                                system('pkill -9 "nrniv"');
+                            end
+                        else
+                            
+                        end
+                    end
+                    simids(simids<2) = 4;
+                    fclose all;
                 end
             end
         end
+        
+        if ~isempty(strfind(options,'-cl'))
+            s = find(simids==2);
+            
+            for ss = 1:numel(s)
+                [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('ls %s/%s/readyflag',nrn_exchfolder,sprintf('sim%d',s(ss))));
+                if isempty(answer.StdOut)    % then there was an error during executing NEURON
+                    [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('cat %s/%s/ErrorLogFile.txt',nrn_exchfolder,sprintf('sim%d',s(ss))));
+                    if ~isempty(answer.StdOut)
+                        error('There was an error during NEURON simulation #%d:\n%s\n',s(ss),answer.StdOut)
+                    else
+                        error('There was an unknown error during job execution of simulation #%d. Probably job got deleted?',s(ss))
+                    end
+                end
+            end
+        end
+        
+        if ~isempty(strfind(options,'-d'))
+            tim = toc(timm);
+            fprintf(sprintf('NEURON execute time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
+        end
+        if isempty(strfind(options,'-q'))
+            disp('NEURON finished... loading data...')
+        end
+    catch ME
+        if ~isempty(strfind(options,'-w')) && ishandle(w)
+            close(w)  % close waitbar
+        end
+        rethrow(ME) %re-issue the error
     end
     
-    if ~isempty(strfind(options,'-d'))
-        tim = toc(timm);
-        fprintf(sprintf('NEURON execute time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
-    end
-    if isempty(strfind(options,'-q'))
-        disp('NEURON finished... loading data...')
-    end
     if ~isempty(strfind(options,'-w')) && ishandle(w)
         close(w)
     end
@@ -2186,60 +2194,67 @@ if noutfiles > 0 % if output is expected
     if ~isempty(strfind(options,'-w'))
         w = waitbar(0,'Loading files, please wait');
     end
-    for f = 1:noutfiles
-        refPar = t2n_getref(readfiles{f}{2},neuron,'params');
-        if simids(readfiles{f}{2}) == 2    % if there was no error during simulation
-            fn = fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),readfiles{f}{1});
-            if numel(readfiles{f}{6}) > 1
-                warning('Recording of %s in %s has %d redundant values since nodes are in same segment.\n',readfiles{f}{5},readfiles{f}{4},numel(readfiles{f}{6}))
-            end
-            switch readfiles{f}{4}
-                case 'APCtimes'
-                    out{readfiles{f}{2}}.APCtimes{readfiles{f}{3}}(readfiles{f}{6}) = repmat({load(fn,'-ascii')},numel(readfiles{f}{6}),1);
-                otherwise
-                    out{readfiles{f}{2}}.record{readfiles{f}{3}}.(readfiles{f}{4}).(readfiles{f}{5})(readfiles{f}{6}) = repmat({load(fn,'-ascii')},numel(readfiles{f}{6}),1);
-                    if neuron{refPar}.params.cvode
-                        if neuron{refPar}.params.use_local_dt || neuron{refPar}.params.parallel  % if yes, dt was different for each cell, so there is more than one time vector
-                            if ~isfield(out{readfiles{f}{2}},'t') || numel(out{readfiles{f}{2}}.t) < readfiles{f}{3} || isempty(out{readfiles{f}{2}}.t{readfiles{f}{3}})
-                                out{readfiles{f}{2}}.t{readfiles{f}{3}} = load(fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),sprintf('cell%d_tvec.dat', find(readfiles{f}{3} == neuron{n}.tree)-1)),'-ascii');    %loading of one time vector file per cell (sufficient)
+    try
+        for f = 1:noutfiles
+            refPar = t2n_getref(readfiles{f}{2},neuron,'params');
+            if simids(readfiles{f}{2}) == 2    % if there was no error during simulation
+                fn = fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),readfiles{f}{1});
+                if numel(readfiles{f}{6}) > 1
+                    warning('Recording of %s in %s has %d redundant values since nodes are in same segment.\n',readfiles{f}{5},readfiles{f}{4},numel(readfiles{f}{6}))
+                end
+                switch readfiles{f}{4}
+                    case 'APCtimes'
+                        out{readfiles{f}{2}}.APCtimes{readfiles{f}{3}}(readfiles{f}{6}) = repmat({load(fn,'-ascii')},numel(readfiles{f}{6}),1);
+                    otherwise
+                        out{readfiles{f}{2}}.record{readfiles{f}{3}}.(readfiles{f}{4}).(readfiles{f}{5})(readfiles{f}{6}) = repmat({load(fn,'-ascii')},numel(readfiles{f}{6}),1);
+                        if neuron{refPar}.params.cvode
+                            if neuron{refPar}.params.use_local_dt || neuron{refPar}.params.parallel  % if yes, dt was different for each cell, so there is more than one time vector
+                                if ~isfield(out{readfiles{f}{2}},'t') || numel(out{readfiles{f}{2}}.t) < readfiles{f}{3} || isempty(out{readfiles{f}{2}}.t{readfiles{f}{3}})
+                                    out{readfiles{f}{2}}.t{readfiles{f}{3}} = load(fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),sprintf('cell%d_tvec.dat', find(readfiles{f}{3} == neuron{n}.tree)-1)),'-ascii');    %loading of one time vector file per cell (sufficient)
+                                    % add tiny time step to tvec to avoid problems with step functions
+                                    out{readfiles{f}{2}}.t{readfiles{f}{3}}(find(diff(out{readfiles{f}{2}}.t{readfiles{f}{3}},1) == 0) + 1) = out{readfiles{f}{2}}.t{readfiles{f}{3}}(find(diff(out{readfiles{f}{2}}.t{readfiles{f}{3}},1) == 0) + 1) + 1e-10;
+                                end
+                            elseif ~isfield(out{readfiles{f}{2}},'t')       % if it has not been loaded in a previous loop
+                                out{readfiles{f}{2}}.t = load(fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),'tvec.dat'),'-ascii');    %loading of one time vector file at all (sufficient)
                                 % add tiny time step to tvec to avoid problems with step functions
-                                out{readfiles{f}{2}}.t{readfiles{f}{3}}(find(diff(out{readfiles{f}{2}}.t{readfiles{f}{3}},1) == 0) + 1) = out{readfiles{f}{2}}.t{readfiles{f}{3}}(find(diff(out{readfiles{f}{2}}.t{readfiles{f}{3}},1) == 0) + 1) + 1e-10; 
+                                out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) = out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) + 1e-10;
                             end
-                        elseif ~isfield(out{readfiles{f}{2}},'t')       % if it has not been loaded in a previous loop
-                            out{readfiles{f}{2}}.t = load(fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),'tvec.dat'),'-ascii');    %loading of one time vector file at all (sufficient)
-                            % add tiny time step to tvec to avoid problems with step functions
-                            out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) = out{readfiles{f}{2}}.t(find(diff(out{readfiles{f}{2}}.t,1) == 0) + 1) + 1e-10; 
+                            
+                            
                         end
-                         
-                        
-                    end
-            end
-            delete(fn)  % delete dat file after loading
-        elseif simids(readfiles{f}{2}) == 4  % t2n was aborted
-            out{readfiles{f}{2}}.error = 2;
-        else
-            out{readfiles{f}{2}}.error = 1;
-        end
-        if ~isempty(strfind(options,'-w'))
-            if ishandle(w)
-                waitbar(f/noutfiles,w);
+                end
+                delete(fn)  % delete dat file after loading
+            elseif simids(readfiles{f}{2}) == 4  % t2n was aborted
+                out{readfiles{f}{2}}.error = 2;
             else
-                answer = questdlg(sprintf('Waitbar has been closed during data loading. If accidently, retry.\nClose all NEURON instances?\n (Caution if several Matlab instances are running)'),'Close NEURON instances?','Close','Ignore','Ignore');
-                if strcmp(answer,'Close')
-                    system('taskkill /F /IM nrniv.exe');
-                end
-                fclose all;
-                for n = 1:numel(neuron)
-                    delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',n),'iamrunning'));   % delete the running mark
-                end
-                return
+                out{readfiles{f}{2}}.error = 1;
             end
-            
+            if ~isempty(strfind(options,'-w'))
+                if ishandle(w)
+                    waitbar(f/noutfiles,w);
+                else
+                    answer = questdlg(sprintf('Waitbar has been closed during data loading. If accidently, retry.\nClose all NEURON instances?\n (Caution if several Matlab instances are running)'),'Close NEURON instances?','Close','Ignore','Ignore');
+                    if strcmp(answer,'Close')
+                        system('taskkill /F /IM nrniv.exe');
+                    end
+                    fclose all;
+                    for n = 1:numel(neuron)
+                        delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',n),'iamrunning'));   % delete the running mark
+                    end
+                    return
+                end
+                
+            end
         end
-    end
-    
-    if isempty(strfind(options,'-q'))
-        disp('data sucessfully loaded')
+        
+        if isempty(strfind(options,'-q'))
+            disp('data sucessfully loaded')
+        end
+    catch ME
+        if ~isempty(strfind(options,'-w')) && ishandle(w)
+            close(w)  % close waitbar
+        end
+        rethrow(ME) %re-issue the error
     end
     if ~isempty(strfind(options,'-w'))
         close(w)
