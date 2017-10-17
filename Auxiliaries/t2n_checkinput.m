@@ -141,7 +141,16 @@ for n = 1:numel(neuron)
         elseif numel(neuron) > 1 && neuron{n}.params.parallel > 0
             warning('It seems you have enabled parallel Neuron together with multiple Neuron instances. Be sure that there are %d cores available, otherwise there will be no improvement in speed and the CPUs might be overloaded.',numel(neuron)*neuron{n}.params.parallel)
         end
-        
+        if neuron{n}.params.parallel && ~ispc()
+            [~,outp] = system('which mpiexec');
+            if isempty(outp) || ~isempty(strfind(outp,'not found'))  || ~isempty(strfind(outp,'no mpiexec'))
+                if ismac
+                    error('MPI software (mpiexec) not found on this Mac! Either not installed correctly or Matlab was not started from Terminal')
+                else
+                    error('MPI software (mpiexec) not found on this Linux machine or module has not been loaded! Check correct installation')
+                end
+            end
+        end
         if ~isfield(neuron{n}.params,'cvode')
             neuron{n}.params.cvode = false;
         end
@@ -196,7 +205,7 @@ for n = 1:numel(neuron)
                 end
             end
             if ~isfield(neuron{n}.con(c).source,'pp')
-               neuron{n}.con(c).source.pp = [];
+                neuron{n}.con(c).source.pp = [];
             end
             if ~isfield(neuron{n}.con(c).source,'node')
                 if isfield(tree{neuron{n}.tree==neuron{n}.con(c).source.cell},'artificial')
