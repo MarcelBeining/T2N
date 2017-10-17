@@ -178,8 +178,8 @@ elseif ispc
         fclose(fid);
     end
 else
-    [~,outp] = system('which nrniv');
-    if isempty(outp)
+    [~,outp] = system('type nrniv');
+    if isempty(outp) || ~isempty(strfind(outp,'not found'))
         if ismac
             error('NEURON software (nrniv) not found on this Mac! Either not installed correctly or Matlab was not started from Terminal')
         else
