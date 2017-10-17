@@ -2292,12 +2292,12 @@ end
                     end
                 else
                     if parallel
-                        system([sprintf('cd "%s/lib_mech"; mpiexec -n %d nrniv -nobanner -nogui -mpi "',modelFolder,parallel) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid),'&']);
+                        system([sprintf('cd "%s/lib_mech"; mpiexec -n %d nrniv -nobanner -nogui -mpi "',modelFolder,parallel) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
                     else
                         if ~isempty(strfind(options,'-o'))
-                            system([sprintf('echo ''cd "%s/lib_mech"; nrniv -nobanner "',modelFolder), fname,sprintf('" -''> "%s/sim%d/startNeuron.sh";chmod +x "%s/sim%d/startNeuron.sh";open -a terminal "%s/sim%d/startNeuron.sh"',exchfolder,simid,exchfolder,simid,exchfolder,simid)]);
+                            system([sprintf('echo ''cd "%s/lib_mech"; nrniv -nobanner "',modelFolder), fname,sprintf('" -''> "%s/sim%d/startNeuron.sh";chmod +x "%s/sim%d/startNeuron.sh";open -a terminal "%s/sim%d/startNeuron.sh"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid)]);
                         else
-                            system([sprintf('cd "%s/lib_mech"; nrniv -nobanner -nogui "',modelFolder) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid),'&']);
+                            system([sprintf('cd "%s/lib_mech"; nrniv -nobanner -nogui "',modelFolder) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
                         end
                     end
                 end
