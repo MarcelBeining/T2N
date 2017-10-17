@@ -2076,7 +2076,7 @@ if noutfiles > 0 % if output is expected
             else
                 s = find(simids==1);
                 for ss = 1:numel(s)
-                    r = exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'readyflag'),'file');  % becomes 1 (still running) if not existing, or 2 (finished)
+                    r = exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'readyflag'),'file');  % becomes 0 (still running) if not existing, or 2 (finished)
                     if r == 2
                         simids(s(ss)) = 2;              % mark that simulation as finished
                         r = find(simids==0,1,'first');  % find next not runned simid
@@ -2112,15 +2112,7 @@ if noutfiles > 0 % if output is expected
                 else
                     answer = questdlg(sprintf('Waitbar was closed, t2n stopped continuing. Only finished data is returned. If accidently, retry.\nClose all NEURON instances?\n (Caution if several Matlab instances are running)'),'Close NEURON instances?','Close','Ignore','Ignore');
                     if strcmp(answer,'Close')
-                        if isempty(strfind(options,'-cl'))
-                            if ispc
-                                system('taskkill /F /IM nrniv.exe');
-                            else
-                                system('pkill -9 "nrniv"');
-                            end
-                        else
-                            
-                        end
+                        killNEURON
                     end
                     simids(simids<2) = 4;
                     fclose all;
@@ -2155,6 +2147,7 @@ if noutfiles > 0 % if output is expected
         if ~isempty(strfind(options,'-w')) && ishandle(w)
             close(w)  % close waitbar
         end
+        killNEURON
         rethrow(ME) %re-issue the error
     end
     
@@ -2183,7 +2176,7 @@ if noutfiles > 0 % if output is expected
         if ~neuron{refPar}.params.cvode
             if s~=refPar && isfield(out{refPar},'t')
                 out{s}.t = out{refPar}.t;   % just use tvec of simulation with same parameters
-            else
+            elseif simids(s) == 2
                 fn = fullfile(modelFolder,exchfolder,sprintf('sim%d',s),'tvec.dat');
                 out{s}.t = load(fn,'-ascii');
             end
@@ -2235,11 +2228,7 @@ if noutfiles > 0 % if output is expected
                 else
                     answer = questdlg(sprintf('Waitbar has been closed during data loading. If accidently, retry.\nClose all NEURON instances?\n (Caution if several Matlab instances are running)'),'Close NEURON instances?','Close','Ignore','Ignore');
                     if strcmp(answer,'Close')
-                        system('taskkill /F /IM nrniv.exe');
-                    end
-                    fclose all;
-                    for n = 1:numel(neuron)
-                        delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',n),'iamrunning'));   % delete the running mark
+                        killNEURON
                     end
                     return
                 end
@@ -2254,6 +2243,7 @@ if noutfiles > 0 % if output is expected
         if ~isempty(strfind(options,'-w')) && ishandle(w)
             close(w)  % close waitbar
         end
+        killNEURON
         rethrow(ME) %re-issue the error
     end
     if ~isempty(strfind(options,'-w'))
@@ -2332,6 +2322,22 @@ end
         
     end
 
+
+    function killNEURON
+        if isempty(strfind(options,'-cl'))
+            if ispc
+                system('taskkill /F /IM nrniv.exe');
+            else
+                system('pkill -9 "nrniv"');
+            end
+            fclose all;
+            for z = 1:numel(neuron)
+                delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',z),'iamrunning'));   % delete the running mark
+            end
+        else
+            
+        end
+    end
 
 end
 
