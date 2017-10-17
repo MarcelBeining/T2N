@@ -1402,7 +1402,7 @@ for n = 1:numel(neuron)
                                 end
                                 neuron{refR}.record{t}.(recfields{f1}) = tmpstruct;  % overwrite old record defiition with new record structure
                             else
-                                warning('It seems recordings of different PP groups have been defined. Make sure that indices match, e.g. .record{1}.ExpSyn(3) is to target only .pp{1}.ExpSyn(3) etc.\n')
+                                warning('It seems recordings of different PP groups have been defined. Make sure that indices match, e.g. .record{1}.ExpSyn(3) is to target only .pp{1}.ExpSyn(3) etc.')
                             end
                         end
                         for r = 1:numel(neuron{refR}.record{t}.(recfields{f1})) %.record)  % go through all variables to be recorded

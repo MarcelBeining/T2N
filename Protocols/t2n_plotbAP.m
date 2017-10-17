@@ -73,7 +73,7 @@ if nargout == 0 || nargout > 4
     end
    
     fig(2) = figure;clf,hold all
-    xlabel(sprintf('%s distance to soma [µm]',ostruct.dist))
+    xlabel(sprintf('%s distance to soma [\\mum]',ostruct.dist))
     ylabel('Delay [ms]')
     FontResizer
     % bAP{t} 2nd dim: nodes_ind, time of max amp, PL to root, Eucl to root, max Voltage, baseline voltage before AP];
@@ -129,7 +129,7 @@ for n = 1:numel(neuron)
                 PL2 = NaN(numel(tree{t}.Y),1);
                 for d = 2:numel(dendind2)
                     [x,~] = find(dendind2(d)==ipar);
-                    PL2(dendind2(d)) = L(dendind2(d))/max(L(ipar(x,1)));
+                    PL2(dendind2(d)) = L(dendind2(d))/max(L(ipar(x,1)));  % normalize path lengths to maximal path length
                 end
                 plotadjval(PL2,y,tree{t},col);
             else
@@ -186,11 +186,11 @@ for n = 1:numel(neuron)
     if ostruct.relamp
         ylabel('Rel. amplitude')
         ylim([0 1.1])
-        xlabel(sprintf('Rel %s distance to soma [\mum]',ostruct.dist))
+        xlabel(sprintf('Rel %s distance to soma',ostruct.dist))
     else
         ylabel('Amplitude [mV]')
         ylim([0 max(maxy,120)])
-        xlabel(sprintf('%s distance to soma [\mum]',ostruct.dist))
+        xlabel(sprintf('%s distance to soma [\\mum]',ostruct.dist))
         
     end
     FontResizer
