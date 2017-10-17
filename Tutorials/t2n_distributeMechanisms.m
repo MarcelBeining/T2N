@@ -71,7 +71,8 @@ neuron.mech{1}.soma.hh = struct('gnabar',0.15);
 
 plen = Pvec_tree(tree);                                         % get path lengths to root for each node
 vec = 0.2*exp(-plen/100);                                       % create the exponentially decaying range vector for the hh sodium conductance
-isdendritic =  find(strcmp(tree.rnames,'dendrite'));            % get the region index of the 'dendrite' region
+isdendritic =  find(strcmp(tree.rnames,'dendrite') ...
+    | strcmp(tree.rnames,'dendritic'));                         % get the region index of the 'dendrite' region
 isdendritic = tree.R == isdendritic;                            % get the nodes that belong to this region
 vec(~isdendritic) = NaN;                                        % let only the dendritic regions be exponentially decaying and keep the standard value(s) for the rest by setting their range entry to NaN
 neuron.mech{1}.range.hh = struct('gnabar',vec);                 % set the range variable
