@@ -232,19 +232,19 @@ for n = 1:numel(neuron)
         set(c,'YTick',[-80,0,80])
         tprint(t2n_catName(targetfolder_results,'bAP-trees',neuron{n}.experiment),'-SHR-tif')
     end
-    fprintf('Dendritic Velocity cell %d: %f µm/ms (time to max amp)\n',reshape(cat(1,(1:numel(mveloc_dend)),mveloc_dend),1,numel(mveloc_dend)*2))
-    fprintf('Far Axonal Velocity cell %d: %f µm/ms (time to half-max amp)\n',reshape(cat(1,(1:numel(mveloc_farax)),mveloc_farax),1,numel(mveloc_farax)*2))
-    fprintf('Near Axonal Velocity cell %d: %f µm/ms (time to half-max amp)\n',reshape(cat(1,(1:numel(mveloc_nearax)),mveloc_nearax),1,numel(mveloc_nearax)*2))
+    fprintf('Dendritic Velocity cell %d: %f micron/ms (time to max amp)\n',reshape(cat(1,(1:numel(mveloc_dend)),mveloc_dend),1,numel(mveloc_dend)*2))
+    fprintf('Far Axonal Velocity cell %d: %f micron/ms (time to half-max amp)\n',reshape(cat(1,(1:numel(mveloc_farax)),mveloc_farax),1,numel(mveloc_farax)*2))
+    fprintf('Near Axonal Velocity cell %d: %f micron/ms (time to half-max amp)\n',reshape(cat(1,(1:numel(mveloc_nearax)),mveloc_nearax),1,numel(mveloc_nearax)*2))
     % hide p, set colorbar to border and save
     
     if ~all(spiked)
         disp('CAUTION: Not all cells spiked!')
     end
-    fprintf('Mean voltage attenuation @ %d µm: %g +- %g %% (s.e.m.)\n',thisdist,mean(bAPrelthisdist)*100,std(bAPrelthisdist)/sqrt(numel(tree))*100)
+    fprintf('Mean voltage attenuation @ %d micron: %g +- %g %% (s.e.m.)\n',thisdist,mean(bAPrelthisdist)*100,std(bAPrelthisdist)/sqrt(numel(tree))*100)
     if (nargout == 0 || nargout > 4) && ~isnan(data(1))
-        fprintf('Mean voltage attenuation in exp @ 185 µm: %g +- %g %% (s.e.m.)\n',mean(data(17:20,2))/mean(cellfun(@(x) x(1,5)-x(1,6),bAP))*100,std(data(17:20,2))/mean(cellfun(@(x) x(1,5)-x(1,6),bAP))/sqrt(4)*100)  % bAP at 185 µm in exp
+        fprintf('Mean voltage attenuation in exp @ 185 micron: %g +- %g %% (s.e.m.)\n',mean(data(17:20,2))/mean(cellfun(@(x) x(1,5)-x(1,6),bAP))*100,std(data(17:20,2))/mean(cellfun(@(x) x(1,5)-x(1,6),bAP))/sqrt(4)*100)  % bAP at 185 µm in exp
     end
-    fprintf('Mean delay @ %d µm: %g +- %g ms (s.e.m.)\n',thisdist,mean(bAPdelaythisdist),std(bAPdelaythisdist)/sqrt(numel(tree)))
+    fprintf('Mean delay @ %d micron: %g +- %g ms (s.e.m.)\n',thisdist,mean(bAPdelaythisdist),std(bAPdelaythisdist)/sqrt(numel(tree)))
     
 end
 
