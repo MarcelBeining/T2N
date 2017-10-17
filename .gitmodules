@@ -1,0 +1,3 @@
+[submodule "src/masterplotter"]
+	path = src/masterplotter
+	url = mbeining@bitbucket.org:cuntzlab/masterplotter.git
