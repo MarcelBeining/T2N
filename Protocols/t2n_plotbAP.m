@@ -71,18 +71,7 @@ if nargout == 0 || nargout > 4
     else
         data2 = NaN(1,2);
     end
-    if ostruct.relamp
-        ylabel('Rel. amplitude')
-        ylim([0 1.1])
-        xlabel(sprintf('Rel %s distance to soma [µm]',ostruct.dist))
-    else
-        ylabel('Amplitude [mV]')
-        ylim([0 120])
-        xlabel(sprintf('%s distance to soma [µm]',ostruct.dist))
-        
-    end
-    FontResizer
-    
+   
     fig(2) = figure;clf,hold all
     xlabel(sprintf('%s distance to soma [µm]',ostruct.dist))
     ylabel('Delay [ms]')
@@ -93,7 +82,6 @@ if nargout == 0 || nargout > 4
         axis off
     end
 end
-
 for n = 1:numel(neuron)
     load(t2n_catName(targetfolder_data,'Exp_bAP',neuron{n}.experiment,'.mat'),'bAP','plotvals','nodes','tree','tim')%,'neuron'
     
@@ -101,6 +89,7 @@ for n = 1:numel(neuron)
 
     xlims = [Inf Inf];
     ylims = xlims;
+    maxy = -Inf;
     for t = 1:numel(tree)
         som = find(bAP{t}(:,1)==1);
         if isfield(tree{t},'col')
@@ -146,7 +135,7 @@ for n = 1:numel(neuron)
             else
                 plotadjval(L,y,tree{t},col);
             end
-            
+            maxy = max(maxy,max(y));
             figure(fig(n+2));
             ptree = tran_tree(rot_tree(tran_tree(tree{t}),[],'-m3dY'),[350*t 300 0]);
             ptree.D(ptree.D<2) = 2;
@@ -193,6 +182,18 @@ for n = 1:numel(neuron)
         mveloc_farax(t) = mean(veloc_farax); % mean of velocity
         mveloc_nearax(t) = mean(veloc_nearax); % mean of velocity
     end
+    figure(fig(1))
+    if ostruct.relamp
+        ylabel('Rel. amplitude')
+        ylim([0 1.1])
+        xlabel(sprintf('Rel %s distance to soma [\mum]',ostruct.dist))
+    else
+        ylabel('Amplitude [mV]')
+        ylim([0 max(maxy,120)])
+        xlabel(sprintf('%s distance to soma [\mum]',ostruct.dist))
+        
+    end
+    FontResizer
     if (nargout == 0 || nargout > 4) && exist('targetfolder_results','var') && ~isempty(targetfolder_results)
         figure(fig(1))
         if ostruct.plotData
