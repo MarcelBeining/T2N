@@ -70,6 +70,12 @@ if ~exist('exchfolder','var')
         exchfolder = 't2n_exchange';
     end
 end
+if ~ispc()
+    [~,cmdout] = system('echo $0');
+    if isempty(strfind(cmdout,'bash'))
+        error('It seems your system is not using bash shell as standard shell for Matlab! Please, before starting Matlab, define the environental variable $MATLAB_SHELL to point to the bash shell, e.g. by "setenv MATLAB_SHELL /bin/bash"');
+    end
+end
 
 if ~isempty(strfind(options,'-cl')) % server mode
     nrn_path = server.modelfolder;
