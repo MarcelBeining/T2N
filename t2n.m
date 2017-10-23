@@ -162,16 +162,27 @@ elseif ispc
         fid = fopen(fullfile(t2npath,'nrniv_win.txt'),'r');
         nrnivPath = fread(fid,'*char')';
         fclose(fid);
-        if exist(nrnivPath,'file') ~= 2
+        if ~exist(nrnivPath,'file')
             askflag = 1;
             nrnivPath = strcat(' under "',nrnivPath,'"');
         end
     else
+        disp('Searching for nrniv.exe ...please wait')
+%         system(sprintf('echo CLOSE ME && where /R C:\ nrniv.exe > %s&',fullfile(t2npath,'nrniv_win.txt')));
         nrnivPath  = '';
         askflag = 1;
     end
     if askflag
-        [filename,pathname] = uigetfile('.exe',sprintf('No NEURON software found%s! Please provide path to nrniv.exe',nrnivPath));
+        [filename,pathname] = uigetfile('nrniv.exe',sprintf('No NEURON software found%s! Please select the nrniv.exe in your neuron installation',nrnivPath));
+        if isnumeric(filename) && filename == 0
+            error('Search for nrniv.exe was aborted. It is necessary that NEURON is installed and nrniv.exe is once localized by you')
+        end
+        while isempty(strfind(filename,'nrniv.exe'))
+            [filename,pathname] = uigetfile('nrniv.exe','You did not choose the nrniv.exe! Please select the nrniv.exe in your neuron installation');
+            if isnumeric(filename) && filename == 0
+                error('Search for nrniv.exe was aborted. It is necessary that NEURON is installed and nrniv.exe is once localized by you')
+            end
+        end
         nrnivPath = fullfile(pathname,filename);
         fid = fopen(fullfile(t2npath,'nrniv_win.txt'),'w');
         fprintf(fid,strrep(nrnivPath,'\','/'));

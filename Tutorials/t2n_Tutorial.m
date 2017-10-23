@@ -132,7 +132,7 @@ nneuron = cell(numel(amp),1);      % initialize (clear) simulation list
 %
 %  Principally, we could copy the standard neuron structure into the neuron 
 % cell array for each protocol and then add the IClamp with different amplitude 
-% which would like this: 
+% which would look like this: 
 
 % for n = 1:numel(amp)
 %     nneuron{n} = neuron;                                                            % use neuron structure defined above as basis
@@ -206,9 +206,10 @@ nneuron{1} = neuron;                                                            
 nneuron{1}.record{1}.SEClamp = struct('node',1,'record','i');                      % record current "i" from SEClamp electrode which will be located at node 1
 
 for n = 1:numel(amp)
-    nneuron{n}.pp{1}.SEClamp = struct('node',1,'times',[0 50 150],'amp',[-80 amp(n) -80]);   % now define the SEClamp in all simulations (remember that all other parameters were only defined in simulation 1) and...
+    % now define the SEClamp in all simulations (remember that all other parameters were only defined in simulation 1)
+    nneuron{n}.pp{1}.SEClamp = struct('node',1,'times',[0 50 150],'amp',[-80 amp(n) -80]);   
 end
-nneuron = t2n_as(1,nneuron);                                                        % ... use the previously defined neuron structure as basis for each other simulation
+nneuron = t2n_as(1,nneuron);                                                 % then use the previously defined neuron structure as basis for each other simulation
 
 out = t2n(nneuron,tree,'-w-q');                                              % execute t2n
 
