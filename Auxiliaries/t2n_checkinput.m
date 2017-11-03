@@ -1,11 +1,10 @@
-function [neuron,tree,usestreesof,nocell,exchfolder] = t2n_checkinput(neuron,tree,options)
+function [neuron,tree,usestreesof,nocell,exchfolder] = t2n_checkinput(neuron,tree)
 % This function checks the neuron structure for correct definition of the
 % used morphologies and returns info about it
 %
 % INPUTS
 % neuron            t2n neuron structure with already defined mechanisms (see documentation)
 % tree              tree cell array with morphologies (see documentation)
-% options           (optional) option string of t2n
 %
 % OUTPUTS
 % tree              corrected tree cell array
@@ -22,9 +21,6 @@ function [neuron,tree,usestreesof,nocell,exchfolder] = t2n_checkinput(neuron,tre
 % * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
-if nargin < 4 || isempty(options)
-    options = '';
-end
 if ~exist(fullfile(pwd,'morphos','hocs'),'dir')
     mkdir(fullfile(pwd,'morphos','hocs'));
 end
@@ -140,16 +136,6 @@ for n = 1:numel(neuron)
             warning('Neuron instance %d has params.parallel set to 1, however this variable is no boolean but defines the number of cores that should be used. Using 1 core has not advantage.',n)
         elseif numel(neuron) > 1 && neuron{n}.params.parallel > 0
             warning('It seems you have enabled parallel Neuron together with multiple Neuron instances. Be sure that there are %d cores available, otherwise there will be no improvement in speed and the CPUs might be overloaded.',numel(neuron)*neuron{n}.params.parallel)
-        end
-        if neuron{n}.params.parallel && ~ispc()
-            [~,outp] = system('which mpiexec');
-            if isempty(outp) || ~isempty(strfind(outp,'not found'))  || ~isempty(strfind(outp,'no mpiexec'))
-                if ismac
-                    error('MPI software (mpiexec) not found on this Mac! Either not installed correctly or Matlab was not started from Terminal')
-                else
-                    error('MPI software (mpiexec) not found on this Linux machine or module has not been loaded! Check correct installation')
-                end
-            end
         end
         if ~isfield(neuron{n}.params,'cvode')
             neuron{n}.params.cvode = false;

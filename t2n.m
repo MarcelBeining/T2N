@@ -99,8 +99,20 @@ else
     if ~ispc()
         [~,cmdout] = system('echo $0');
         if isempty(strfind(cmdout,'bash'))
-            error('It seems your system is not using bash shell as standard shell for Matlab! Please, before starting Matlab, define the environental variable $MATLAB_SHELL to point to the bash shell, e.g. by "setenv MATLAB_SHELL /bin/bash"');
+            error('It seems your system is not using bash shell as standard shell for Matlab! Please, before starting Matlab, define the environmental variable $MATLAB_SHELL to point to the bash shell, e.g. by "setenv MATLAB_SHELL /bin/bash"');
         end
+        % search for the libstdc library in order to have matlab using the
+        % same libary than the system
+%         [~,cmdout] = system('find / -maxdepth 4 -name libstdc++.so.6 -print -quit');
+        [~,cmdout] = system('ldconfig -p | grep stdc++'); % search for the libstdc++ library that is used by the system
+        cmdout = strsplit(cmdout,'\n');
+        cmdout = cellfun(@(x)  x(regexp(x,'=> /','end'):end),cmdout,'uni',0); % get the paths to the libraries
+        if any(cellfun(@(x) ~isempty(strfind(x,'64')),cmdout))  % check for a 64 bit version otherwise take first one found
+            libstdcLocation = cmdout{cellfun(@(x) ~isempty(strfind(x,'64')),cmdout)};
+        else
+            libstdcLocation = cmdout{1};
+        end
+        setenv('LD_PRELOAD',libstdcLocation)  % preload the libstdc library from the system
     end
 end
 nrn_path = regexprep(nrn_path,'\\','/');
@@ -150,13 +162,14 @@ end
 nrn_exchfolder = regexprep(nrn_exchfolder,'\\','/');
 
 
-%% Check if NEURON software exists at the given path
+%% Check if NEURON software exists at the given path and assure that parallel NEURON can be executed if necessary
 if ~isempty(strfind(options,'-cl'))
     [~, outp] = sshfrommatlabissue(server.connect,'module avail');
     server.neuron = regexpi(outp.StdErr,'neuron/\d{1,2}\.\d{1,2}\s','match');  % available modules are reported to errorStream..dunno why
     %     server.envstr = [server.envstr, sprintf('module load %s; ',outp{1})];  % load first found neuron version
     fprintf('Available neuron modules found:\n%s\nChoosing %s',sprintf('%s',server.neuron{:}),server.neuron{1})
 elseif ispc
+    lookForCommand = 'where';
     askflag = 0;
     if exist(fullfile(t2npath,'nrniv_win.txt'),'file')
         fid = fopen(fullfile(t2npath,'nrniv_win.txt'),'r');
@@ -188,18 +201,51 @@ elseif ispc
         fprintf(fid,strrep(nrnivPath,'\','/'));
         fclose(fid);
     end
+   
 else
-    [~,outp] = system('which nrniv');
+    lookForCommand = 'which';
+    [~,outp] = system([lookForCommand, ' nrniv']);
     if isempty(outp) || ~isempty(strfind(outp,'not found'))  || ~isempty(strfind(outp,'no nrniv'))
         if ismac
             error('NEURON software (nrniv) not found on this Mac! Either not installed correctly or Matlab was not started from Terminal')
         else
-            error('NEURON software (nrniv) not found on this Linux machine or module has not been loaded! Check correct installation')
+            error('NEURON software (nrniv) not found on this Linux machine or module has not been loaded! Check for correct installation')
         end
     end
     nrnivPath = outp;
 end
 
+if any(arrayfun(@(x) neuron{t2n_getref(x,neuron,'params')}.params.parallel,1:numel(neuron))) % check for the parallel NEURON flag
+    %     % get PATH environment variable that will be used in the shell, find
+    %     % the mpi software and put it to the front. Use this string later on
+    %     % mpiexec execution
+    %     [~,pth] = system('echo %PATH%');
+    %     pth = strsplit(pth,';');
+    %     mpisoftw = cellfun(@(x) ~isempty(strfind(x,'mpi'))|~isempty(strfind(x,'MPI')),pth);
+    %     parstr = sprintf('set PATH=%s;%%PATH%%',pth{find(mpisoftw,1,'first')});
+    
+    % look for mpi software on PC, extract the ones which do not come from
+    % Matlab and use them later
+    [~,mpilocs] = system([lookForCommand, ' mpiexec']);
+    try
+        if isempty(mpilocs) || ~isempty(strfind(mpilocs,'not find'))  || ~isempty(strfind(mpilocs,'not found'))  || ~isempty(strfind(mpilocs,'no mpiexec'))
+            error('')
+        end
+        mpilocs = strsplit(mpilocs,'\n');
+        mpisoftw = mpilocs{find(cellfun(@(x) ~isempty(x) & isempty(strfind(x,'MATLAB')) & isempty(strfind(x,'matlab')) & isempty(strfind(x,'Matlab')) ,mpilocs),1,'first')};
+        if isempty(mpisoftw)
+            error('')
+        end
+    catch
+        if ispc
+            error('No MPI (Message Passing Interface) implementation found on this Windows machine! You should install Microsoft MPI: https://msdn.microsoft.com/en-us/library/bb524831.aspx')
+        elseif ismac
+            error('No MPI (Message Passing Interface) implementation found on this Mac! Either not installed correctly or Matlab was not started from Terminal. If installation is necessary, we recommend https://www.open-mpi.org/software/ompi/')
+        else
+            error('No MPI (Message Passing Interface) implementation found on this Linux machine or module has not been loaded! If installation is necessary, we recommend https://www.open-mpi.org/software/ompi/')
+        end
+    end
+end
 
 %% check for standard hoc files in the model folder and copy them if not existing
 if ~exist(fullfile(modelFolder,'lib_genroutines'),'dir')
@@ -340,9 +386,9 @@ for n = 1:numel(neuron)
             otherwise
                 error('T2N aborted')
         end
-    else
-        ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'iamrunning') ,'wt');   %open morph hoc file in write modus
-        fclose(ofile);
+%     else
+%         ofile = fopen(fullfile(modelFolder,exchfolder,thisfolder,'iamrunning') ,'wt');  
+%         fclose(ofile);
     end
     % delete the readyflag and log files if they exist
     if exist(fullfile(modelFolder,exchfolder,thisfolder,'readyflag'),'file')
@@ -370,6 +416,19 @@ for n = 1:numel(neuron)
     fprintf(nfile,'// ***** Initialize Variables *****\n');
     fprintf(nfile,'strdef tmpstr,simfold // temporary string object\nobjref f\n');
     fprintf(nfile,'objref pc,nil,cvode,strf,tvec,cell,cellList,pp,ppList,con,conList,nilcon,nilconList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList,thissec,thisseg,thisval,maxRa,maxcm \n cellList = new List() // comprises all instances of cell templates, also artificial cells\n ppList = new List() // comprises all Point Processes of any cell\n conList = new List() // comprises all NetCon objects\n recList = new List() //comprises all recording vectors\n rectList = new List() //comprises all time vectors of recordings\n playtList = new List() //comprises all time vectors for play objects\n playList = new List() //comprises all vectors played into an object\n APCList = new List() //comprises all APC objects\n APCrecList = new List() //comprises all APC recording vectors\n nilconList = new List() //comprises all NULL object NetCons\n cvode = new CVode() //the Cvode object\n thissec = new Vector() //for reading range variables\n thisseg = new Vector() //for reading range variables\n thisval = new Vector() //for reading range variables\n\n');% maxRa = new Vector() //for reading range variables\n maxcm = new Vector() //for reading range variables\n\n');%[',numel(tree),']\n'  ;
+    fprintf(nfile,'\n\n');
+    fprintf(nfile,'// ***** Make Matlab notice that NEURON is running here *****\n');
+    fprintf(nfile,sprintf('\n\nchdir("%s/%s") // change directory to folder of simulation #%d \n',exchfolder,thisfolder,n));
+    if neuron{refPar}.params.parallel
+        fprintf(nfile,'if (pc.id()==0){\n');
+    end
+    fprintf(nfile,'f = new File()\n');       %create a new filehandle
+    fprintf(nfile,'io = f.wopen("iamrunning")\n' );       % create the readyflag file
+    fprintf(nfile,'io = f.close()\n');   % close the filehandle
+    if neuron{refPar}.params.parallel
+        fprintf(nfile,'}\n');
+    end
+           
     if neuron{refPar}.params.parallel
         fprintf(nfile,'// ***** Create empty cell object (parallel NEURON) *****\n');
         fprintf(nfile,'begintemplate emptyObject\nendtemplate emptyObject\nobjref eObj\neObj = new emptyObject()\n');
@@ -2031,11 +2090,13 @@ end
 
 simids = zeros(numel(neuron),1); % 0 = not run, 1 = running, 2 = finished, 3 = error
 jobid = simids;
+timN = zeros(numel(neuron),1,'uint64');
+checked = false(numel(neuron),1);
 for s = 1:num_cores
     r = find(simids==0,1,'first');
     if ~isempty(r)
         refPar = t2n_getref(r,neuron,'params');
-        [jobid(r),tim] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);
+        [jobid(r),timN(r)] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);
         simids(r) = 1;
     else
         break
@@ -2053,6 +2114,7 @@ if noutfiles > 0 % if output is expected
         w = waitbar(0,'Neuron Simulations are running, please wait');
     end
     timm = tic;
+    
     try
         while ~all(simids>1)
             if ~isempty(strfind(options,'-cl'))
@@ -2099,12 +2161,18 @@ if noutfiles > 0 % if output is expected
                         r = find(simids==0,1,'first');  % find next not runned simid
                         if ~isempty(r)
                             refPar = t2n_getref(r,neuron,'params');
-                            [jobid(r),tim] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
+                            [jobid(r),timN(r)] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
                             simids(r) = 1;          % mark this as running
+                        end
+                    elseif ~checked(s(ss)) && toc(timN(s(ss))) > 30
+                        % check after 30 sec of running, if NEURON is indeed running
+                        checked(s(ss)) = true;
+                        if ~exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'iamrunning'),'file')
+                            error('It seems NEURON was not started sucessfully (30 sec timeout) and did not report an error. Please consult the T2N developers')
                         end
                     elseif exist(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'),'file') == 2
                         finfo = dir(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
-                        if finfo.bytes > 0      % because error file log is always built
+                        if finfo.bytes > 0      % because error log file is always built
                             f = fopen(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
                             txt = fscanf(f,'%c');
                             fclose(f);
@@ -2113,7 +2181,7 @@ if noutfiles > 0 % if output is expected
                             r = find(simids==0,1,'first');  % find next not runned simid
                             if ~isempty(r)
                                 refPar = t2n_getref(r,neuron,'params');
-                                [jobid(r),tim] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
+                                [jobid(r),timN(r)] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
                                 simids(r) = 1;          % mark this as running
                             end
                         end
@@ -2293,12 +2361,12 @@ end
             else
                 if ispc
                     if parallel
-                        system([fullfile(fileparts(nrnivPath),'mpiexec') sprintf(' -n %d nrniv -nobanner -nogui -mpi "',parallel) fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+                        system(['"',mpisoftw,sprintf('" -n %d "%s" -nobanner -nogui -mpi "',parallel,nrnivPath) fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]);
                     else
                         if ~isempty(strfind(options,'-o'))
-                            system(['start ' nrnivPath ' -nobanner "' fname sprintf('" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+                            system(['start ' nrnivPath ' -nobanner "' fname sprintf('" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]);  %nrniv statt neuron
                         else
-                            system(['start /B ' nrnivPath ' -nobanner -nogui "' fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]); %&,char(13),'exit&']); %nrniv statt neuron
+                            system(['start /B ' nrnivPath ' -nobanner -nogui "' fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]);  %nrniv statt neuron
                         end
                     end
                 else
