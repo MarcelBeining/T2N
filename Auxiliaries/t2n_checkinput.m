@@ -117,8 +117,8 @@ end
 if flag
     error('Error in neuron{%d}.tree, please check\n',n)
 end
-
-if isfield(neuron{1}.params,'exchfolder')
+refP = t2n_getref(1,neuron,'params');
+if ~isnan(refP) && isfield(neuron{refP}.params,'exchfolder')
     exchfolder = neuron{1}.params.exchfolder;
 else
     exchfolder = [];

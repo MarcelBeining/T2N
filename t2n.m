@@ -175,13 +175,14 @@ else
         lookForCommand = 'which';
     end
     [~,outp] = system([lookForCommand, ' nrniv']);
-    if isempty(outp) || ~isempty(strfind(outp,'not found'))  || ~isempty(strfind(outp,'no nrniv')) || ~isempty(strfind(outp,'not find'))
+    % check if any nrniv has been found. if not and it is Windows, ask to
+    % search for the nrniv exe or look for the nrniv_win text file
+    if isempty(outp) || ~isempty(strfind(outp,'not found'))  || ~isempty(strfind(outp,'no nrniv')) || ~isempty(strfind(outp,'not find')) || strcmp(outp,sprintf('\n')) || isempty(strfind(outp,'nrniv')) 
         if ispc
             askflag = 0;
             if ~exist(fullfile(t2npath,'nrniv_win.txt'),'file')
                 disp('Searching for nrniv.exe ...please wait')
-                system(sprintf('echo CLOSE ME && where /R C:\ nrniv.exe > %s&',fullfile(t2npath,'nrniv_win.txt')));
-                pause(2);
+                system(sprintf('where /R C:\\ nrniv.exe > "%s"&',fullfile(t2npath,'nrniv_win.txt')));
             end
             fid = fopen(fullfile(t2npath,'nrniv_win.txt'),'r');
             nrnivPath = fread(fid,'*char')';
@@ -206,7 +207,7 @@ else
                 fprintf(fid,strrep(nrnivPath,'\','/'));
                 fclose(fid);
             else
-                fprintf('Neuron installation found in "%d"',nrnivPath)
+                fprintf('Neuron installation found in "%s"',nrnivPath)
             end
             
         elseif ismac
