@@ -433,13 +433,13 @@ for n = 1:numel(neuron)
                 if ~exist(fullfile(modelFolder,'lib_mech',neuron{refPar}.params.nrnmech{c}),'file')
                     error('File %s is not existent in folder lib_mech',neuron{refPar}.params.nrnmech{c})
                 end
-                fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',neuron{refPar}.params.nrnmech{c}));
+                fprintf(nfile,sprintf('io = nrn_load_dll("%s/lib_mech/%s")\n',strrep(modelFolder,'\','/'),neuron{refPar}.params.nrnmech{c}));
             end
         else
             if ~exist(fullfile(modelFolder,'lib_mech',neuron{refPar}.params.nrnmech),'file')
                 error('File %s is not existent in folder lib_mech',neuron{refPar}.params.nrnmech)
             end
-            fprintf(nfile,sprintf('io = nrn_load_dll("lib_mech/%s")\n',neuron{refPar}.params.nrnmech));
+            fprintf(nfile,sprintf('io = nrn_load_dll("%s/lib_mech/%s")\n',strrep(modelFolder,'\','/'),neuron{refPar}.params.nrnmech));
         end
     else
         if exist(fullfile(modelFolder,'lib_mech'),'dir')
@@ -455,7 +455,7 @@ for n = 1:numel(neuron)
                     end
                     t2n_renameNrnmech()  % delete the o and c files
                 end
-                fprintf(nfile,'nrn_load_dll("lib_mech/nrnmech.dll")\n');
+                fprintf(nfile,'nrn_load_dll("%s/lib_mech/nrnmech.dll")\n',strrep(modelFolder,'\','/'));
             else
                 mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
                 if isempty(mechfold) || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
