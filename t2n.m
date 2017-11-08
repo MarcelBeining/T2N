@@ -254,23 +254,14 @@ if any(arrayfun(@(x) neuron{t2n_getref(x,neuron,'params')}.params.parallel,1:num
 end
 
 %% check for standard hoc files in the model folder and copy them if not existing
-if ~exist(fullfile(modelFolder,'lib_genroutines'),'dir')
-    mkdir(modelFolder,'lib_genroutines')
-    warning('non-existent folder lib_genroutines created')
+if ~ exist(fullfile(modelFolder,'lib_mech'),'dir') || ~ exist(fullfile(modelFolder,'lib_custom'),'dir') || ~ exist(fullfile(modelFolder,'morphos'),'dir') || ~ exist(fullfile(modelFolder,'lib_genroutines'),'dir')
+    answer = questdlg(sprintf('T2N detection that the current folder contains no T2N standard folders (lib_mech etc.). This is mandatory. Do you want to have them created now?'),'Initialize model folders?','Yes','No','Cancel','Cancel');
+    if strcmp(answer,'Yes')
+        t2n_initModelfolders(modelFolder);
+    else
+        error('Aborted creation of model folders.');
+    end
 end
-if ~exist(fullfile(modelFolder,'lib_genroutines/fixnseg.hoc'),'file')
-    copyfile(fullfile(t2npath,'src','fixnseg.hoc'),fullfile(modelFolder,'lib_genroutines/fixnseg.hoc'))
-    disp('fixnseg.hoc copied to model folder')
-end
-if ~exist(fullfile(modelFolder,'lib_genroutines/genroutines.hoc'),'file')
-    copyfile(fullfile(t2npath,'src','genroutines.hoc'),fullfile(modelFolder,'lib_genroutines/genroutines.hoc'))
-    disp('genroutines.hoc copied to model folder')
-end
-if ~exist(fullfile(modelFolder,'lib_genroutines/pasroutines.hoc'),'file')
-    copyfile(fullfile(t2npath,'src','pasroutines.hoc'),fullfile(modelFolder,'lib_genroutines/pasroutines.hoc'))
-    disp('pasroutines.hoc copied to model folder')
-end
-
 %% create the local and server exchange folder
 if exist(fullfile(modelFolder,exchfolder),'dir') == 0
     mkdir(fullfile(modelFolder,exchfolder));
@@ -457,19 +448,23 @@ for n = 1:numel(neuron)
                 end
                 fprintf(nfile,'nrn_load_dll("%s/lib_mech/nrnmech.dll")\n',strrep(modelFolder,'\','/'));
             else
-                mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
-                if isempty(mechfold) || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
+                [~,cmdout] = system('uname –m'); % get machine specification
+                mechfile = fullfile(modelFolder,'lib_mech',cmdout,'.libs','libnrnmech.so.0');
+%                 mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
+                if ~exist(mechfile,'file')  || ~isempty(strfind(options,'-m'))  % isempty(mechfold) % check for existent file, otherwise compile
                     [~,outp] = system(sprintf('cd "%s/lib_mech";nrnivmodl',modelFolder));
                     if ~isempty(regexp(outp,'Successfully','ONCE'))
                         disp('nrn mechanisms compiled from mod files in folder lib_mech')
                     else
-                        mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
-                        for  m = 1:numel(mechfold)
-                            rmdir(fullfile(modelFolder,'lib_mech',mechfold(m).name),'s');
-                        end
+                        rmdir(fullfile(modelFolder,'lib_mech',cmdout),'s');
+%                         mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
+%                         for  m = 1:numel(mechfold)
+%                             rmdir(fullfile(modelFolder,'lib_mech',mechfold(m).name),'s');
+%                         end
                         error('There was an error during compiling of mechanisms:\n\n%s',outp)
                     end
                 end
+                fprintf(nfile,'nrn_load_dll("%s")\n',mechfile);
             end
         else
             warning('No folder "lib_mech" found in your model directory and no nrnmech found to load in neuron{refP}.params.nrnmech. Only insertion of standard mechanisms (pas,hh,IClamp,AlphaSynapse etc.) possible.')

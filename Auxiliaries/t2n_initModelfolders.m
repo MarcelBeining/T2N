@@ -40,7 +40,7 @@ if ~exist(fullfile(folder,'lib_mech/vecevent.mod'),'file')
     copyfile(fullfile(t2npath,'src','vecevent.mod'),fullfile(folder,'lib_mech/vecevent.mod'))
     disp('vecevent.mod copied to lib_mech folder')
 end
-if ~exist(fullfile(folder,'lib_genroutines'),'file')
+if ~exist(fullfile(folder,'lib_genroutines'),'dir')
     mkdir(folder,'lib_genroutines')
     disp('non-existent folder lib_genroutines created')
 end
