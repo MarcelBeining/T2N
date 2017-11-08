@@ -448,7 +448,7 @@ for n = 1:numel(neuron)
                 end
                 fprintf(nfile,'nrn_load_dll("%s/lib_mech/nrnmech.dll")\n',strrep(modelFolder,'\','/'));
             else
-                [~,cmdout] = system('uname –m'); % get machine specification
+                [~,cmdout] = system('uname -m'); % get machine specification
                 mechfile = fullfile(modelFolder,'lib_mech',cmdout,'.libs','libnrnmech.so.0');
 %                 mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
                 if ~exist(mechfile,'file')  || ~isempty(strfind(options,'-m'))  % isempty(mechfold) % check for existent file, otherwise compile
