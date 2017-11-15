@@ -449,7 +449,7 @@ for n = 1:numel(neuron)
                 fprintf(nfile,'nrn_load_dll("%s/lib_mech/nrnmech.dll")\n',strrep(modelFolder,'\','/'));
             else
                 [~,cmdout] = system('uname -m'); % get machine specification
-                mechfile = fullfile(modelFolder,'lib_mech',cmdout,'.libs','libnrnmech.so.0');
+                mechfile = fullfile(modelFolder,'lib_mech',strrep(cmdout,sprintf('\n'),''),'.libs','libnrnmech.so.0');
 %                 mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
                 if ~exist(mechfile,'file')  || ~isempty(strfind(options,'-m'))  % isempty(mechfold) % check for existent file, otherwise compile
                     [~,outp] = system(sprintf('cd "%s/lib_mech";nrnivmodl',modelFolder));
@@ -2378,12 +2378,12 @@ end
                     end
                 else
                     if parallel
-                        system([sprintf('cd "%s/lib_mech"; mpiexec -n %d nrniv -nobanner -nogui -mpi "',modelFolder,parallel) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
+                        system([sprintf('mpiexec -n %d nrniv -nobanner -nogui -mpi "',parallel) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
                     else
                         if ~isempty(strfind(options,'-o'))
-                            system([sprintf('echo ''cd "%s/lib_mech"; nrniv -nobanner "',modelFolder), fname,sprintf('" -''> "%s/sim%d/startNeuron.sh";chmod +x "%s/sim%d/startNeuron.sh";open -a terminal "%s/sim%d/startNeuron.sh"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid)]);
+                            system(['echo ''nrniv -nobanner "', fname,sprintf('" -''> "%s/sim%d/startNeuron.sh";chmod +x "%s/sim%d/startNeuron.sh";open -a terminal "%s/sim%d/startNeuron.sh"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid)]);
                         else
-                            system([sprintf('cd "%s/lib_mech"; nrniv -nobanner -nogui "',modelFolder) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
+                            system(['nrniv -nobanner -nogui "', fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
                         end
                     end
                 end
