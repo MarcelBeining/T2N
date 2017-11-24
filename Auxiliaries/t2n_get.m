@@ -4,12 +4,13 @@ function [ vec, tvecout ] = t2n_get(out,par,arg,typ)
 %
 % INPUTS
 % out     the output structure of the t2n main function
-% par     string of the the parameter to obtain
+% par     string of the parameter to obtain (DEFAULT: 'v')
 % arg     can be either
 %         - a scalar defining time point [ms] at which the parameter should be returned
 %         - a 1x2 vector with the start and end time point [ms] between which the parameter should be returned
-%         - the string name of a function that should be applied on the recorded parameter values at each node
-% typ     string that specifies if the recorded parameter is from the cell ('cell',default) or from a point process (e.g. 'IClamp')
+%         - the string name of a function that should be applied on the
+%           recorded parameter values at each node (DEFAULT: 'max')
+% typ     string that specifies if the recorded parameter is from the cell ('cell',DEFAULT) or from a point process (e.g. 'IClamp')
 %
 % OUTPUTS
 % vec       cell array or vector returning the desired parameter at simulation (first level) and node (second level)
@@ -23,8 +24,14 @@ function [ vec, tvecout ] = t2n_get(out,par,arg,typ)
 % * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
-if nargin < 4 || isempty(typ)
+if nargin < 4 || isempty(arg)
+    arg = 'max';
+end
+if nargin < 3 || isempty(typ)
     typ = 'cell';
+end
+if nargin < 2 || isempty(par)
+    par = 'v';
 end
 
 nocellflag = 0;
