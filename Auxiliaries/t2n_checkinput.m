@@ -215,7 +215,7 @@ end
 
 function newcon = detangleCon(oldcon,field1,field2)
 
-newcon = cell(numel(oldcon));
+newcon = cell(numel(oldcon),1);
 for c = 1:numel(oldcon)
     if isfield(oldcon(c).(field1),field2) && ~ischar(oldcon(c).(field1).(field2)) && ~isempty(oldcon(c).(field1).(field2))
         num = numel(oldcon(c).(field1).(field2));
