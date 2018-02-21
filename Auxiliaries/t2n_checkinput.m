@@ -178,8 +178,7 @@ for n = 1:numel(neuron)
             warning ('t2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
         end
     end
-    
-    if isfield(neuron{n},'con')
+    if t2n_getref(n,neuron,'con') == n && isfield(neuron{n},'con')
         % check for all con fields and provide standard values if not
         % existent
         for c = 1:numel(neuron{n}.con)

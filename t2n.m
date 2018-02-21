@@ -1344,7 +1344,7 @@ for n = 1:numel(neuron)
                                                 iid{n1} = cat (1,iid{n1},ind(neuron{n}.con(c).target(it).ipp));
                                             else
                                                 iid{n1} = cat (1,iid{n1},ind(1:min(cpp(ucon(uc) == upp),ccon(uc))));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
-                                                fprintf('Warning cell %d, node %d. Less connections to same %s declared than %ss at that node. Connections target now only the first %d %ss.',cell_target,ucon(uc),pp,pp,min(cpp(ucon(uc) == upp),ccon(uc)),pp) % give a warning if more connections were declared than PPs exist at that node
+                                                fprintf('Warning cell %d, node %d. Less connections to same %s declared than %ss at that node. Connections target now only the first %d %ss.\n',cell_target,ucon(uc),pp,pp,min(cpp(ucon(uc) == upp),ccon(uc)),pp) % give a warning if more connections were declared than PPs exist at that node
                                             end
                                         else   % same number of PPs and connections, put them together, should be ok without warning
                                             iid{n1} = cat (1,iid{n1},ind);
