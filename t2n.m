@@ -2316,16 +2316,11 @@ if noutfiles > 0 % if output is expected
                 if ishandle(w)
                     waitbar(f/noutfiles,w);
                 else
-                    answer = questdlg(sprintf('Waitbar has been closed during data loading. If accidently, retry.\nClose all NEURON instances?\n (Caution if several Matlab instances are running)'),'Close NEURON instances?','Close','Ignore','Ignore');
-                    if strcmp(answer,'Close')
-                        killNEURON
-                    end
+                    warning('Waitbar has been closed during data loading. If accidently, rerun.');
                     return
                 end
-                
             end
         end
-        
         if isempty(strfind(options,'-q'))
             disp('data sucessfully loaded')
         end
