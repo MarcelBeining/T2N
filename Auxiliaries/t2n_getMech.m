@@ -1,6 +1,6 @@
 function [varargout] = t2n_getMech(neuron,tree,var)
 % This function maps the values of a given NEURON variable onto each
-% morpholgy and optionally returns these values, too;
+% morphology and optionally returns these values, too;
 % INPUTS
 % neuron    t2n neuron structure or cell array of structure (see
 %           documentation)

@@ -207,7 +207,7 @@ else
                 fprintf(fid,strrep(nrnivPath,'\','/'));
                 fclose(fid);
             else
-                fprintf('Neuron installation found in "%s"',nrnivPath)
+                fprintf('Neuron installation found in "%s"\n',nrnivPath)
             end
             
         elseif ismac

@@ -24,11 +24,11 @@ function [ vec, tvecout ] = t2n_get(out,par,arg,typ)
 % * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
-if nargin < 4 || isempty(arg)
-    arg = 'max';
-end
-if nargin < 3 || isempty(typ)
+if nargin < 4 || isempty(typ)
     typ = 'cell';
+end
+if nargin < 3 || isempty(arg)
+    arg = 'max';
 end
 if nargin < 2 || isempty(par)
     par = 'v';
