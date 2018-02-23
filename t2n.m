@@ -43,7 +43,7 @@ modelFolder = pwd;
 if nargin < 3 || isempty(options)
     options = '';
 end
-if ~isempty(strfind(options,'-d'))
+if ~isempty(regexp(options,'-d','ONCE'))
     debug = 1;
 else
     debug = 0;
@@ -71,7 +71,7 @@ if ~exist('exchfolder','var')
     end
 end
 
-if ~isempty(strfind(options,'-cl')) % server mode
+if ~isempty(regexp(options,'-cl','ONCE')) % server mode
     nrn_path = server.modelfolder;
     if ~isfield(server,'walltime') || numel(server.walltime) ~=3
         server.walltime = [5 0 0];
@@ -98,7 +98,7 @@ else
     nrn_path = modelFolder;
     if ~ispc()
         [~,cmdout] = system('echo $0');
-        if isempty(strfind(cmdout,'bash'))
+        if isempty(regexp(cmdout,'bash','ONCE'))
             error('It seems your system is not using bash shell as standard shell for Matlab! Please, before starting Matlab, define the environmental variable $MATLAB_SHELL to point to the bash shell, e.g. by "setenv MATLAB_SHELL /bin/bash"');
         end
         % search for the libstdc library in order to have matlab using the
@@ -107,8 +107,8 @@ else
         [~,cmdout] = system('ldconfig -p | grep stdc++'); % search for the libstdc++ library that is used by the system
         cmdout = strsplit(cmdout,'\n');
         cmdout = cellfun(@(x)  x(regexp(x,'=> /','end'):end),cmdout,'uni',0); % get the paths to the libraries
-        if any(cellfun(@(x) ~isempty(strfind(x,'64')),cmdout))  % check for a 64 bit version otherwise take first one found
-            libstdcLocation = cmdout{cellfun(@(x) ~isempty(strfind(x,'64')),cmdout)};
+        if any(cellfun(@(x) ~isempty(regexp(x,'64','ONCE')),cmdout))  % check for a 64 bit version otherwise take first one found
+            libstdcLocation = cmdout{cellfun(@(x) ~isempty(regexp(x,'64','ONCE')),cmdout)};
         else
             libstdcLocation = cmdout{1};
         end
@@ -121,7 +121,7 @@ if strcmp(nrn_path(end),'/') % remove "/" from path
 end
 
 %% connect to server
-if strfind(options,'-cl') % server mode
+if regexp(options,'-cl') % server mode
     if ~exist('server','var')
         error('No access data provided for Cluster server. Please specify in server')
     else
@@ -153,7 +153,7 @@ end
 %% check for exchange folder (folder where files between Matlab and NEURON
 % are exchanged)
 
-if strfind(options,'-cl')
+if regexp(options,'-cl')
     nrn_exchfolder = fullfile(server.modelfolder,exchfolder);
 else
     nrn_exchfolder = fullfile(modelFolder,exchfolder);
@@ -163,7 +163,7 @@ nrn_exchfolder = regexprep(nrn_exchfolder,'\\','/');
 
 
 %% Check if NEURON software exists at the given path and assure that parallel NEURON can be executed if necessary
-if ~isempty(strfind(options,'-cl'))
+if ~isempty(regexp(options,'-cl','ONCE'))
     [~, outp] = sshfrommatlabissue(server.connect,'module avail');
     server.neuron = regexpi(outp.StdErr,'neuron/\d{1,2}\.\d{1,2}\s','match');  % available modules are reported to errorStream..dunno why
     %     server.envstr = [server.envstr, sprintf('module load %s; ',outp{1})];  % load first found neuron version
@@ -177,12 +177,15 @@ else
     [~,outp] = system([lookForCommand, ' nrniv']);
     % check if any nrniv has been found. if not and it is Windows, ask to
     % search for the nrniv exe or look for the nrniv_win text file
-    if isempty(outp) || ~isempty(strfind(outp,'not found'))  || ~isempty(strfind(outp,'no nrniv')) || ~isempty(strfind(outp,'not find')) || strcmp(outp,sprintf('\n')) || isempty(strfind(outp,'nrniv')) 
+    if isempty(outp) || ~isempty(regexp(outp,'not found','ONCE'))  || ~isempty(regexp(outp,'no nrniv','ONCE')) || ~isempty(regexp(outp,'not find','ONCE')) || strcmp(outp,sprintf('\n')) || isempty(regexp(outp,'nrniv','ONCE')) 
         if ispc
             askflag = 0;
             if ~exist(fullfile(t2npath,'nrniv_win.txt'),'file')
                 disp('Searching for nrniv.exe ...please wait')
+                printflag = true;
                 system(sprintf('where /R C:\\ nrniv.exe > "%s"&',fullfile(t2npath,'nrniv_win.txt')));
+            else
+                printflag = false;
             end
             fid = fopen(fullfile(t2npath,'nrniv_win.txt'),'r');
             nrnivPath = fread(fid,'*char')';
@@ -196,7 +199,7 @@ else
                 if isnumeric(filename) && filename == 0
                     error('Search for nrniv.exe was aborted. It is necessary that NEURON is installed and nrniv.exe is once localized by you (alternatively use the "Set DOS environment" option during NEURON installation).')
                 end
-                while isempty(strfind(filename,'nrniv.exe'))
+                while isempty(regexp(filename,'nrniv.exe','ONCE'))
                     [filename,pathname] = uigetfile('nrniv.exe','You did not choose the nrniv.exe! Please select the nrniv.exe in your NEURON installation');
                     if isnumeric(filename) && filename == 0
                         error('Search for nrniv.exe was aborted. It is necessary that NEURON is installed and nrniv.exe is once localized by you (alternatively use the "Set DOS environment option during NEURON installation).')
@@ -206,7 +209,7 @@ else
                 fid = fopen(fullfile(t2npath,'nrniv_win.txt'),'w');
                 fprintf(fid,strrep(nrnivPath,'\','/'));
                 fclose(fid);
-            else
+            elseif printflag
                 fprintf('Neuron installation found in "%s"\n',nrnivPath)
             end
             
@@ -218,7 +221,7 @@ else
     else
         % get path to nrniv out of the which/where command output
         nrnlocs = strsplit(outp,'\n');
-        nrnivPath = nrnlocs{find(cellfun(@(x) ~isempty(strfind(x,'nrniv')) ,nrnlocs),1,'first')};
+        nrnivPath = nrnlocs{find(cellfun(@(x) ~isempty(regexp(x,'nrniv','ONCE')) ,nrnlocs),1,'first')};
     end
 end
 
@@ -232,11 +235,11 @@ if any(arrayfun(@(x) neuron{t2n_getref(x,neuron,'params')}.params.parallel,1:num
         % for Mac/Linux, mpiexec has to be installed
         [~,mpilocs] = system([lookForCommand, ' mpiexec']);
         try
-            if isempty(mpilocs) || ~isempty(strfind(mpilocs,'not find'))  || ~isempty(strfind(mpilocs,'not found'))  || ~isempty(strfind(mpilocs,'no mpiexec'))
+            if isempty(mpilocs) || ~isempty(regexp(mpilocs,'not find','ONCE'))  || ~isempty(regexp(mpilocs,'not found','ONCE'))  || ~isempty(regexp(mpilocs,'no mpiexec','ONCE'))
                 error('')
             end
             mpilocs = strsplit(mpilocs,'\n');
-            mpisoftw = mpilocs{find(cellfun(@(x) ~isempty(x) & isempty(strfind(x,'MATLAB')) & isempty(strfind(x,'matlab')) & isempty(strfind(x,'Matlab')) ,mpilocs),1,'first')};
+            mpisoftw = mpilocs{find(cellfun(@(x) ~isempty(x) & isempty(regexpi(x,'matlab','ONCE')),mpilocs),1,'first')};
             if isempty(mpisoftw)
                 error('')
             end
@@ -266,7 +269,7 @@ end
 if exist(fullfile(modelFolder,exchfolder),'dir') == 0
     mkdir(fullfile(modelFolder,exchfolder));
 end
-if strfind(options,'-cl')
+if regexp(options,'-cl')
     localfilename = {};
     mechflag = false;
     [server.connect,~] = sshfrommatlabissue(server.connect,sprintf('mkdir %s',server.modelfolder));  % check if mainfolder exists
@@ -354,7 +357,7 @@ for n = 1:numel(neuron)
     if ~isfield(neuron{n},'custom')
         neuron{n}.custom = {};
     end
-    if strfind(options,'-d')
+    if regexp(options,'-d')
         tim = tic;
     end
     for tt = 1:numel(tree(neuron{n}.tree))
@@ -397,7 +400,7 @@ for n = 1:numel(neuron)
     if exist(fullfile(modelFolder,exchfolder,thisfolder,'NeuronLogFile.txt'),'file')
         delete(fullfile(modelFolder,exchfolder,thisfolder,'NeuronLogFile.txt'))
     end
-    if ~isempty(strfind(options,'-cl'))
+    if ~isempty(regexp(options,'-cl','ONCE'))
         [server.connect,~] = sshfrommatlabissue(server.connect,sprintf('mkdir %s/%s',nrn_exchfolder,thisfolder));
     end
     
@@ -435,11 +438,11 @@ for n = 1:numel(neuron)
     else
         if exist(fullfile(modelFolder,'lib_mech'),'dir')
             if ispc
-                if ~exist(fullfile(modelFolder,'lib_mech','nrnmech.dll'),'file') || ~isempty(strfind(options,'-m'))  % check for existent file, otherwise compile dll
+                if ~exist(fullfile(modelFolder,'lib_mech','nrnmech.dll'),'file') || ~isempty(regexp(options,'-m','ONCE'))  % check for existent file, otherwise compile dll
                     nrn_installfolder = regexprep(fileparts(fileparts(nrnivPath)),'\\','/');
                     tstr = sprintf('cd "%s" && %s/mingw/bin/sh "%s/mknrndll.sh" %s',[nrn_path,'/lib_mech'],nrn_installfolder, regexprep(t2npath,'\\','/'), ['/',regexprep(nrn_installfolder,':','')]);
                     [~,cmdout] = system(tstr);
-                    if isempty(strfind(cmdout,'nrnmech.dll was built successfully'))
+                    if isempty(regexp(cmdout,'nrnmech.dll was built successfully','ONCE'))
                         error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually\n Log of compiling:\n%s',cmdout)
                     else
                         disp('nrnmech.dll compiled from mod files in folder lib_mech')
@@ -451,7 +454,7 @@ for n = 1:numel(neuron)
                 [~,cmdout] = system('uname -m'); % get machine specification
                 mechfile = fullfile(modelFolder,'lib_mech',strrep(cmdout,sprintf('\n'),''),'.libs','libnrnmech.so');
 %                 mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
-                if ~exist(mechfile,'file')  || ~isempty(strfind(options,'-m'))  % isempty(mechfold) % check for existent file, otherwise compile
+                if ~exist(mechfile,'file')  || ~isempty(regexp(options,'-m','ONCE'))  % isempty(mechfold) % check for existent file, otherwise compile
                     [~,outp] = system(sprintf('cd "%s/lib_mech";nrnivmodl',modelFolder));
                     if ~isempty(regexp(outp,'Successfully','ONCE'))
                         disp('nrn mechanisms compiled from mod files in folder lib_mech')
@@ -471,7 +474,7 @@ for n = 1:numel(neuron)
         end
     end
     
-    if ~isempty(strfind(options,'-o'))
+    if ~isempty(regexp(options,'-o','ONCE'))
         fprintf(nfile,'io = load_file("nrngui.hoc")\n');     % load the NEURON GUI
     else
         fprintf(nfile,'io = load_file("stdgui.hoc")\n');     % ony load other standard procedures
@@ -703,7 +706,7 @@ for n = 1:numel(neuron)
     fprintf(nfile,'f = new File()\n');       %create a new filehandle
     fprintf(nfile,'io = f.wopen("readyflag")\n' );       % create the readyflag file
     fprintf(nfile,'io = f.close()\n');   % close the filehandle
-    if isempty(strfind(options,'-o'))
+    if isempty(regexp(options,'-o','ONCE'))
         fprintf(nfile,'quit()\n');  % exit NEURON if it was defined so in the parameters
     end
     if neuron{refPar}.params.parallel
@@ -2017,7 +2020,7 @@ for n = 1:numel(neuron)
     fclose(ofile);
     
     
-    if ~isempty(strfind(options,'-cl')) %transfer files to server
+    if ~isempty(regexp(options,'-cl','ONCE')) %transfer files to server
         filenames = {interf_file,'init_cells.hoc','init_mech.hoc','init_pp.hoc','init_con.hoc','init_rec.hoc','save_rec.hoc','init_play.hoc'}; %'init_pas.hoc','init_stim.hoc'
         m = 1;
         localfilename{m} = fullfile(modelFolder,exchfolder,thisfolder,filenames{1});
@@ -2081,7 +2084,7 @@ for n = 1:numel(neuron)
         [server.connect,~] = sshfrommatlabissue(server.connect,sprintf('tr -d ''\r'' < %s/%s/start_nrn_pre.pbs > %s/%s/start_nrn.pbs',nrn_exchfolder,thisfolder,nrn_exchfolder,thisfolder)); % delete carriage returns (windows)
     end
     
-    if strfind(options,'-d')
+    if regexp(options,'-d','ONCE')
         tim = toc(tim);
         fprintf(sprintf('Sim %d: HOC writing time: %g min %.2f sec\n',n,floor(tim/60),rem(tim,60)))
     end
@@ -2089,12 +2092,12 @@ for n = 1:numel(neuron)
 end
 
 %% Execute NEURON
-if ~isempty(strfind(options,'-cl'))
+if ~isempty(regexp(options,'-cl','ONCE'))
     num_cores = 500;  % use evt qstat -f?
 else
     num_cores = feature('numCores');
 end
-if ~isempty(strfind(options,'-nc'))
+if ~isempty(regexp(options,'-nc','ONCE'))
     nc = str2double(regexp(options,'(?<=-nc)[0-9]*', 'match'));
     if num_cores < nc
         warning('%d cores have been assigned to T2N, however only %d physical cores where detected. Defining more cores might slow down PC and simulations',neuron{refPar}.params.numCores,num_cores)
@@ -2121,17 +2124,17 @@ if noutfiles > 0 % if output is expected
     % wait for the NEURON process to be finished as indicated by appearance of
     % a file called 'readyflag' in the exchfolder; should be created in the last
     % line of the NEURON program
-    if isempty(strfind(options,'-q'))
+    if isempty(regexp(options,'-q','ONCE'))
         disp('waiting for NEURON to finish...')
     end
-    if ~isempty(strfind(options,'-w'))
+    if ~isempty(regexp(options,'-w','ONCE'))
         w = waitbar(0,'Neuron Simulations are running, please wait');
     end
     timm = tic;
     
     try
         while ~all(simids>1)
-            if ~isempty(strfind(options,'-cl'))
+            if ~isempty(regexp(options,'-cl','ONCE'))
                 pause(30); % wait for 30 seconds
                 [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('%s %sqstat -u %s',server.envstr,server.qfold,server.user));
                 if isempty(answer.StdOut)
@@ -2203,7 +2206,7 @@ if noutfiles > 0 % if output is expected
                 end
                 pause(0.1);
             end
-            if ~isempty(strfind(options,'-w'))
+            if ~isempty(regexp(options,'-w','ONCE'))
                 if ishandle(w)
                     if any(simids>1)
                         waitbar(sum(simids>1)/numel(simids),w);
@@ -2219,7 +2222,7 @@ if noutfiles > 0 % if output is expected
             end
         end
         
-        if ~isempty(strfind(options,'-cl'))
+        if ~isempty(regexp(options,'-cl','ONCE'))
             s = find(simids==2);
             
             for ss = 1:numel(s)
@@ -2235,28 +2238,28 @@ if noutfiles > 0 % if output is expected
             end
         end
         
-        if ~isempty(strfind(options,'-d'))
+        if ~isempty(regexp(options,'-d','ONCE'))
             tim = toc(timm);
             fprintf(sprintf('NEURON execute time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
         end
-        if isempty(strfind(options,'-q'))
+        if isempty(regexp(options,'-q','ONCE'))
             disp('NEURON finished... loading data...')
         end
     catch ME
-        if ~isempty(strfind(options,'-w')) && ishandle(w)
+        if ~isempty(regexp(options,'-w','ONCE')) && ishandle(w)
             close(w)  % close waitbar
         end
         killNEURON
         rethrow(ME) %re-issue the error
     end
     
-    if ~isempty(strfind(options,'-w')) && ishandle(w)
+    if ~isempty(regexp(options,'-w','ONCE')) && ishandle(w)
         close(w)
     end
-    if strfind(options,'-d')
+    if regexp(options,'-d','ONCE')
         tim = tic;
     end
-    if ~isempty(strfind(options,'-cl'))
+    if ~isempty(regexp(options,'-cl','ONCE'))
         remotefilename = cellfun(@(y) strcat(nrn_exchfolder,sprintf('/sim%d/',y{2}),y{1}),readfiles,'UniformOutput',0);  % extract filenames
         localfilename = cellfun(@(x) fullfile(modelFolder,x(regexp(x,exchfolder,'start'):end)),remotefilename,'UniformOutput',0);
         sftptomatlab(server.user,server.host,server.pw,remotefilename,localfilename)
@@ -2265,7 +2268,7 @@ if noutfiles > 0 % if output is expected
     
     
     % load time vector from NEURON (necessary because of roundoff errors
-    if ~isempty(strfind(options,'-cl'))
+    if ~isempty(regexp(options,'-cl','ONCE'))
         remotefilename = arrayfun(@(x) regexprep(fullfile(server.modelfolder,exchfolder,sprintf('sim%d',x),'tvec.dat'),'\\','/'),1:numel(simids),'UniformOutput',0);
         localfilename = cellfun(@(x) fullfile(modelFolder,x(regexp(x,exchfolder,'start'):end)),remotefilename,'UniformOutput',0);
         sftptomatlab(server.user,server.host,server.pw,remotefilename,localfilename)
@@ -2283,7 +2286,7 @@ if noutfiles > 0 % if output is expected
     end
     
     %% Receive files from Neuron
-    if ~isempty(strfind(options,'-w'))
+    if ~isempty(regexp(options,'-w','ONCE'))
         w = waitbar(0,'Loading files, please wait');
     end
     try
@@ -2321,7 +2324,7 @@ if noutfiles > 0 % if output is expected
             else
                 out{readfiles{f}{2}}.error = 1;
             end
-            if ~isempty(strfind(options,'-w'))
+            if ~isempty(regexp(options,'-w','ONCE'))
                 if ishandle(w)
                     waitbar(f/noutfiles,w);
                 else
@@ -2330,20 +2333,20 @@ if noutfiles > 0 % if output is expected
                 end
             end
         end
-        if isempty(strfind(options,'-q'))
+        if isempty(regexp(options,'-q','ONCE'))
             disp('data sucessfully loaded')
         end
     catch ME
-        if ~isempty(strfind(options,'-w')) && ishandle(w)
+        if ~isempty(regexp(options,'-w','ONCE')) && ishandle(w)
             close(w)  % close waitbar
         end
         killNEURON
         rethrow(ME) %re-issue the error
     end
-    if ~isempty(strfind(options,'-w'))
+    if ~isempty(regexp(options,'-w','ONCE'))
         close(w)
     end
-    if strfind(options,'-d')
+    if regexp(options,'-d')
         tim = toc(tim);
         fprintf(sprintf('Data loading time: %g min %.2f sec\n',floor(tim/60),rem(tim,60)))
     end
@@ -2366,7 +2369,7 @@ end
         if ~isempty(simid)
             % execute the file in neuron:
             fname = regexprep(fullfile(modelFolder,exchfolder,sprintf('sim%d',simid),interf_file),'\\','/');
-            if ~isempty(strfind(options,'-cl'))
+            if ~isempty(regexp(options,'-cl','ONCE'))
                 [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('%s%sqsub -p 0 %s/%s/%s',server.envstr,server.qfold,nrn_exchfolder,sprintf('sim%d',simid),'start_nrn.pbs'));
                 fprintf(sprintf('Answer server after submitting:\n%s\n%s\nExtracing Job Id and wait..\n',answer.StdOut,answer.StdErr))
             else
@@ -2374,7 +2377,7 @@ end
                     if parallel
                         system(['"',mpisoftw,sprintf('" -n %d "%s" -nobanner -nogui -mpi "',parallel,nrnivPath) fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]);
                     else
-                        if ~isempty(strfind(options,'-o'))
+                        if ~isempty(regexp(options,'-o','ONCE'))
                             system(['start ' nrnivPath ' -nobanner "' fname sprintf('" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]);  %nrniv statt neuron
                         else
                             system(['start /B ' nrnivPath ' -nobanner -nogui "' fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]);  %nrniv statt neuron
@@ -2384,7 +2387,7 @@ end
                     if parallel
                         system([sprintf('mpiexec -n %d nrniv -nobanner -nogui -mpi "',parallel) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
                     else
-                        if ~isempty(strfind(options,'-o'))
+                        if ~isempty(regexp(options,'-o','ONCE'))
                             system(['echo ''nrniv -nobanner "', fname,sprintf('" -''> "%s/sim%d/startNeuron.sh";chmod +x "%s/sim%d/startNeuron.sh";open -a terminal "%s/sim%d/startNeuron.sh"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid)]);
                         else
                             system(['nrniv -nobanner -nogui "', fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
@@ -2399,7 +2402,7 @@ end
             end
             
             
-            if ~isempty(strfind(options,'-cl'))
+            if ~isempty(regexp(options,'-cl','ONCE'))
                 if ~isempty(answer.StdOut)
                     str = regexp(answer.StdOut,'Your job [0-9]*','match','ONCE');
                     jobid = str2double(str(10:end));%{ind}
@@ -2420,7 +2423,7 @@ end
 
 
     function killNEURON
-        if isempty(strfind(options,'-cl'))
+        if isempty(regexp(options,'-cl','ONCE'))
             if ispc
                 system('taskkill /F /IM nrniv.exe');
             else
