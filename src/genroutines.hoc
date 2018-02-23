@@ -123,3 +123,12 @@ if (pc.gid_exists($1)) {
 	objref con
 }
 }
+
+proc con_cellP() {
+	con = pc.gid_connect($1,$o2)
+	if (numarg()>2){con.delay = $3}
+	if (numarg()>3){con.weight = $4}
+	io = conList.append(con)
+	objref con
+
+}

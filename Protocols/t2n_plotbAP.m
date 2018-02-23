@@ -182,55 +182,58 @@ for n = 1:numel(neuron)
         mveloc_farax(t) = mean(veloc_farax); % mean of velocity
         mveloc_nearax(t) = mean(veloc_nearax); % mean of velocity
     end
-    figure(fig(1))
-    if ostruct.relamp
-        ylabel('Rel. amplitude')
-        ylim([0 1.1])
-        xlabel(sprintf('Rel %s distance to soma',ostruct.dist))
-    else
-        ylabel('Amplitude [mV]')
-        ylim([0 max(maxy,120)])
-        xlabel(sprintf('%s distance to soma [\\mum]',ostruct.dist))
-        
-    end
-    FontResizer
-    if (nargout == 0 || nargout > 4) && exist('targetfolder_results','var') && ~isempty(targetfolder_results)
+    if (nargout == 0 || nargout > 4)
         figure(fig(1))
-        if ostruct.plotData
-            plot(data(:,1),data(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
-        end
-        xlim([0 400])
-        FigureResizer(5,8)
         if ostruct.relamp
-            ylim([0 1])
-            tprint(fullfile(targetfolder_results,sprintf('bAP-rel-ampl_%s',neuron{n}.experiment)),'-pdf')
+            ylabel('Rel. amplitude')
+            ylim([0 1.1])
+            xlabel(sprintf('Rel %s distance to soma',ostruct.dist))
         else
-            ylim([0 150])
-            tprint(fullfile(targetfolder_results,sprintf('bAP-ampl_%s',neuron{n}.experiment)),'-pdf')
+            ylabel('Amplitude [mV]')
+            ylim([0 max(maxy,120)])
+            xlabel(sprintf('%s distance to soma [\\mum]',ostruct.dist))
+            
         end
-        figure(fig(2))
-        if ostruct.plotData
-            if ostruct.relamp
-                plot(data2(:,1)/300,data2(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
-            else
-                plot(data2(:,1),data2(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
-            end
-        end
-        ylim([-0.5 4.5])
-        xlim([0 400])
-        FigureResizer(5,8)
+        FontResizer
         
-        tprint(fullfile(targetfolder_results,sprintf('bAP-del_%s',neuron{n}.experiment)),'-pdf')
-        figure(fig(n+2))
-        ylim(ylims)
-        xlim(xlims)
-        ostruct.image = 1 ;
-        FigureResizer(5,17,[],ostruct)
-        c = colorbar;
-        c.Limits =[-80,80];
-        set(c,'Position',[0.93 0.35 0.02 0.4],'fontweight','bold','fontname','Arial')
-        set(c,'YTick',[-80,0,80])
-        tprint(t2n_catName(targetfolder_results,'bAP-trees',neuron{n}.experiment),'-SHR-tif')
+        if exist('targetfolder_results','var') && ~isempty(targetfolder_results)
+            
+            if ostruct.plotData
+                plot(data(:,1),data(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
+            end
+            xlim([0 400])
+            FigureResizer(5,8)
+            if ostruct.relamp
+                ylim([0 1])
+                tprint(fullfile(targetfolder_results,sprintf('bAP-rel-ampl_%s',neuron{n}.experiment)),'-pdf')
+            else
+                ylim([0 150])
+                tprint(fullfile(targetfolder_results,sprintf('bAP-ampl_%s',neuron{n}.experiment)),'-pdf')
+            end
+            figure(fig(2))
+            if ostruct.plotData
+                if ostruct.relamp
+                    plot(data2(:,1)/300,data2(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
+                else
+                    plot(data2(:,1),data2(:,2),'Marker','.','color','k','markersize',10,'linestyle','none') %*MRratioPL
+                end
+            end
+            ylim([-0.5 4.5])
+            xlim([0 400])
+            FigureResizer(5,8)
+            
+            tprint(fullfile(targetfolder_results,sprintf('bAP-del_%s',neuron{n}.experiment)),'-pdf')
+            figure(fig(n+2))
+            ylim(ylims)
+            xlim(xlims)
+            ostruct.image = 1 ;
+            FigureResizer(5,17,[],ostruct)
+            c = colorbar;
+            c.Limits =[-80,80];
+            set(c,'Position',[0.93 0.35 0.02 0.4],'fontweight','bold','fontname','Arial')
+            set(c,'YTick',[-80,0,80])
+            tprint(t2n_catName(targetfolder_results,'bAP-trees',neuron{n}.experiment),'-SHR-tif')
+        end
     end
     fprintf('Dendritic Velocity cell %d: %f micron/ms (time to max amp)\n',reshape(cat(1,(1:numel(mveloc_dend)),mveloc_dend),1,numel(mveloc_dend)*2))
     fprintf('Far Axonal Velocity cell %d: %f micron/ms (time to half-max amp)\n',reshape(cat(1,(1:numel(mveloc_farax)),mveloc_farax),1,numel(mveloc_farax)*2))

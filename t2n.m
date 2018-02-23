@@ -1191,23 +1191,30 @@ for n = 1:numel(neuron)
         fprintf(ofile,'// ***** Define Connections *****\n');
         if isfield(neuron{n},'con')
             if neuron{refPar}.params.parallel
+                % sort the connections according to their target GID, such
+                % that the gid_exist check only has to be once for the
+                % whole set
+                [~,indGID] = ismember(arrayfun(@(x) x.target.cell , neuron{n}.con),cat(1,GIDs.cell));
+                [indGID,ia] = sort(indGID);
+                neuron{n}.con = neuron{n}.con(ia);
+                indGID = cat(1,GIDs(indGID).gid);
                 fprintf(ofile,'pc.barrier()\n'); % wait for all workers
             end
+            ccount = 0;
             for c = 1:numel(neuron{n}.con)
-                if neuron{refPar}.params.parallel
-                    fprintf(ofile,'if (pc.gid_exists(%d)) {\n',GIDs(find(arrayfun(@(x) x.cell == neuron{n}.con(c).target.cell ,GIDs),1,'first')).gid);
-                end
                 str = cell(0);
                 nodeflag = false;
                 sourcefields = setdiff(fieldnames(neuron{n}.con(c).source),{'cell','watch'});
-                
+                if neuron{refPar}.params.parallel && (c == 1 || ccount == 0 || indGID(c)~=indGID(c-1))
+                    fprintf(ofile,'if (pc.gid_exists(%d)) {\n',indGID(c));
+                end
                 cell_source = neuron{n}.con(c).source.cell;
                 %             error('In con(%d) it seems you specified a connection from a real cell (%d) without specifying a node location! Please specify under con(%d).source.node',c,t,c)
                 if isempty(cell_source)  % empty source
                     str{1} = sprintf('con = new NetCon(nil,');
                 elseif isfield(tree{neuron{n}.con(c).source.cell},'artificial') % an artificial cell is the source .create a NetCon for it
                     if neuron{refPar}.params.parallel
-                        str{1} = sprintf('con = pc.gid_connect(%d,',neuron{n}.con(c).source.gid);
+                        str{1} = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
                     else
                         str{1} = sprintf('con = new NetCon(cellList.o(%d).cell,',cell_source-1);
                     end
@@ -1256,7 +1263,7 @@ for n = 1:numel(neuron)
                                 end
                                 
                             else
-                                fprintf('Warning cell %d. PP %s for connection does not exist at node %d',neuron{n}.con(c).target.cell,pp,ucon(uc))
+                                fprintf('Warning cell %d. PP %s for connection does not exist at node %d\n',neuron{n}.con(c).target.cell,pp,ucon(uc))
                             end
                         end
                         if numel(iid) >1
@@ -1264,7 +1271,7 @@ for n = 1:numel(neuron)
                         end
                         for ii = 1:numel(iid)
                             if neuron{refPar}.params.parallel
-                                str{ii} = sprintf('con = pc.gid_connect(%d,',neuron{n}.con(c).source.gid);
+                                str{ii} = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
                             else
                                 str{ii} = sprintf('con = new NetCon(ppList.o(%d),',neuron{refPP}.pp{cell_source}.(pp).id(iid{ii}));
                             end
@@ -1273,7 +1280,7 @@ for n = 1:numel(neuron)
                         node = neuron{n}.con(c).source.node;
                         inode = find(minterf{neuron{n}.tree(cell_source)}(:,1) == node,1,'first');    %find the index of the node in minterf
                         if neuron{refPar}.params.parallel
-                            str{1} = sprintf('con = pc.gid_connect(%d,',neuron{n}.con(c).source.gid);
+                            str{1} = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
                         else
                             str{1} = sprintf('cellList.o(%d).allregobj.o(%d).sec {con = new NetCon(&%s(%f),',cell_source-1,minterf{neuron{n}.tree(cell_source)}(inode,2),neuron{n}.con(c).source.watch,minterf{neuron{n}.tree(cell_source)}(inode,3));
                             nodeflag = true;
@@ -1332,7 +1339,7 @@ for n = 1:numel(neuron)
                                         if cpp(ucon(uc) == upp) < ccon(uc)  % less PPs exist than connections to node
                                             if numel(ind) == 1
                                                 iid{n1} = cat (1,iid{n1},repmat(ind,ccon(uc),1));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
-                                                fprintf('Warning cell %d. More connections to same %s declared than %ss at that node. All connections target now that %s.',cell_target,pp,pp,pp) % give a warning if more connections were declared than PPs exist at that node
+                                                fprintf('Warning cell %d. More connections to same %s declared than %ss at that node. All connections target now that %s.\n',cell_target,pp,pp,pp) % give a warning if more connections were declared than PPs exist at that node
                                             else
                                                 for nn = 1:numel(neuron)
                                                     delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
@@ -1354,11 +1361,11 @@ for n = 1:numel(neuron)
                                 end
                                 
                             else
-                                fprintf('Warning cell %d. PP %s for connection does not exist at node %d',cell_target,pp,ucon(uc))
+                                fprintf('Warning cell %d. PP %s for connection does not exist at node %d\n',cell_target,pp,ucon(uc))
                             end
                         end
                         if numel(unique(cat(1,iid{:}))) ~= numel(cat(1,iid{:}))
-                            fprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(refPP).target(y).ppg = z" to connect only to the zth group of PP %s.',neuron{n}.con(c).target.cell,c,pp,pp,pp)
+                            fprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(refPP).target(y).ppg = z" to connect only to the zth group of PP %s.\n',neuron{n}.con(c).target.cell,c,pp,pp,pp)
                         end
                         for n1 = 1:numel(iid)
                             for ii = 1:numel(iid{n1})
@@ -1374,12 +1381,12 @@ for n = 1:numel(neuron)
                     end
                 end
                 for s = 1:numel(newstr)
-                    if neuron{refPar}.params.parallel
-                        newstr{s} = strcat(newstr{s},')');
-                        istr = {'','\ncon.delay = ','\ncon.weight = '};
-                    else
+%                     if neuron{refPar}.params.parallel
+%                         newstr{s} = strcat(newstr{s},')');
+%                         istr = {'','\ncon.delay = ','\ncon.weight = '};
+%                     else
                         istr = repmat({','},3,1);
-                    end
+%                     end
                     if ~neuron{refPar}.params.parallel  % for parallel NEURON the threshold has to be defined earlier
                         if isfield(neuron{n}.con(c),'threshold')
                             newstr{s} = sprintf('%s%s%g', newstr{s},istr{1},neuron{n}.con(c).threshold);
@@ -1399,13 +1406,10 @@ for n = 1:numel(neuron)
                         disp('Caution: NetCon Weight initialized with default (0) !')
                     end
                     if neuron{refPar}.params.parallel
-                        newstr{s} = sprintf('%s\n', newstr{s});
+                        newstr{s} = sprintf('%s)', newstr{s});
                     else
                         newstr{s} = sprintf('%s)\n', newstr{s});
-                    end
-                    newstr{s} = sprintf('%sio = conList.append(con)',newstr{s});  %append con to conList
-                    if neuron{refPar}.params.parallel
-                        newstr{s} = sprintf('%s}', newstr{s});
+                        newstr{s} = sprintf('%sio = conList.append(con)',newstr{s});  %append con to conList
                     end
                     if nodeflag
                         newstr{s} = sprintf('%s}\n',newstr{s});
@@ -1413,7 +1417,12 @@ for n = 1:numel(neuron)
                         newstr{s} = sprintf('%s\n',newstr{s});
                     end
                 end
+                ccount = ccount + 1;
                 fprintf(ofile,strjoin(newstr));  % new connection
+                if neuron{refPar}.params.parallel && (c == numel(neuron{n}.con) || indGID(c+1)~=indGID(c) || ccount > 2000)
+                    fprintf(ofile,'}\n');
+                    ccount = 0;
+                end
             end
             fprintf(ofile, 'objref con\n');
         end

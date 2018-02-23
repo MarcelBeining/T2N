@@ -178,7 +178,19 @@ for n = 1:numel(neuron)
             warning ('t2n:cvode', 'Dt is set but cvode is active. Dt will be ignored');
         end
     end
-    if t2n_getref(n,neuron,'con') == n && isfield(neuron{n},'con')
+    % stupid workaround if someone put the node information along second
+    % dimension...
+    if t2n_getref(n,neuron,'pp') == n
+        for p = 1:numel(neuron{n}.pp)
+            fields = fieldnames(neuron{n}.pp{p});
+            for f = 1:numel(fields)
+                for nn = 1:numel(neuron{n}.pp{p}.(fields{f}))
+                    neuron{n}.pp{p}.(fields{f})(nn).node = neuron{n}.pp{p}.(fields{f})(nn).node(:);
+                end
+            end
+        end
+    end
+    if t2n_getref(n,neuron,'con') == n
         % check for all con fields and provide standard values if not
         % existent
         for c = 1:numel(neuron{n}.con)
