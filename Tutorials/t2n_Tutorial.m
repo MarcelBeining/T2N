@@ -243,7 +243,7 @@ mkdir('tmpfolder')                % t2n_currSteps saves the result of the simula
                                   % which can then be used by various plotting functions
                                   % hence we here specify a temporary folder. this of course
                                   % can also be a permanent folder in your simulations
-t2n_VoltSteps(neuron,tree,amp,duration,holding_voltage,'tmpfolder/'); % run the current step simulations and save the results in tmpfolder
+t2n_voltSteps(neuron,tree,amp,duration,holding_voltage,'tmpfolder/'); % run the current step simulations and save the results in tmpfolder
 t2n_IVplot('tmpfolder/',neuron,ostruct); % plot an f-i-relationship from the simulation results
 rmdir('tmpfolder','s')            % remove the tmpfolder
 %

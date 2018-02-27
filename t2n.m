@@ -420,8 +420,7 @@ for n = 1:numel(neuron)
     
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Load standard libraries *****\n');
-%     fprintf(nfile,sprintf('\nchdir("%s") // change directory to main simulation folder \n',nrn_path));
-     fprintf(nfile,'\n\nchdir("%s/%s/%s") // change directory to folder of simulation #%d \n',nrn_path,exchfolder,thisfolder,n);
+%      fprintf(nfile,'\n\nchdir("%s/%s/%s") // change directory to folder of simulation #%d \n',nrn_path,exchfolder,thisfolder,n);
 
     if isfield(neuron{refPar}.params,'nrnmech')
         if iscell(neuron{refPar}.params.nrnmech)
@@ -530,7 +529,7 @@ for n = 1:numel(neuron)
         fprintf(nfile,sprintf('tvec = new Vector()\ntvec = tvec.indgen(%f,%f,%f)\n',neuron{refPar}.params.tstart,neuron{refPar}.params.tstop,neuron{refPar}.params.dt));
         if refPar == n  % only write tvec if parameters are not referenced from another sim
             fprintf(nfile,'f = new File()\n');      %create a new filehandle
-            fprintf(nfile,sprintf('io = f.wopen("%s//%s//tvec.dat")\n',exchfolder,thisfolder)  );  % open file for this time vector with write perm.
+            fprintf(nfile,'io = f.wopen("tvec.dat")\n' );  % open file for this time vector with write perm.
             fprintf(nfile,sprintf('io = tvec.printf(f,"%%%%-20.10g\\\\n")\n') );    % print the data of the vector into the file
             fprintf(nfile,'io = f.close()\n');
         end
@@ -543,7 +542,7 @@ for n = 1:numel(neuron)
             if strcmpi(neuron{n}.custom{c,2},'start')
                 if strcmp(neuron{n}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
                     if exist(fullfile(modelFolder,'lib_custom',neuron{n}.custom{c,1}),'file')
-                        fprintf(nfile,sprintf('io = load_file("lib_custom/%s")\n',neuron{n}.custom{c,1}));
+                        fprintf(nfile,sprintf('io = load_file("../../lib_custom/%s")\n',neuron{n}.custom{c,1}));
                     else
                         fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
                     end
@@ -2367,37 +2366,32 @@ end
         
         if ~isempty(simid)
             % execute the file in neuron:
-            fname = regexprep(fullfile(modelFolder,exchfolder,sprintf('sim%d',simid),interf_file),'\\','/');
+            simfold = regexprep(fullfile(modelFolder,exchfolder,sprintf('sim%d',simid)),'\\','/');
             if ~isempty(regexp(options,'-cl','ONCE'))
                 [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('%s%sqsub -p 0 %s/%s/%s',server.envstr,server.qfold,nrn_exchfolder,sprintf('sim%d',simid),'start_nrn.pbs'));
                 fprintf(sprintf('Answer server after submitting:\n%s\n%s\nExtracing Job Id and wait..\n',answer.StdOut,answer.StdErr))
             else
                 if ispc
                     if parallel
-                        system(['"',mpisoftw,sprintf('" -n %d "%s" -nobanner -nogui -mpi "',parallel,nrnivPath) fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]);
+                        system(['cd "' simfold '" && "',mpisoftw,sprintf('" -n %d "%s" -nobanner -nogui -mpi "',parallel,nrnivPath) interf_file '" -c quit() > NeuronLogFile.txt 2> ErrorLogFile.txt']);
                     else
                         if ~isempty(regexp(options,'-o','ONCE'))
-                            system(['start ' nrnivPath ' -nobanner "' fname sprintf('" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]);  %nrniv statt neuron
+                            system(['cd "' simfold '" && start ' nrnivPath ' -nobanner "' interf_file '" > NeuronLogFile.txt 2> ErrorLogFile.txt']);  %nrniv statt neuron
                         else
-                            system(['start /B ' nrnivPath ' -nobanner -nogui "' fname sprintf('" -c quit() > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid)]);  %nrniv statt neuron
+                            system(['cd "' simfold '" && start /B ' nrnivPath ' -nobanner -nogui "' interf_file '" -c quit() > NeuronLogFile.txt 2> ErrorLogFile.txt']);  %nrniv statt neuron
                         end
                     end
                 else
                     if parallel
-                        system([sprintf('mpiexec -n %d nrniv -nobanner -nogui -mpi "',parallel) fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
+                        system([sprintf('cd "%s"; mpiexec -n %d nrniv -nobanner -nogui -mpi "',parallel) interf_file '" -c "quit()" > NeuronLogFile.txt 2> ErrorLogFile.txt','&']);
                     else
                         if ~isempty(regexp(options,'-o','ONCE'))
-                            system(['echo ''nrniv -nobanner "', fname,sprintf('" -''> "%s/sim%d/startNeuron.sh";chmod +x "%s/sim%d/startNeuron.sh";open -a terminal "%s/sim%d/startNeuron.sh"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid)]);
+                            system(['cd "' simfold '" ; echo ''nrniv -nobanner "', interf_file,'" -''> startNeuron.sh;chmod +x startNeuron.sh;open -a terminal startNeuron.sh']);
                         else
-                            system(['nrniv -nobanner -nogui "', fname sprintf('" -c "quit()" > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',fullfile(modelFolder,exchfolder),simid,fullfile(modelFolder,exchfolder),simid),'&']);
+                            system(['cd "' simfold '" ; nrniv -nobanner -nogui "', interf_file '" -c "quit()" > NeuronLogFile.txt 2> ErrorLogFile.txt','&']);
                         end
                     end
                 end
-                %         system(['wmic process call create ''', nrnivPath, ' -nobanner "', fname, '" -c quit() ''',sprintf(' > "%s/sim%d/NeuronLogFile.txt" 2> "%s/sim%d/ErrorLogFile.txt"',exchfolder,simid,exchfolder,simid) ]);
-                %         f = fopen(sprintf('%s/sim%d/NeuronLogFile.txt',exchfolder,simid));
-                %         txt = fscanf(f,'%c');
-                %         fclose(f);
-                %         txt
             end
             
             
