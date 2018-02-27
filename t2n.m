@@ -420,20 +420,22 @@ for n = 1:numel(neuron)
     
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Load standard libraries *****\n');
-    fprintf(nfile,sprintf('\nchdir("%s") // change directory to main simulation folder \n',nrn_path));
+%     fprintf(nfile,sprintf('\nchdir("%s") // change directory to main simulation folder \n',nrn_path));
+     fprintf(nfile,'\n\nchdir("%s/%s/%s") // change directory to folder of simulation #%d \n',nrn_path,exchfolder,thisfolder,n);
+
     if isfield(neuron{refPar}.params,'nrnmech')
         if iscell(neuron{refPar}.params.nrnmech)
             for c = 1:numel(neuron{refPar}.params.nrnmech)
                 if ~exist(fullfile(modelFolder,'lib_mech',neuron{refPar}.params.nrnmech{c}),'file')
                     error('File %s is not existent in folder lib_mech',neuron{refPar}.params.nrnmech{c})
                 end
-                fprintf(nfile,sprintf('io = nrn_load_dll("%s/lib_mech/%s")\n',strrep(modelFolder,'\','/'),neuron{refPar}.params.nrnmech{c}));
+                fprintf(nfile,sprintf('io = nrn_load_dll("../../lib_mech/%s")\n',neuron{refPar}.params.nrnmech{c}));
             end
         else
             if ~exist(fullfile(modelFolder,'lib_mech',neuron{refPar}.params.nrnmech),'file')
                 error('File %s is not existent in folder lib_mech',neuron{refPar}.params.nrnmech)
             end
-            fprintf(nfile,sprintf('io = nrn_load_dll("%s/lib_mech/%s")\n',strrep(modelFolder,'\','/'),neuron{refPar}.params.nrnmech));
+            fprintf(nfile,sprintf('io = nrn_load_dll("../../lib_mech/%s")\n',neuron{refPar}.params.nrnmech));
         end
     else
         if exist(fullfile(modelFolder,'lib_mech'),'dir')
@@ -449,12 +451,12 @@ for n = 1:numel(neuron)
                     end
                     t2n_renameNrnmech()  % delete the o and c files
                 end
-                fprintf(nfile,'nrn_load_dll("%s/lib_mech/nrnmech.dll")\n',strrep(modelFolder,'\','/'));
+                fprintf(nfile,'nrn_load_dll("../../lib_mech/nrnmech.dll")\n');
             else
                 [~,cmdout] = system('uname -m'); % get machine specification
-                mechfile = fullfile(modelFolder,'lib_mech',strrep(cmdout,sprintf('\n'),''),'.libs','libnrnmech.so');
+                mechfile = fullfile('lib_mech',strrep(cmdout,sprintf('\n'),''),'.libs','libnrnmech.so');
 %                 mechfold = dir(fullfile(modelFolder,'lib_mech','x86_*'));
-                if ~exist(mechfile,'file')  || ~isempty(regexp(options,'-m','ONCE'))  % isempty(mechfold) % check for existent file, otherwise compile
+                if ~exist(fullfile(modelFolder,mechfile),'file')  || ~isempty(regexp(options,'-m','ONCE'))  % isempty(mechfold) % check for existent file, otherwise compile
                     [~,outp] = system(sprintf('cd "%s/lib_mech";nrnivmodl',modelFolder));
                     if ~isempty(regexp(outp,'Successfully','ONCE'))
                         disp('nrn mechanisms compiled from mod files in folder lib_mech')
@@ -467,7 +469,7 @@ for n = 1:numel(neuron)
                         error('There was an error during compiling of mechanisms:\n\n%s',outp)
                     end
                 end
-                fprintf(nfile,'nrn_load_dll("%s")\n',mechfile);
+                fprintf(nfile,'nrn_load_dll("../../%s")\n',mechfile);
             end
         else
             warning('No folder "lib_mech" found in your model directory and no nrnmech found to load in neuron{refP}.params.nrnmech. Only insertion of standard mechanisms (pas,hh,IClamp,AlphaSynapse etc.) possible.')
@@ -479,10 +481,10 @@ for n = 1:numel(neuron)
     else
         fprintf(nfile,'io = load_file("stdgui.hoc")\n');     % ony load other standard procedures
     end
-    fprintf(nfile,sprintf('simfold = "%s/%s"\n',nrn_exchfolder,sprintf('sim%d',n))); % das passt so!
-    fprintf(nfile, sprintf('io = xopen("lib_genroutines/fixnseg.hoc")\n') );
-    fprintf(nfile, sprintf('io = xopen("lib_genroutines/genroutines.hoc")\n') );
-    fprintf(nfile, sprintf('io = xopen("lib_genroutines/pasroutines.hoc")\n') );
+    fprintf(nfile,'simfold = "../sim%d"\n',n); % das passt so!
+    fprintf(nfile, 'io = xopen("../../lib_genroutines/fixnseg.hoc")\n' );
+    fprintf(nfile, 'io = xopen("../../lib_genroutines/genroutines.hoc")\n' );
+    fprintf(nfile, 'io = xopen("../../lib_genroutines/pasroutines.hoc")\n' );
     
     if neuron{refPar}.params.parallel
         [GIDs,neuron{n},mindelay] = t2n_getGIDs(neuron{n},tree,neuron{n}.tree);
@@ -497,9 +499,8 @@ for n = 1:numel(neuron)
         fprintf(nfile,'if (pc.id()==0){\n');
     end
     fprintf(nfile,'// ***** Make Matlab notice that NEURON is running here *****\n');
-%     fprintf(nfile,sprintf('chdir("%s/%s") // change directory to folder of simulation #%d \n',exchfolder,thisfolder,n));
     fprintf(nfile,'f = new File()\n');       %create a new filehandle
-    fprintf(nfile,sprintf('io = f.wopen("%s/%s/iamrunning")\n',exchfolder,thisfolder) );       % create the readyflag file
+    fprintf(nfile,'io = f.wopen("iamrunning")\n');       % create the readyflag file
     fprintf(nfile,'io = f.close()\n');   % close the filehandle
     if neuron{refPar}.params.parallel
         fprintf(nfile,'}\n');
@@ -537,12 +538,11 @@ for n = 1:numel(neuron)
     
     fprintf(nfile,'\n\n');
     fprintf(nfile,'\n// ***** Load custom libraries *****\n');
-%     fprintf(nfile,sprintf('\nchdir("%s") // change directory to main simulation folder \n',nrn_path));
     if ~isempty(neuron{n}.custom)
         for c = 1:size(neuron{n}.custom,1)
             if strcmpi(neuron{n}.custom{c,2},'start')
                 if strcmp(neuron{n}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
-                    if exist(fullfile(nrn_path,'lib_custom',neuron{n}.custom{c,1}),'file')
+                    if exist(fullfile(modelFolder,'lib_custom',neuron{n}.custom{c,1}),'file')
                         fprintf(nfile,sprintf('io = load_file("lib_custom/%s")\n',neuron{n}.custom{c,1}));
                     else
                         fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
@@ -555,15 +555,14 @@ for n = 1:numel(neuron)
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Load cell morphologies and create artificial cells *****\n');
-    fprintf(nfile,sprintf('io = xopen("%s/%s/init_cells.hoc")\n',nrn_exchfolder,sprintf('sim%d',usestreesof(n)))); % das passt so!
+    fprintf(nfile,'io = xopen("../sim%d/init_cells.hoc")\n',usestreesof(n)); % das passt so!
     
-    fprintf(nfile,sprintf('\n\nchdir("%s/%s") // change directory to folder of simulation #%d \n',exchfolder,thisfolder,n));
     fprintf(nfile,'\n\n');
     
     if ~isnan(refM)
         fprintf(nfile,'// ***** Load mechanisms and adjust nseg *****\n');
         if refM~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_mech.hoc")\n',nrn_exchfolder,sprintf('sim%d',refM)) );
+            fprintf(nfile,'io = load_file("../sim%d/init_mech.hoc")\n',refM);
         else
             fprintf(nfile,'io = xopen("init_mech.hoc")\n' );
         end
@@ -574,7 +573,7 @@ for n = 1:numel(neuron)
     if ~isnan(refPP)
         fprintf(nfile,'// ***** Place Point Processes *****\n');
         if refPP~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_pp.hoc")\n',nrn_exchfolder,sprintf('sim%d',refPP)) );
+            fprintf(nfile,'io = load_file("../sim%d/init_pp.hoc")\n',refPP );
         else
             fprintf(nfile,'io = xopen("init_pp.hoc")\n' );
         end
@@ -584,7 +583,7 @@ for n = 1:numel(neuron)
     if ~isnan(refC)
         fprintf(nfile,'// ***** Define Connections *****\n');
         if refC~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_con.hoc")\n',nrn_exchfolder,sprintf('sim%d',refC)) );
+            fprintf(nfile,'io = load_file("../sim%d/init_con.hoc")\n',refC );
         else
             fprintf(nfile,'io = xopen("init_con.hoc")\n' );
         end
@@ -598,7 +597,7 @@ for n = 1:numel(neuron)
     if ~isnan(refR) || ~isnan(refAP)
         fprintf(nfile,'// ***** Define recording sites *****\n');
         if refR~=n && refAP~=n && refR==refAP  % if both reference to the same other sim, use this sim
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_rec.hoc")\n',nrn_exchfolder,sprintf('sim%d',refR)) );
+            fprintf(nfile,'io = load_file("../sim%d/init_rec.hoc")\n',refR );
         else  % else write an own file
             fprintf(nfile,'io = xopen("init_rec.hoc")\n' );
         end
@@ -609,7 +608,7 @@ for n = 1:numel(neuron)
     if ~isnan(refP)
         fprintf(nfile,'// ***** Define vector play sites *****\n');
         if refP~=n
-            fprintf(nfile,sprintf('io = load_file("%s/%s/init_play.hoc")\n',nrn_exchfolder,sprintf('sim%d',refP)) );
+            fprintf(nfile,'io = load_file("../sim%d/init_play.hoc")\n',refP );
         else
             fprintf(nfile,'io = xopen("init_play.hoc")\n' );
         end
@@ -650,8 +649,8 @@ for n = 1:numel(neuron)
         for c = 1:size(neuron{n}.custom,1)
             if strcmpi(neuron{n}.custom{c,2},'mid')
                 if strcmp(neuron{n}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
-                    if exist(fullfile(nrn_path,'lib_custom',neuron{n}.custom{c,1}),'file')
-                        fprintf(nfile,sprintf('io = load_file("%s/lib_custom/%s")\n',nrn_path,neuron{n}.custom{c,1}));
+                    if exist(fullfile(modelFolder,'lib_custom',neuron{n}.custom{c,1}),'file')
+                        fprintf(nfile,sprintf('io = load_file("../../lib_custom/%s")\n',neuron{n}.custom{c,1}));
                     else
                         fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
                     end
@@ -687,8 +686,8 @@ for n = 1:numel(neuron)
         for c = 1:size(neuron{n}.custom,1)
             if strcmpi(neuron{n}.custom{c,2},'end')
                 if strcmp(neuron{n}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
-                    if exist(fullfile(nrn_path,'lib_custom',neuron{n}.custom{c,1}),'file')
-                        fprintf(nfile,sprintf('io = load_file("%s/lib_custom/%s")\n',nrn_path,neuron{n}.custom{c,1}));
+                    if exist(fullfile(modelFolder,'lib_custom',neuron{n}.custom{c,1}),'file')
+                        fprintf(nfile,sprintf('io = load_file("../../lib_custom/%s")\n',neuron{n}.custom{c,1}));
                     else
                         fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
                     end
@@ -729,7 +728,7 @@ for n = 1:numel(neuron)
             % load templates generated by neuron_template_tree, create one
             % instance of them and add them to the cellList
             if ~any(strcmp(templates,tree{neuron{n}.tree(tt)}.NID))
-                fprintf(ofile,'io = xopen("%s/%s.hoc")\n','morphos/hocs',tree{neuron{n}.tree(tt)}.NID );
+                fprintf(ofile,'io = xopen("../../%s/%s.hoc")\n','morphos/hocs',tree{neuron{n}.tree(tt)}.NID );
                 templates = cat(1,templates,tree{neuron{n}.tree(tt)}.NID);
             end
             if neuron{refPar}.params.parallel
@@ -2002,7 +2001,7 @@ for n = 1:numel(neuron)
                 for r = 1: size(neuron{refAP}.APCount{t},1)
                     fname = sprintf('cell%d_node%d_APCtimes.dat',tt-1,neuron{refAP}.APCount{t}(r,1) );
                     fprintf(ofile,'f = new File()\n');      %create a new filehandle
-                    fprintf(ofile,sprintf('io = f.wopen("%s/%s/%s")\n',nrn_exchfolder,thisfolder,fname) );  % open file for this vector with write perm.
+                    fprintf(ofile,sprintf('io = f.wopen("../%s/%s")\n',thisfolder,fname) );  % open file for this vector with write perm.
                     fprintf(ofile,sprintf('io = APCrecList.o(%d).printf(f, "%%%%-20.10g")\n', c ) );    % print the data of the vector into the file
                     fprintf(ofile,'io = f.close()\n');   %close the filehandle
                     
@@ -2226,9 +2225,9 @@ if noutfiles > 0 % if output is expected
             s = find(simids==2);
             
             for ss = 1:numel(s)
-                [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('ls %s/%s/readyflag',nrn_exchfolder,sprintf('sim%d',s(ss))));
+                [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('ls %s/sim%d/readyflag',nrn_exchfolder,s(ss)));
                 if isempty(answer.StdOut)    % then there was an error during executing NEURON
-                    [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('cat %s/%s/ErrorLogFile.txt',nrn_exchfolder,sprintf('sim%d',s(ss))));
+                    [server.connect,answer] = sshfrommatlabissue(server.connect,sprintf('cat %s/sim%d/ErrorLogFile.txt',nrn_exchfolder,s(ss)));
                     if ~isempty(answer.StdOut)
                         error('There was an error during NEURON simulation #%d:\n%s\n',s(ss),answer.StdOut)
                     else
