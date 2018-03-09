@@ -77,37 +77,78 @@ proc set_range() {
 	}else {execerror("Error, thisseg, thissec and thisval do not have same size! please check!!")}
 }
 
+// reads in the custom time vectors
+proc read_tvecs() {strdef filnam
+	sprint(filnam,"../%s/tvecs.dat",$s1) // simulation folder where tvecs.dat is stored
+	f = new File()
+	io = f.ropen(filnam)
+	if (io!=0) {
+		while (!f.eof()) {
+			objref tmpvec
+			tmpvec = new Vector(20000)
+			io = tmpvec.scantil(f, -1e15)
+			tvecs.append(tmpvec)
+		}
+		io = f.close()
+	}
+}
 
-proc save_rec() {strdef filnam
-sprint(filnam,"%s/%s",simfold,$s1)
-
-f = new File()
-io = f.wopen(filnam)
-io = recList.o($2).printf(f, "%-20.20g\n")
-io = f.close()
+proc save_rec() {local n strdef filnam
+	
+	sprint(filnam,"%s/%s",simfold,$s1)   // simulation folder plus output file name
+	
+	if ($3 >0) {
+		//if (cvode.active() && cvode.use_local_dt()) {
+			print $s1
+			io = sscanf($s1,"_cell%i_", &n)  // get the cell number of that recording (as different time vectors might exist for different cells
+			tvec = rectList.o(int(n))
+		//}
+		print "test"
+		if ($3 == 1) {
+			// downsample vector to values of Dt
+			tmpvec = new Vector(int(tvec.x[tvec.size()-1]/$4))
+			tmpvec.indgen($4)
+		}else{if ($3 == 2) {
+			// downsample vector to values of tvec $4
+			tmpvec = tvecs.o($4)
+			}
+		}
+		// get the tvec indices of the desired times (or the closest to it) 
+		for x = 0, tmpvec.size()-1 {
+			tmpvec.x[x] = tvec.indwhere(">",tmpvec.x[x]) - 1
+		}
+		tmpvec = recList.o($2).ind(tmpvec) // resample the vector to only those positions
+		// replace the recorded vector in the list with the new vector
+		io = recList.insrt($2,tmpvec)
+		io = recList.remove($2+1)
+	}
+	f = new File()
+	io = f.wopen(filnam)
+	io = recList.o($2).printf(f, "%-20.20g\n")
+	io = f.close()
 }
 
 proc save_rect() {strdef filnam
-sprint(filnam,"%s/%s",simfold,$s1)
+	sprint(filnam,"%s/%s",simfold,$s1)
 
-f = new File()
-io = f.wopen(filnam)
-io = rectList.o($2).printf(f, "%-20.20g\n")
-io = f.close()
+	f = new File()
+	io = f.wopen(filnam)
+	io = rectList.o($2).printf(f, "%-20.20g\n")
+	io = f.close()
 }
 
 
 proc set_gid2node() {//strdef filnam
-// function to read in the host id for each gid that should be set
-sprint(filnam,"%s/gid2node.dat",simfold)
-f = new File()
-io = f.ropen(filnam)
-io = thisval.scanf(f)
-io = f.close()
-for c = 0, thisval.size()-1 {
-	pc.set_gid2node(c,thisval.x(c)) // set gid for each node according to read vector
-}
-thisval.resize(0)
+	// function to read in the host id for each gid that should be set
+	sprint(filnam,"%s/gid2node.dat",simfold)
+	f = new File()
+	io = f.ropen(filnam)
+	io = thisval.scanf(f)
+	io = f.close()
+	for c = 0, thisval.size()-1 {
+		pc.set_gid2node(c,thisval.x(c)) // set gid for each node according to read vector
+	}
+	thisval.resize(0)
 }
 
 proc reg_cell() {
