@@ -1606,9 +1606,9 @@ for n = 1:numel(neuron)
                                                 if sum(specField) == 2
                                                     error('Recording specification has both the Dt and tvec field. Only one (or none) is allowed')
                                                 elseif specField(1)
-                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,%.6f)\n',neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refT}.record{t}.(recfields{f1})(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
+                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,%.6f)\n',neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
                                                 elseif specField(2)
-                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,tvecs.o(%d))\n',neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refT}.record{t}.(recfields{f1})(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
+                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,tvecs.o(%d))\n',neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
                                                 else
                                                     fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,tvec)\n',neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record ); % record the parameter x at site y as specified in neuron{refR}.record
                                                 end
@@ -1656,9 +1656,9 @@ for n = 1:numel(neuron)
                                             if sum(specField) == 2
                                                 error('Recording specification has both the Dt and tvec field. Only one (or none) is allowed')
                                             elseif specField(1)
-                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).cell.%s,%.6f)\n', tt-1, neuron{refR}.record{t}.cell(r).record, neuron{refT}.record{t}.cell(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
+                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).cell.%s,%.6f)\n', tt-1, neuron{refR}.record{t}.cell(r).record, neuron{refR}.record{t}.cell(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
                                             elseif specField(2)
-                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).cell.%s,tvecs.o(%d))\n', tt-1, neuron{refR}.record{t}.cell(r).record, neuron{refT}.record{t}.cell(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
+                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).cell.%s,tvecs.o(%d))\n', tt-1, neuron{refR}.record{t}.cell(r).record, neuron{refR}.record{t}.cell(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
                                             else
                                                 fprintf(ofile,'io = rec.record(&cellList.o(%d).cell.%s,tvec)\n', tt-1, neuron{refR}.record{t}.cell(r).record ); % record the parameter x of artificial cell tt-1
                                             end
@@ -2341,7 +2341,6 @@ if noutfiles > 0 % if output is expected
     try
         for f = 1:noutfiles
             refPar = t2n_getref(readfiles{f}{2},neuron,'params');
-            refT = t2n_getref(readfiles{f}{2},neuron,'timevecs');
             if simids(readfiles{f}{2}) == 2    % if there was no error during simulation
                 fn = fullfile(modelFolder,exchfolder,sprintf('sim%d',readfiles{f}{2}),readfiles{f}{1});
                 if numel(readfiles{f}{6}) > 1
