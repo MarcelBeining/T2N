@@ -531,7 +531,7 @@ for n = 1:numel(neuron)
         if refPar == n  % only write tvec if parameters are not referenced from another sim
             fprintf(nfile,'f = new File()\n');      %create a new filehandle
             fprintf(nfile,'io = f.wopen("tvec.dat")\n' );  % open file for this time vector with write perm.
-            fprintf(nfile,'io = tvec.printf(f,"%%%%-20.10g\\\\n")\n');    % print the data of the vector into the file
+            fprintf(nfile,'io = tvec.printf(f,"%%-20.10g\\n")\n');    % print the data of the vector into the file
             fprintf(nfile,'io = f.close()\n');
         end
     end
@@ -2052,7 +2052,7 @@ for n = 1:numel(neuron)
                     fname = sprintf('cell%d_node%d_APCtimes.dat',tt-1,neuron{refAP}.APCount{t}(r,1) );
                     fprintf(ofile,'f = new File()\n');      %create a new filehandle
                     fprintf(ofile,'io = f.wopen("../%s/%s")\n',thisfolder,fname);  % open file for this vector with write perm.
-                    fprintf(ofile,'io = APCrecList.o(%d).printf(f, "%%%%-20.10g")\n', c );    % print the data of the vector into the file
+                    fprintf(ofile,'io = APCrecList.o(%d).printf(f, "%%-20.10g")\n', c );    % print the data of the vector into the file
                     fprintf(ofile,'io = f.close()\n');   %close the filehandle
                     
                     c= c+1;
