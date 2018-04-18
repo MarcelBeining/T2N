@@ -149,6 +149,12 @@ for n = 1:numel(neuron)
         elseif strcmpi(neuron{n}.params.nseg,'d_lambda')
             neuron{n}.params.nseg = 'dlambda';
         end
+        if ~isfield(neuron{n}.params,'dlambda')
+            neuron{n}.params.dlambda = 0.1;
+        end
+        if ~isfield(neuron{n}.params,'freq')
+            neuron{n}.params.freq = 300;
+        end
         if ~isfield(neuron{n}.params,'tstart')
             neuron{n}.params.tstart = 0;
         end

@@ -416,7 +416,7 @@ for n = 1:numel(neuron)
     
     fprintf(nfile,'// ***** Initialize Variables *****\n');
     fprintf(nfile,'strdef tmpstr,simfold // temporary string object\nobjref f\n');
-    fprintf(nfile,'objref pc,nil,cvode,strf,tmpvec,tvec,tvecs,cell,cellList,pp,ppList,con,conList,nilcon,nilconList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList,thissec,thisseg,thisval,maxRa,maxcm \n cellList = new List() // comprises all instances of cell templates, also artificial cells\n ppList = new List() // comprises all Point Processes of any cell\n conList = new List() // comprises all NetCon objects\n tvecs = new List() //comprises all custom time vectors\n recList = new List() //comprises all recording vectors\n rectList = new List() //comprises all time vectors of recordings\n playtList = new List() //comprises all time vectors for play objects\n playList = new List() //comprises all vectors played into an object\n APCList = new List() //comprises all APC objects\n APCrecList = new List() //comprises all APC recording vectors\n nilconList = new List() //comprises all NULL object NetCons\n cvode = new CVode() //the Cvode object\n thissec = new Vector() //for reading range variables\n thisseg = new Vector() //for reading range variables\n thisval = new Vector() //for reading range variables\n\n');% maxRa = new Vector() //for reading range variables\n maxcm = new Vector() //for reading range variables\n\n');%[',numel(tree),']\n'  ;
+    fprintf(nfile,'objref pc,nil,cvode,strf,tmpvec,tvec,tvecs,cell,cellList,pp,ppList,con,conList,nilcon,nilconList,rec,recList,rect,rectList,playt,playtList,play,playList,APCrec,APCrecList,APC,APCList,APCcon,APCconList,thissec,thisseg,thisval \n cellList = new List() // comprises all instances of cell templates, also artificial cells\n ppList = new List() // comprises all Point Processes of any cell\n conList = new List() // comprises all NetCon objects\n tvecs = new List() //comprises all custom time vectors\n recList = new List() //comprises all recording vectors\n rectList = new List() //comprises all time vectors of recordings\n playtList = new List() //comprises all time vectors for play objects\n playList = new List() //comprises all vectors played into an object\n APCList = new List() //comprises all APC objects\n APCrecList = new List() //comprises all APC recording vectors\n nilconList = new List() //comprises all NULL object NetCons\n cvode = new CVode() //the Cvode object\n thissec = new Vector() //for reading range variables\n thisseg = new Vector() //for reading range variables\n thisval = new Vector() //for reading range variables\n\n');
     
     
     fprintf(nfile,'\n\n');
@@ -482,7 +482,6 @@ for n = 1:numel(neuron)
         fprintf(nfile,'io = load_file("stdgui.hoc")\n');     % ony load other standard procedures
     end
     fprintf(nfile,'simfold = "../sim%d"\n',n); % das passt so!
-    fprintf(nfile, 'io = xopen("../../lib_genroutines/fixnseg.hoc")\n' );
     fprintf(nfile, 'io = xopen("../../lib_genroutines/genroutines.hoc")\n' );
     fprintf(nfile, 'io = xopen("../../lib_genroutines/pasroutines.hoc")\n' );
     
@@ -902,20 +901,21 @@ for n = 1:numel(neuron)
                             mechs = fieldnames(neuron{n}.mech{t}.range);
                             for m = 1:numel(mechs)
                                 vars = fieldnames(neuron{n}.mech{t}.range.(mechs{m}));
-                                %                                 allvals = zeros(3,0);
-                                %                                 thesevars = '';
                                 for r = 1:numel(vars)
                                     if numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == numel(tree{neuron{n}.tree(tt)}.X)
                                         allvals = zeros(3,0);
                                         for in = 1:numel(ia)-1
-                                            thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{neuron{n}.tree(tt)}(ia(in),1):minterf{neuron{n}.tree(tt)}(ia(in+1)-1,1))); % the value is the mean of all tree nodes which are simulated by this segment, if first node is start of section, ignore this one, since it belongs to old region
-                                            
+                                            % the value is the mean of all
+                                            % tree nodes which are
+                                            % simulated by this segment, if
+                                            % last node is a start of
+                                            % another section, subtract one
+                                            % index more
+                                            thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{neuron{n}.tree(tt)}(ia(in),1):minterf{neuron{n}.tree(tt)}(ia(in+1)-1-isnan(minterf{neuron{n}.tree(tt)}(ia(in+1)-1,4)),1))); 
                                             if ~isnan(thisval)
                                                 allvals = cat(2,allvals,[minterf{neuron{n}.tree(tt)}(ia(in),[2,4]),thisval]');
                                             end
                                         end
-                                        
-                                        %                                         thesevars = sprintf('%s"%s_%s",',thesevars,vars{r},mechs{m});
                                         secname = sprintf('range_%s_%s_%s_sec.dat',tree{neuron{n}.tree(tt)}.NID,vars{r},mechs{m});
                                         f = fopen(fullfile(modelFolder,exchfolder,thisfolder,secname) ,'Wt');
                                         fprintf(f,'%g\n',allvals(1,:));
@@ -938,7 +938,6 @@ for n = 1:numel(neuron)
                                             delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
                                         end
                                         error('Range variable definition should be a vector with same number of elements as tree has nodes')
-                                        %                                         return
                                     end
                                 end
                             end
@@ -1005,7 +1004,7 @@ for n = 1:numel(neuron)
                     warning('nseg is not odd! Please reconsider nseg');
                 end
             elseif isfield(neuron{refPar}.params,'nseg') && strcmpi(neuron{refPar}.params.nseg,'dlambda')
-                fprintf(ofile, 'geom_nseg()\n}\n');
+                fprintf(ofile, 'geom_nseg(%g,%d)\n}\n',neuron{refPar}.params.dlambda,neuron{refPar}.params.freq);
             elseif isfield(neuron{refPar}.params,'nseg') && ~isempty(strfind(neuron{refPar}.params.nseg,'ach'))
                 each = cell2mat(textscan(neuron{refPar}.params.nseg,'%*s %d')); % get number
                 fprintf(ofile, 'forsec cellList.o(CELLINDEX).allreg {\n');

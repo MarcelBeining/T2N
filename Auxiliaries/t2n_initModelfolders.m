@@ -44,10 +44,6 @@ if ~exist(fullfile(folder,'lib_genroutines'),'dir')
     mkdir(folder,'lib_genroutines')
     disp('non-existent folder lib_genroutines created')
 end
-if ~exist(fullfile(folder,'lib_genroutines/fixnseg.hoc'),'file')
-    copyfile(fullfile(t2npath,'src','fixnseg.hoc'),fullfile(folder,'lib_genroutines/fixnseg.hoc'))
-    disp('fixnseg.hoc copied to model folder')
-end
 if ~exist(fullfile(folder,'lib_genroutines/genroutines.hoc'),'file')
     copyfile(fullfile(t2npath,'src','genroutines.hoc'),fullfile(folder,'lib_genroutines/genroutines.hoc'))
     disp('genroutines.hoc copied to model folder')
