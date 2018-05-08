@@ -21,7 +21,7 @@ function neuron = t2n_as(x,neuron)
 % * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
-fields = {'tree','mech','pp','con','record','play','APCount','params','tvecs'};
+fields = {'tree','mech','pp','con','record','play','APCount','params','tvecs','custom'};
 if nargin < 1 || isempty(x)
     x = 1;
 end
