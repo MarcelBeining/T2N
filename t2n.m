@@ -34,7 +34,7 @@ function [out, origminterf,tree] = t2n(neuron,tree,options,exchfolder,server)
 
 %%%%%%%%%%%%%%%%%%% CONFIGURATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 interf_file = 'neuron_runthis.hoc'; % the name of the main hoc file which will be written
-'test'
+
 %% check options and paths
 
 t2npath = fileparts(which('t2n.m'));
