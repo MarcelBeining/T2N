@@ -337,6 +337,7 @@ for n = 1:numel(neuron)
     refM = t2n_getref(n,neuron,'mech');
     refPP = t2n_getref(n,neuron,'pp');
     refC = t2n_getref(n,neuron,'con');
+    refCust = t2n_getref(n,neuron,'custom');
     refR = t2n_getref(n,neuron,'record');
     refP = t2n_getref(n,neuron,'play');
     refAP = t2n_getref(n,neuron,'APCount');
@@ -355,9 +356,6 @@ for n = 1:numel(neuron)
         end
     end
     
-    if ~isfield(neuron{n},'custom')
-        neuron{n}.custom = {};
-    end
     if regexp(options,'-d')
         tim = tic;
     end
@@ -547,17 +545,17 @@ for n = 1:numel(neuron)
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'\n// ***** Load custom libraries *****\n');
-    if ~isempty(neuron{n}.custom)
-        for c = 1:size(neuron{n}.custom,1)
-            if strcmpi(neuron{n}.custom{c,2},'start')
-                if strcmp(neuron{n}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
-                    if exist(fullfile(modelFolder,'lib_custom',neuron{n}.custom{c,1}),'file')
-                        fprintf(nfile,'io = load_file("../../lib_custom/%s")\n',neuron{n}.custom{c,1});
+    if ~isempty(neuron{refCust}.custom)
+        for c = 1:size(neuron{refCust}.custom,1)
+            if strcmpi(neuron{refCust}.custom{c,2},'start')
+                if strcmp(neuron{refCust}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
+                    if exist(fullfile(modelFolder,'lib_custom',neuron{refCust}.custom{c,1}),'file')
+                        fprintf(nfile,'io = load_file("../../lib_custom/%s")\n',neuron{refCust}.custom{c,1});
                     else
-                        fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
+                        fprintf('File "%s" does not exist',neuron{refCust}.custom{c,1})
                     end
                 else
-                    fprintf(nfile,neuron{n}.custom{c,1});  % add string as custom neuron code
+                    fprintf(nfile,neuron{refCust}.custom{c,1});  % add string as custom neuron code
                 end
             end
         end
@@ -654,17 +652,17 @@ for n = 1:numel(neuron)
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Include prerun or standard run replacing custom code *****\n');
-    if ~isempty(neuron{n}.custom)
-        for c = 1:size(neuron{n}.custom,1)
-            if strcmpi(neuron{n}.custom{c,2},'mid')
-                if strcmp(neuron{n}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
-                    if exist(fullfile(modelFolder,'lib_custom',neuron{n}.custom{c,1}),'file')
-                        fprintf(nfile,'io = load_file("../../lib_custom/%s")\n',neuron{n}.custom{c,1});
+    if ~isempty(neuron{refCust}.custom)
+        for c = 1:size(neuron{refCust}.custom,1)
+            if strcmpi(neuron{refCust}.custom{c,2},'mid')
+                if strcmp(neuron{refCust}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
+                    if exist(fullfile(modelFolder,'lib_custom',neuron{refCust}.custom{c,1}),'file')
+                        fprintf(nfile,'io = load_file("../../lib_custom/%s")\n',neuron{refCust}.custom{c,1});
                     else
-                        fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
+                        fprintf('File "%s" does not exist',neuron{refCust}.custom{c,1})
                     end
                 else
-                    fprintf(nfile,neuron{n}.custom{c,1});  % add string as custom neuron code
+                    fprintf(nfile,neuron{refCust}.custom{c,1});  % add string as custom neuron code
                 end
             end
         end
@@ -691,17 +689,17 @@ for n = 1:numel(neuron)
     
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Include finishing custom code *****\n');
-    if ~isempty(neuron{n}.custom)
-        for c = 1:size(neuron{n}.custom,1)
-            if strcmpi(neuron{n}.custom{c,2},'end')
-                if strcmp(neuron{n}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
-                    if exist(fullfile(modelFolder,'lib_custom',neuron{n}.custom{c,1}),'file')
-                        fprintf(nfile,'io = load_file("../../lib_custom/%s")\n',neuron{n}.custom{c,1});
+    if ~isempty(neuron{refCust}.custom)
+        for c = 1:size(neuron{refCust}.custom,1)
+            if strcmpi(neuron{refCust}.custom{c,2},'end')
+                if strcmp(neuron{refCust}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
+                    if exist(fullfile(modelFolder,'lib_custom',neuron{refCust}.custom{c,1}),'file')
+                        fprintf(nfile,'io = load_file("../../lib_custom/%s")\n',neuron{refCust}.custom{c,1});
                     else
-                        fprintf('File "%s" does not exist',neuron{n}.custom{c,1})
+                        fprintf('File "%s" does not exist',neuron{refCust}.custom{c,1})
                     end
                 else
-                    fprintf(nfile,neuron{n}.custom{c,1});  % add string as custom neuron code
+                    fprintf(nfile,neuron{refCust}.custom{c,1});  % add string as custom neuron code
                 end
             end
         end
