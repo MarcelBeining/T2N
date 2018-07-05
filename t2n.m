@@ -545,7 +545,7 @@ for n = 1:numel(neuron)
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'\n// ***** Load custom libraries *****\n');
-    if ~isempty(neuron{refCust}.custom)
+    if ~isnan(refCust) && ~isempty(neuron{refCust}.custom)
         for c = 1:size(neuron{refCust}.custom,1)
             if strcmpi(neuron{refCust}.custom{c,2},'start')
                 if strcmp(neuron{refCust}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
@@ -652,7 +652,7 @@ for n = 1:numel(neuron)
     end
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Include prerun or standard run replacing custom code *****\n');
-    if ~isempty(neuron{refCust}.custom)
+    if ~isnan(refCust) && ~isempty(neuron{refCust}.custom)
         for c = 1:size(neuron{refCust}.custom,1)
             if strcmpi(neuron{refCust}.custom{c,2},'mid')
                 if strcmp(neuron{refCust}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
@@ -689,7 +689,7 @@ for n = 1:numel(neuron)
     
     fprintf(nfile,'\n\n');
     fprintf(nfile,'// ***** Include finishing custom code *****\n');
-    if ~isempty(neuron{refCust}.custom)
+    if ~isnan(refCust) && ~isempty(neuron{refCust}.custom)
         for c = 1:size(neuron{refCust}.custom,1)
             if strcmpi(neuron{refCust}.custom{c,2},'end')
                 if strcmp(neuron{refCust}.custom{c,1}(end-4:end),'.hoc')   %check for hoc ending
@@ -891,10 +891,15 @@ for n = 1:numel(neuron)
                     end
                     if any(strcmpi(fields,'range'))
                         if ~isfield(tree{neuron{n}.tree(tt)},'artificial')
-                            %                             str = '';
-                            [~, ia] = unique(minterf{neuron{n}.tree(tt)}(:,[2,4]),'rows','stable');  % find real segments in neuron simulation
-                            ia = ia(~isnan(minterf{neuron{n}.tree(tt)}(ia,4))); % remove start nodes of a segment (cause their value belongs to segment -1)
-                            ia(numel(ia)+1) = size(minterf{neuron{n}.tree(tt)},1)+1;   % add one entry
+                            [~, indSeg] = unique(minterf{neuron{n}.tree(tt)}(:,[2,4]),'rows','stable');  % find real segments in neuron simulation
+                            indSeg = indSeg(~isnan(minterf{neuron{n}.tree(tt)}(indSeg,4))); % remove start nodes of a segment (cause their value belongs to segment -1)
+                            indSeg(numel(indSeg)+1) = size(minterf{neuron{n}.tree(tt)},1)+1;   % add one entry
+                            
+                            if any(strcmp(fieldnames(neuron{n}.mech{t}.range),'pas')) && any(strcmp(fieldnames(neuron{n}.mech{t}.range.pas),'Ra'))
+                                [~, indSec] = unique(minterf{neuron{n}.tree(tt)}(:,2),'stable');  % find real sections in neuron simulation
+                                indSec = indSec + 1; % add 1 to not start at segment 0 of the section
+                                indSec(numel(indSec)+1) = size(minterf{neuron{n}.tree(tt)},1)+1;   % add one entry
+                            end
                             
                             mechs = fieldnames(neuron{n}.mech{t}.range);
                             for m = 1:numel(mechs)
@@ -902,16 +907,31 @@ for n = 1:numel(neuron)
                                 for r = 1:numel(vars)
                                     if numel(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})) == numel(tree{neuron{n}.tree(tt)}.X)
                                         allvals = zeros(3,0);
-                                        for in = 1:numel(ia)-1
-                                            % the value is the mean of all
-                                            % tree nodes which are
-                                            % simulated by this segment, if
-                                            % last node is a start of
-                                            % another section, subtract one
-                                            % index more
-                                            thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{neuron{n}.tree(tt)}(ia(in),1):minterf{neuron{n}.tree(tt)}(ia(in+1)-1-isnan(minterf{neuron{n}.tree(tt)}(ia(in+1)-1,4)),1))); 
-                                            if ~isnan(thisval)
-                                                allvals = cat(2,allvals,[minterf{neuron{n}.tree(tt)}(ia(in),[2,4]),thisval]');
+                                        if strcmp(vars{r},'Ra') && strcmp(mechs{m},'pas')
+                                            for in = 1:numel(indSec)-1
+                                                % the value of Ra is the mean of all
+                                                % tree nodes which are
+                                                % simulated by this section, if
+                                                % last node is a start of
+                                                % another section, subtract one
+                                                % index more
+                                                thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{neuron{n}.tree(tt)}(indSec(in),1):minterf{neuron{n}.tree(tt)}(indSec(in+1)-1-isnan(minterf{neuron{n}.tree(tt)}(indSec(in+1)-1,4)),1)));
+                                                if ~isnan(thisval)
+                                                    allvals = cat(2,allvals,[minterf{neuron{n}.tree(tt)}(indSec(in),2),0.5,thisval]'); % value of 0.5 will not be used by genroutines but is necessary for syntax 
+                                                end
+                                            end
+                                        else
+                                            for in = 1:numel(indSeg)-1
+                                                % the value is the mean of all
+                                                % tree nodes which are
+                                                % simulated by this segment, if
+                                                % last node is a start of
+                                                % another section, subtract one
+                                                % index more
+                                                thisval = nanmean(neuron{n}.mech{t}.range.(mechs{m}).(vars{r})(minterf{neuron{n}.tree(tt)}(indSeg(in),1):minterf{neuron{n}.tree(tt)}(indSeg(in+1)-1-isnan(minterf{neuron{n}.tree(tt)}(indSeg(in+1)-1,4)),1)));
+                                                if ~isnan(thisval)
+                                                    allvals = cat(2,allvals,[minterf{neuron{n}.tree(tt)}(indSeg(in),[2,4]),thisval]');
+                                                end
                                             end
                                         end
                                         secname = sprintf('range_%s_%s_%s_sec.dat',tree{neuron{n}.tree(tt)}.NID,vars{r},mechs{m});

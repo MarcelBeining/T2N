@@ -40,7 +40,7 @@ end
 minterf(:,4) = 0;
 
 for sec = 0:max(minterf(:,2))  %go through all sections
-    secstart = find(minterf(:,2) == sec & minterf(:,3) == 0);
+    secstart = find(minterf(:,2) == sec & minterf(:,3) == 0,1,'first');
     secend = find(minterf(:,2) == sec & minterf(:,3) == 1,1,'last');
     if dodlambda || doeach
         secnodestart = minterf(secstart,1);

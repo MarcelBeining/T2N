@@ -67,9 +67,14 @@ proc set_range() {
 	io = f.close()
 	if (thissec.size()==thisseg.size() && thissec.size() == thisval.size()) {
 		for c = 0, thissec.size()-1 {
-			io = sprint(tmpstr,"%s(thisseg.x(c)) = thisval.x(c)",$s5)
-			cellList.o($1).allregobj.o(thissec.x(c)).sec     io = execute(tmpstr)
-			//print $1, thissec.x(c), thisseg.x(c), thisval.x(c)
+			// extra handling of Ra as this is no ranged variable
+			if (strcmp($s5, "Ra") ) {
+				io = sprint(tmpstr,"%s = thisval.x(c)",$s5)
+			}else{
+				io = sprint(tmpstr,"%s(thisseg.x(c)) = thisval.x(c)",$s5)
+			}
+				cellList.o($1).allregobj.o(thissec.x(c)).sec  {   io = execute(tmpstr)}
+				//print $1, thissec.x(c), thisseg.x(c), thisval.x(c)
 		}
 		thissec.resize(0)
 		thisseg.resize(0)
