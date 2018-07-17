@@ -16,6 +16,9 @@ if nargin < 1
     folder = uigetdir(pwd,'Please give a folder where the model structure should be initialized');
 end
 if ~ischar(folder)
+    if folder == 0
+        return
+    end
     error('Input was no string')
 end
 if ~exist(folder,'file')
