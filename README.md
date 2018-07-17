@@ -18,3 +18,6 @@ The easiest way is to open an [issue](https://github.com/MarcelBeining/T2N/issue
 
 # Contributing
 I am always open for new ideas and contributions. Please contact me via beining@fias.uni-frankfurt.de
+
+# License
+This software is published under the MIT license. For further information read the LICENSE file.
