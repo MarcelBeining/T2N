@@ -68,7 +68,7 @@ proc set_range() {
 	if (thissec.size()==thisseg.size() && thissec.size() == thisval.size()) {
 		for c = 0, thissec.size()-1 {
 			// extra handling of Ra as this is no ranged variable
-			if (strcmp($s5, "Ra") ) {
+			if (strcmp($s5, "Ra")==0 ) {
 				io = sprint(tmpstr,"%s = thisval.x(c)",$s5)
 			}else{
 				io = sprint(tmpstr,"%s(thisseg.x(c)) = thisval.x(c)",$s5)
