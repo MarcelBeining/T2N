@@ -500,18 +500,20 @@ out = t2n(nneuron,trees,'-w-q');                                    % execute t2
 
 % plot the result (Vmem at soma and synapse and synaptic current)
 fig = figure;
-subplot(4,1,1)
+subplot(4,1,2)
 hold all
 plot(out.t{1},out.record{1}.cell.v{1})       % plot time vs voltage at soma
 plot(out.t{1},out.record{1}.cell.v{synIDsExc})  % plot time vs voltage at dendrite end
-legend('Soma (Target Inh Synapse)','Exc. Synapse','Location','northoutside')
+legend('Loc soma','Loc exc. synapse','Location','northoutside')
 ylabel('Membrane potential [mV]')
-subplot(4,1,2)
+subplot(4,1,3)
 plot(out.t{1},out.record{1}.Exp2Syn.i{synIDsExc})  % plot time vs synaptic current
 ylabel('Exc. syn. current [nA]')
-subplot(4,1,3)
+subplot(4,1,4)
 plot(out.t{1},out.record{1}.Exp2Syn.i{synIDsInh})  % plot time vs synaptic current
 ylabel('Inh. syn. current [nA]')
-subplot(4,1,4)
+subplot(4,1,1)
 t2n_plotRaster(spikeMat,tvec)
+title('Spikes NetStim (Poisson distr.)')
 fig.Position(4) = fig.Position(4) * 2;
+linkaxes(get(fig,'Children'),'x')

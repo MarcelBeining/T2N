@@ -34,9 +34,9 @@ end
 % this is necessary that gid_exist works
 for t = 1:numel(thesetrees)
     if isfield(tree{thesetrees(t)},'artificial')
-        GIDs(t) = struct('gid',t-1,'pp',[],'watch','on','node',[],'cell',t,'threshold',[]);
+        GIDs(t) = struct('gid',t-1,'pp',[],'ppg',0,'watch','on','node',[],'cell',t,'threshold',[]);
     else
-        GIDs(t) = struct('gid',t-1,'pp',[],'watch','v','node',1,'cell',t,'threshold',[]);
+        GIDs(t) = struct('gid',t-1,'pp',[],'ppg',0,'watch','v','node',1,'cell',t,'threshold',[]);
     end
 end
 counter = 1+t; 
@@ -44,33 +44,24 @@ counter = 1+t;
 if isfield(neuron,'con')
     for c = 1:numel(neuron.con)
         if isfield(neuron.con(c).source,'pp') && ~isempty(neuron.con(c).source.pp)
-            % check for all fields and put standard values in there if not
-            % existing
-            if isfield(neuron{n}.con(c).source,'ppg')  % check for an index to a PP subgroup
-                ppg = neuron{n}.con(c).source.ppg;
-            else
-                ppg = 1:numel(neuron{x}.pp{neuron.con(c).source.cell}.(neuron.con(c).source.pp));  % else take all PP subgroups
-            end
+            
             % add the point process which is used as a netcon as a new GID            
-            ind = find(arrayfun(@(x) strcmp(x.pp,neuron.con(c).source.pp) & x.cell  == neuron.con(c).source.cell & isequal(x.node,neuron.con(c).source.node) & strcmp(x.watch,neuron.con(c).source.watch) ,GIDs),1,'first');
+            ind = find(arrayfun(@(x) strcmp(x.pp,neuron.con(c).source.pp) & x.ppg == neuron.con(c).source.ppg & x.cell  == neuron.con(c).source.cell & isequal(x.node,neuron.con(c).source.node) & strcmp(x.watch,neuron.con(c).source.watch) ,GIDs),1,'first');
             if ~isempty(ind)
-                neuron.con(c).source.gid = GIDs(ind).gid(1:numel(ppg));
+                neuron.con(c).source.gid = GIDs(ind).gid;
             else
-                for p = 1:numel(ppg)
-                    neuron.con(c).source.gid(p) = counter-1;
-                    tmp = neuron.con(c).source;
-                    if isfield(neuron.con(c),'threshold')
-                        tmp.threshold = neuron.con(c).threshold;
-                    else
-                        tmp.threshold = [];
-                    end
-                    GIDs(counter) = tmp;
-                    GIDs(counter).gid = counter -1;  % only one gid there..
-                    counter = counter +1;
+                neuron.con(c).source.gid = counter-1;
+                tmp = neuron.con(c).source;
+                if isfield(neuron.con(c),'threshold')
+                    tmp.threshold = neuron.con(c).threshold;
+                else
+                    tmp.threshold = [];
                 end
+                GIDs(counter) = tmp;
+                counter = counter +1;
             end
         else
-            % check if not pp, check if GID of cell exist, check if it is
+            % if not pp, check if GID of cell exist, check if it is
             % about the same node, check if the same variable is watched
             ind = arrayfun(@(x) isempty(x.pp) & x.cell  == neuron.con(c).source.cell & isequal(x.node,neuron.con(c).source.node) & strcmp(x.watch,neuron.con(c).source.watch) ,GIDs);
             if any(ind)

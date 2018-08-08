@@ -128,6 +128,7 @@ for n = 1:numel(neuron)
     
     %% check for several standard parameter and initialize default value if not set
     refP = t2n_getref(n,neuron,'params');
+    refPP = t2n_getref(n,neuron,'pp');
     if n == refP % only check if current instance has its own parameter struct
         if ~isfield(neuron{n}.params,'parallel')
             neuron{n}.params.parallel = 0;
@@ -186,7 +187,7 @@ for n = 1:numel(neuron)
     end
     % stupid workaround if someone put the node information along second
     % dimension...
-    if t2n_getref(n,neuron,'pp') == n
+    if refPP == n
         allTags = [];
         for p = 1:numel(neuron{n}.pp)
             fields = fieldnames(neuron{n}.pp{p});
@@ -217,7 +218,12 @@ for n = 1:numel(neuron)
                     neuron{n}.con(c).source.watch = 'v';
                 end
             end
-            if ~isfield(neuron{n}.con(c).source,'pp')
+            if neuron{n}.params.parallel && isfield(neuron{n}.con(c).source,'pp')
+                error('Defining a point process as the source of a NetCon is not implemented in t2n when parallel mode is activated. Please contact the developer')
+                % what would be needed: change reg_cell to accept pps,
+                % assure that pps gid is also registered on the same node
+                % as its host cell
+            elseif ~isfield(neuron{n}.con(c).source,'pp')
                 neuron{n}.con(c).source.pp = [];
             end
             if ~isfield(neuron{n}.con(c).source,'node')
@@ -227,12 +233,22 @@ for n = 1:numel(neuron)
                     neuron{n}.con(c).source.node = 1;
                 end
             end
+            if ~isfield(neuron{n}.con(c).source,'ppg')
+                if ~isempty(neuron{n}.con(c).source.pp)
+                    neuron{n}.con(c).source.ppg = find(arrayfun(@(x) any(ismember(neuron{n}.con(c).source.node,x.node)), neuron{refPP}.pp{neuron{n}.con(c).source.cell}.(neuron{n}.con(c).source.pp))); % connect to all instances of the point process which exist at that source node
+                else
+                    neuron{n}.con(c).source.ppg = 0;
+                end
+            end
         end
         % if multiple nodes/cells/pps have been defined at once in the con
         % list, make them single
         neuron{n}.con = detangleCon(neuron{n}.con,'source','cell');
         neuron{n}.con = detangleCon(neuron{n}.con,'source','node');
-        neuron{n}.con = detangleCon(neuron{n}.con,'source','pp');
+        if ~neuron{n}.params.parallel                % change this is if implemented
+            neuron{n}.con = detangleCon(neuron{n}.con,'source','pp');
+            neuron{n}.con = detangleCon(neuron{n}.con,'source','ppg');
+        end
         neuron{n}.con = detangleCon(neuron{n}.con,'target','cell');
         neuron{n}.con = detangleCon(neuron{n}.con,'target','node');
         neuron{n}.con = detangleCon(neuron{n}.con,'target','pp');

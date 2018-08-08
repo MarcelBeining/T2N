@@ -1254,55 +1254,63 @@ for n = 1:numel(neuron)
                         if isnan(refPP)
                             error('A point process was declared as source for a NetCon no point process was declared for neuron instance %d',n)
                         end
-                        pp = neuron{n}.con(c).source.pp;
-
-                        if isfield(neuron{n}.con(c).source,'ppg')  % check for an index to a PP subgroup
-                            ppg = neuron{n}.con(c).source.ppg;
+                        if 0%isfield(neuron{n}.con(c).source,'tag')
+                            for ind = 1:numel(neuron{n}.con(c).source.tag)
+                            
+                            
+                            
+                            end
                         else
-                            ppg = 1:numel(neuron{refPP}.pp{cell_source}.(pp));  % else take all PP subgroups
-                        end
-                        
-                        upp = unique(cat(1,neuron{refPP}.pp{cell_source}.(pp)(ppg).node));  % unique pp nodes of the cell
-                        if numel(upp) == 1 % otherwise hist would make as many bins as upp
-                            cpp = numel(cat(1,neuron{refPP}.pp{cell_source}.(pp)(ppg).node));%1;
-                        else
-                            cpp =hist(cat(1,neuron{refPP}.pp{cell_source}.(pp)(ppg).node),upp); % number of pps at the same nodes
-                        end
-                        ucon = unique(neuron{n}.con(c).source.node); % unique connection nodes declared to the cell
-                        if numel(ucon) == 1  % otherwise hist would make as many bins as ucon
-                            ccon = numel(neuron{n}.con(c).source.node);
-                        else
-                            ccon =hist(neuron{n}.con(c).source.node,ucon); % number of connections to the same node
-                        end
-                        iid = cell(numel(neuron{n}.pp{cell_source}.(pp)(ppg)),1);  % initialize ids to pps %!%!%!%!
-                        for uc = 1:numel(ucon)  % go trough all nodes that should be connected from
-                            if any(ucon(uc) == upp)  % check if the pp exists there
-                                for n1 = 1:numel(iid)
-                                    ind = find(neuron{refPP}.pp{cell_source}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
-                                    if ~isempty(ind)
-                                        if cpp(ucon(uc) == upp) == ccon(uc)    % same number of PPs and connections, put them together, should be ok without warning
-                                            iid{n1} = cat (1,iid{n1},ind);
-                                        else
-                                            for nn = 1:numel(neuron)
-                                                delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                            pp = neuron{n}.con(c).source.pp;
+                            
+                            if isfield(neuron{n}.con(c).source,'ppg')  % check for an index to a PP subgroup
+                                ppg = neuron{n}.con(c).source.ppg;
+                            else
+                                ppg = 1:numel(neuron{refPP}.pp{cell_source}.(pp));  % else take all PP subgroups
+                            end
+                            
+                            upp = unique(cat(1,neuron{refPP}.pp{cell_source}.(pp)(ppg).node));  % unique pp nodes of the cell
+                            if numel(upp) == 1 % otherwise hist would make as many bins as upp
+                                cpp = numel(cat(1,neuron{refPP}.pp{cell_source}.(pp)(ppg).node));%1;
+                            else
+                                cpp =hist(cat(1,neuron{refPP}.pp{cell_source}.(pp)(ppg).node),upp); % number of pps at the same nodes
+                            end
+                            ucon = unique(neuron{n}.con(c).source.node); % unique connection nodes declared to the cell
+                            if numel(ucon) == 1  % otherwise hist would make as many bins as ucon
+                                ccon = numel(neuron{n}.con(c).source.node);
+                            else
+                                ccon =hist(neuron{n}.con(c).source.node,ucon); % number of connections to the same node
+                            end
+                            iid = cell(numel(neuron{n}.pp{cell_source}.(pp)(ppg)),1);  % initialize ids to pps %!%!%!%!
+                            for uc = 1:numel(ucon)  % go trough all nodes that should be connected from
+                                if any(ucon(uc) == upp)  % check if the pp exists there
+                                    for n1 = 1:numel(iid)
+                                        ind = find(neuron{refPP}.pp{cell_source}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
+                                        if ~isempty(ind)
+                                            if cpp(ucon(uc) == upp) == ccon(uc)    % same number of PPs and connections, put them together, should be ok without warning
+                                                iid{n1} = cat (1,iid{n1},ind);
+                                            else
+                                                for nn = 1:numel(neuron)
+                                                    delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                                end
+                                                error('Error cell %d. %d connections are declared to start from from %d %ss at node %d. Making a connection from PP at a node where multiple of these PPs exist is not allowed. Probably you messed something up',cell_source,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc)) % give an error if more connections were declared than PPs exist at that node
                                             end
-                                            error('Error cell %d. %d connections are declared to start from from %d %ss at node %d. Making a connection from PP at a node where multiple of these PPs exist is not allowed. Probably you messed something up',cell_source,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc)) % give an error if more connections were declared than PPs exist at that node
                                         end
                                     end
+                                    
+                                else
+                                    fprintf('Warning cell %d. PP %s for connection does not exist at node %d\n',neuron{n}.con(c).target.cell,pp,ucon(uc))
                                 end
-                                
-                            else
-                                fprintf('Warning cell %d. PP %s for connection does not exist at node %d\n',neuron{n}.con(c).target.cell,pp,ucon(uc))
                             end
-                        end
-                        if numel(iid) >1
-                            error('too much iids?')
-                        end
-                        for ii = 1:numel(iid)
-                            if neuron{refPar}.params.parallel
-                                str{ii} = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
-                            else
-                                str{ii} = sprintf('con = new NetCon(ppList.o(%d),',ppIdMap{n}.(neuron{refP}.pp{cell_source}.(pp)(ppg(n1)).tag{iid{ii}}));
+                            if numel(iid) >1
+                                error('too much iids?')
+                            end
+                            for ii = 1:numel(iid)
+                                if neuron{refPar}.params.parallel
+                                    str{ii} = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
+                                else
+                                    str{ii} = sprintf('con = new NetCon(ppList.o(%d),',ppIdMap{n}.(neuron{refP}.pp{cell_source}.(pp)(ppg(n1)).tag{iid{ii}}));
+                                end
                             end
                         end
                     else   % a normal section is the source
