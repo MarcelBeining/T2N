@@ -1106,7 +1106,7 @@ for n = 1:numel(neuron)
                                 inode = find(minterf{neuron{n}.tree(tt)}(:,1) == node(in),1,'first');    %find the index of the node in minterf
                                 fprintf(ofile,'cellList.o(%d).allregobj.o(%d).sec',tt-1,minterf{neuron{n}.tree(tt)}(inode,2) );    % corresponding section of node
                                 fprintf(ofile,'{pp = new %s(%f)\n',ppfield{f1},minterf{neuron{n}.tree(tt)}(inode,3) );  % new pp
-                                fields = setdiff(fieldnames(neuron{n}.pp{t}.(ppfield{f1})(n1)),{'node','id','tag'});
+                                fields = setdiff(fieldnames(neuron{n}.pp{t}.(ppfield{f1})(n1)),{'node','tag'});
                                 
                                 if any(strcmp(ppfield{f1},{'IClamp','SEClamp','SEClamp2','VClamp'})) && (any(strcmp(fields,'times')) || (any(strcmp(fields,'dur')) && (numel(neuron{n}.pp{t}.(ppfield{f1})(n1).dur) > 3 || (isfield(neuron{n}.pp{t}.(ppfield{f1})(n1),'del') && neuron{n}.pp{t}.(ppfield{f1})(n1).del == 0))))  % check if field "times" exists or multiple durations are given or del is zero (last point can introduce a bug when cvode is active)
                                     if any(strcmp(fields,'times'))
@@ -1231,9 +1231,8 @@ for n = 1:numel(neuron)
                 indGID = cat(1,GIDs(indGID).gid);
                 fprintf(ofile,'pc.barrier()\n'); % wait for all workers
             end
-            ccount = 0;
+            ccount = 0; % counter to check that {} does not get too long
             for c = 1:numel(neuron{n}.con)
-                str = cell(0);
                 nodeflag = false;
                 sourcefields = setdiff(fieldnames(neuron{n}.con(c).source),{'cell','watch'});
                 if neuron{refPar}.params.parallel && (c == 1 || ccount == 0 || indGID(c)~=indGID(c-1))
@@ -1242,24 +1241,22 @@ for n = 1:numel(neuron)
                 cell_source = neuron{n}.con(c).source.cell;
                 %             error('In con(%d) it seems you specified a connection from a real cell (%d) without specifying a node location! Please specify under con(%d).source.node',c,t,c)
                 if isempty(cell_source)  % empty source
-                    str{1} = sprintf('con = new NetCon(nil,');
+                    str = sprintf('con = new NetCon(nil,');
                 elseif isfield(tree{neuron{n}.con(c).source.cell},'artificial') % an artificial cell is the source .create a NetCon for it
                     if neuron{refPar}.params.parallel
-                        str{1} = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
+                        str = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
                     else
-                        str{1} = sprintf('con = new NetCon(cellList.o(%d).cell,',cell_source-1);
+                        str = sprintf('con = new NetCon(cellList.o(%d).cell,',cell_source-1);
                     end
                 else
                     if any(strcmp(sourcefields,'pp')) && ~isempty(neuron{n}.con(c).source.pp)  % point process is the source
                         if isnan(refPP)
                             error('A point process was declared as source for a NetCon no point process was declared for neuron instance %d',n)
                         end
-                        if 0%isfield(neuron{n}.con(c).source,'tag')
-                            for ind = 1:numel(neuron{n}.con(c).source.tag)
-                            
-                            
-                            
-                            end
+                        if neuron{refPar}.params.parallel
+                            str = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
+                        elseif isfield(neuron{n}.con(c).source,'tag')
+                            str = sprintf('con = new NetCon(ppList.o(%d),',ppIdMap{n}.(neuron{n}.con(c).source.tag));
                         else
                             pp = neuron{n}.con(c).source.pp;
                             
@@ -1304,22 +1301,17 @@ for n = 1:numel(neuron)
                             end
                             if numel(iid) >1
                                 error('too much iids?')
-                            end
-                            for ii = 1:numel(iid)
-                                if neuron{refPar}.params.parallel
-                                    str{ii} = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
-                                else
-                                    str{ii} = sprintf('con = new NetCon(ppList.o(%d),',ppIdMap{n}.(neuron{refP}.pp{cell_source}.(pp)(ppg(n1)).tag{iid{ii}}));
-                                end
+                            else
+                                str = sprintf('con = new NetCon(ppList.o(%d),',ppIdMap{n}.(neuron{refP}.pp{cell_source}.(pp)(ppg(n1)).tag{iid{1}}));
                             end
                         end
                     else   % a normal section is the source
                         node = neuron{n}.con(c).source.node;
                         inode = find(minterf{neuron{n}.tree(cell_source)}(:,1) == node,1,'first');    %find the index of the node in minterf
                         if neuron{refPar}.params.parallel
-                            str{1} = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
+                            str = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
                         else
-                            str{1} = sprintf('cellList.o(%d).allregobj.o(%d).sec {con = new NetCon(&%s(%f),',cell_source-1,minterf{neuron{n}.tree(cell_source)}(inode,2),neuron{n}.con(c).source.watch,minterf{neuron{n}.tree(cell_source)}(inode,3));
+                            str = sprintf('cellList.o(%d).allregobj.o(%d).sec {con = new NetCon(&%s(%f),',cell_source-1,minterf{neuron{n}.tree(cell_source)}(inode,2),neuron{n}.con(c).source.watch,minterf{neuron{n}.tree(cell_source)}(inode,3));
                             nodeflag = true;
                         end
                     end
@@ -1334,86 +1326,86 @@ for n = 1:numel(neuron)
                 for it = 1:numel(neuron{n}.con(c).target)
                     cell_target = neuron{n}.con(c).target(it).cell;
                     if isempty(cell_target)
-                        newstr{count} = sprintf('%snil',str{1});
+                        newstr{count} = sprintf('%snil',str);
                         count = count +1;
                     elseif isfield(tree{neuron{n}.con(c).target(it).cell},'artificial')   % an artificial cell...
-                        newstr{count} = sprintf('%scellList.o(%d).cell',str{1},cell_target-1);
+                        newstr{count} = sprintf('%scellList.o(%d).cell',str,cell_target-1);
                         count = count +1;
                     elseif any(strcmp(targetfields,'pp')) && ~isempty(neuron{n}.con(c).target(it).pp)  % point process is the target
                         if isnan(refPP)
-                            error('A point process was declared as target for a NetCon no point process was declared for neuron instance %d',n)
-                        end
-                        pp = neuron{n}.con(c).target(it).pp;
-                        %                         %                         neuron{refPP}.pp{t_target}.(pp).node
-                        %                         [~,iid] = intersect(neuron{refPP}.pp{cell_target}.(pp).node,neuron{n}.con(c).target(it).node); % get reference to the node location of the PPs that should be connected
-                        %                         intersect unfortunately fails if more than one PP
-                        %                         is declared at the same node and con wants to
-                        %                         target both. here comes the workaround
-                        if isfield(neuron{n}.con(c).target(it),'ppg')
-                            ppg = neuron{n}.con(c).target(it).ppg;
-                        else
-                            ppg = 1:numel(neuron{refPP}.pp{cell_target}.(pp));
-                        end
-                        upp = unique(cat(1,neuron{refPP}.pp{cell_target}.(pp)(ppg).node));  % unique pp nodes of the cell
-                        if numel(upp) == 1 % otherwise hist would make as many bins as upp
-                            cpp = numel(cat(1,neuron{refPP}.pp{cell_target}.(pp)(ppg).node));%1;
-                        else
-                            cpp =hist(cat(1,neuron{refPP}.pp{cell_target}.(pp)(ppg).node),upp); % number of pps at the same nodes
-                        end
-                        ucon = unique(neuron{n}.con(c).target(it).node); % unique connection nodes declared to the cell
-                        if numel(ucon) == 1  % otherwise hist would make as many bins as ucon
-                            ccon = numel(neuron{n}.con(c).target(it).node);
-                        else
-                            ccon =hist(neuron{n}.con(c).target(it).node,ucon); % number of connections to the same node
-                        end
-                        iid = cell(numel(neuron{n}.pp{cell_target}.(pp)(ppg)),1);  % initialize ids to pps
-                        for uc = 1:numel(ucon)  % go trough all nodes that should be connected to
-                            if any(ucon(uc) == upp)  % check if the pp exists there
-                                %
-                                for n1 = 1:numel(iid)
-                                    ind = find(neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
-                                    if ~isempty(ind)
-                                        if cpp(ucon(uc) == upp) < ccon(uc)  % less PPs exist than connections to node
-                                            if numel(ind) == 1
-                                                iid{n1} = cat (1,iid{n1},repmat(ind,ccon(uc),1));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
-                                                fprintf('Warning cell %d. More connections to same %s declared than %ss at that node. All connections target now that %s.\n',cell_target,pp,pp,pp) % give a warning if more connections were declared than PPs exist at that node
-                                            else
-                                                for nn = 1:numel(neuron)
-                                                    delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
-                                                end
-                                                error('Error cell %d. %d connections are declared to %d %ss at node %d. Probably you messed something up',cell_target,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc)) % give an error if more connections were declared than PPs exist at that node
-                                            end
-                                        elseif cpp(ucon(uc) == upp) > ccon(uc)  % more PPs exist than connections to node
-                                            if isfield(neuron{n}.con(c).target(it),'ipp')
-                                                iid{n1} = cat (1,iid{n1},ind(neuron{n}.con(c).target(it).ipp));
-                                            else
-                                                iid{n1} = cat (1,iid{n1},ind(1:min(cpp(ucon(uc) == upp),ccon(uc))));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
-                                                fprintf('Warning cell %d, node %d. Less connections to same %s declared than %ss at that node. Connections target now only the first %d %ss.\n',cell_target,ucon(uc),pp,pp,min(cpp(ucon(uc) == upp),ccon(uc)),pp) % give a warning if more connections were declared than PPs exist at that node
-                                            end
-                                        else   % same number of PPs and connections, put them together, should be ok without warning
-                                            iid{n1} = cat (1,iid{n1},ind);
-                                        end
-                                        
-                                    end
-                                end
-                                
-                            else
-                                fprintf('Warning cell %d. PP %s for connection does not exist at node %d\n',cell_target,pp,ucon(uc))
-                            end
-                        end
-                        if numel(unique(cat(1,iid{:}))) ~= numel(cat(1,iid{:}))
-                            fprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(refPP).target(y).ppg = z" to connect only to the zth group of PP %s.\n',neuron{n}.con(c).target.cell,c,pp,pp,pp)
-                        end
-                        for n1 = 1:numel(iid)
-                            for ii = 1:numel(iid{n1})
-                                newstr{count} = sprintf('%sppList.o(%d)',str{1},ppIdMap{n}.(neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).tag{iid{n1}(ii)}));
-                                count = count +1;
-                            end
+                            error('A point process was declared as target for a NetCon, but no point process was declared for neuron instance %d',n)
                         end
                         
+                        if isfield(neuron{n}.con(c).target,'tag')
+                            newstr{count} = sprintf('%sppList.o(%d)',str,ppIdMap{n}.(neuron{n}.con(c).target.tag));
+                            count = count +1;
+                        else
+                            pp = neuron{n}.con(c).target(it).pp;
+                            if isfield(neuron{n}.con(c).target(it),'ppg')
+                                ppg = neuron{n}.con(c).target(it).ppg;
+                            else
+                                ppg = 1:numel(neuron{refPP}.pp{cell_target}.(pp));
+                            end
+                            upp = unique(cat(1,neuron{refPP}.pp{cell_target}.(pp)(ppg).node));  % unique pp nodes of the cell
+                            if numel(upp) == 1 % otherwise hist would make as many bins as upp
+                                cpp = numel(cat(1,neuron{refPP}.pp{cell_target}.(pp)(ppg).node));%1;
+                            else
+                                cpp =hist(cat(1,neuron{refPP}.pp{cell_target}.(pp)(ppg).node),upp); % number of pps at the same nodes
+                            end
+                            ucon = unique(neuron{n}.con(c).target(it).node); % unique connection nodes declared to the cell
+                            if numel(ucon) == 1  % otherwise hist would make as many bins as ucon
+                                ccon = numel(neuron{n}.con(c).target(it).node);
+                            else
+                                ccon =hist(neuron{n}.con(c).target(it).node,ucon); % number of connections to the same node
+                            end
+                            iid = cell(numel(neuron{n}.pp{cell_target}.(pp)(ppg)),1);  % initialize ids to pps
+                            for uc = 1:numel(ucon)  % go trough all nodes that should be connected to
+                                if any(ucon(uc) == upp)  % check if the pp exists there
+                                    %
+                                    for n1 = 1:numel(iid)
+                                        ind = find(neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).node == ucon(uc));  % find all PPs at that node
+                                        if ~isempty(ind)
+                                            if cpp(ucon(uc) == upp) < ccon(uc)  % less PPs exist than connections to node
+                                                if numel(ind) == 1
+                                                    iid{n1} = cat (1,iid{n1},repmat(ind,ccon(uc),1));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
+                                                    fprintf('Warning cell %d. More connections to same %s declared than %ss at that node. All connections target now that %s.\n',cell_target,pp,pp,pp) % give a warning if more connections were declared than PPs exist at that node
+                                                else
+                                                    for nn = 1:numel(neuron)
+                                                        delete(fullfile(modelFolder,exchfolder,sprintf('sim%d',nn),'iamrunning'));   % delete the running mark
+                                                    end
+                                                    error('Error cell %d. %d connections are declared to %d %ss at node %d. Probably you messed something up',cell_target,ccon(uc),cpp(ucon(uc) == upp),pp,ucon(uc)) % give an error if more connections were declared than PPs exist at that node
+                                                end
+                                            elseif cpp(ucon(uc) == upp) > ccon(uc)  % more PPs exist than connections to node
+                                                if isfield(neuron{n}.con(c).target(it),'ipp')
+                                                    iid{n1} = cat (1,iid{n1},ind(neuron{n}.con(c).target(it).ipp));
+                                                else
+                                                    iid{n1} = cat (1,iid{n1},ind(1:min(cpp(ucon(uc) == upp),ccon(uc))));  % add as many PPs from that node to the id list as connections were declared (or as pps exist there)
+                                                    fprintf('Warning cell %d, node %d. Less connections to same %s declared than %ss at that node. Connections target now only the first %d %ss.\n',cell_target,ucon(uc),pp,pp,min(cpp(ucon(uc) == upp),ccon(uc)),pp) % give a warning if more connections were declared than PPs exist at that node
+                                                end
+                                            else   % same number of PPs and connections, put them together, should be ok without warning
+                                                iid{n1} = cat (1,iid{n1},ind);
+                                            end
+                                            
+                                        end
+                                    end
+                                    
+                                else
+                                    fprintf('Warning cell %d. PP %s for connection does not exist at node %d\n',cell_target,pp,ucon(uc))
+                                end
+                            end
+                            if numel(unique(cat(1,iid{:}))) ~= numel(cat(1,iid{:}))
+                                fprintf('Warning cell %d. Connection #%d targets the PP %s at one or more nodes where several %s groups are defined! Connection is established to all of them. Use "neuron.con(refPP).target(y).ppg = z" to connect only to the zth group of PP %s.\n',neuron{n}.con(c).target.cell,c,pp,pp,pp)
+                            end
+                            for n1 = 1:numel(iid)
+                                for ii = 1:numel(iid{n1})
+                                    newstr{count} = sprintf('%sppList.o(%d)',str,ppIdMap{n}.(neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).tag{iid{n1}(ii)}));
+                                    count = count +1;
+                                end
+                            end
+                        end
                     else
                         warning('No target specified as connection')
-                        newstr{count} = sprintf('%snil',str{1});
+                        newstr{count} = sprintf('%snil',str);
                         count = count + 1;
                     end
                 end

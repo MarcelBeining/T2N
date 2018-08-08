@@ -232,6 +232,8 @@ for n = 1:numel(neuron)
                 else
                     neuron{n}.con(c).source.node = 1;
                 end
+            elseif isfield(neuron{n}.con(c).source,'tag')
+                warning('Tags and nodes specified at the same time in NetCons. Only tags are considered')
             end
             if ~isfield(neuron{n}.con(c).source,'ppg')
                 if ~isempty(neuron{n}.con(c).source.pp)
@@ -243,20 +245,28 @@ for n = 1:numel(neuron)
         end
         % if multiple nodes/cells/pps have been defined at once in the con
         % list, make them single
-        neuron{n}.con = detangleCon(neuron{n}.con,'source','cell');
-        neuron{n}.con = detangleCon(neuron{n}.con,'source','node');
-        if ~neuron{n}.params.parallel                % change this is if implemented
-            neuron{n}.con = detangleCon(neuron{n}.con,'source','pp');
-            neuron{n}.con = detangleCon(neuron{n}.con,'source','ppg');
+        if isfield(neuron{n}.con.source,'tag')
+            neuron{n}.con = detangleCon(neuron{n}.con,'source','tag');
+        else
+            neuron{n}.con = detangleCon(neuron{n}.con,'source','cell');
+            neuron{n}.con = detangleCon(neuron{n}.con,'source','node');
+            if ~neuron{n}.params.parallel                % change this is if implemented
+                neuron{n}.con = detangleCon(neuron{n}.con,'source','pp');
+                neuron{n}.con = detangleCon(neuron{n}.con,'source','ppg');
+            end
         end
-        neuron{n}.con = detangleCon(neuron{n}.con,'target','cell');
-        neuron{n}.con = detangleCon(neuron{n}.con,'target','node');
-        neuron{n}.con = detangleCon(neuron{n}.con,'target','pp');
+        if isfield(neuron{n}.con.target,'tag')
+            neuron{n}.con = detangleCon(neuron{n}.con,'target','tag');
+        else
+            neuron{n}.con = detangleCon(neuron{n}.con,'target','cell');
+            neuron{n}.con = detangleCon(neuron{n}.con,'target','node');
+            neuron{n}.con = detangleCon(neuron{n}.con,'target','pp');
+        end
     end
 end
 end
 
-function newcon = detangleCon(oldcon,field1,field2)
+function newcon = detangleCon(oldcon,field1,field2,field3)
 
 newcon = cell(numel(oldcon),1);
 for c = 1:numel(oldcon)
@@ -265,6 +275,9 @@ for c = 1:numel(oldcon)
         newcon{c} = repmat(oldcon(c),num,1);
         for m = 1:num
             newcon{c}(m).(field1).(field2) = newcon{c}(m).(field1).(field2)(m);
+            if exist('field3','var')
+                newcon{c}(m).(field1).(field3) = newcon{c}(m).(field1).(field3)(m);
+            end
         end
     else
         newcon{c} = oldcon(c);
