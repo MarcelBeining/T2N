@@ -36,7 +36,12 @@ if ischar(par.nseg)
     end
     
 end
-
+if ~isfield(par,'freq')
+    par.freq = 300;
+end
+if ~isfield(par,'dlambda')
+    par.dlambda = 0.1;
+end
 minterf(:,4) = 0;
 
 for sec = 0:max(minterf(:,2))  %go through all sections

@@ -187,13 +187,23 @@ for n = 1:numel(neuron)
     % stupid workaround if someone put the node information along second
     % dimension...
     if t2n_getref(n,neuron,'pp') == n
+        allTags = [];
         for p = 1:numel(neuron{n}.pp)
             fields = fieldnames(neuron{n}.pp{p});
             for f = 1:numel(fields)
                 for nn = 1:numel(neuron{n}.pp{p}.(fields{f}))
                     neuron{n}.pp{p}.(fields{f})(nn).node = neuron{n}.pp{p}.(fields{f})(nn).node(:);
+                    if ~isfield(neuron{n}.pp{p}.(fields{f})(nn),'tag') || isempty(neuron{n}.pp{p}.(fields{f})(nn).tag)
+                        neuron{n}.pp{p}.(fields{f})(nn).tag = arrayfun(@(x) sprintf('tag_%d_%s_%d_%d',p,fields{f},nn,x),neuron{n}.pp{p}.(fields{f})(nn).node,'uni',0);
+                    elseif numel(neuron{n}.pp{p}.(fields{f})(nn).node) ~= numel(neuron{n}.pp{p}.(fields{f})(nn).tag)
+                        error('t2n:InconsistentTag','The number of specified tags does not equal the number of nodes specified for instance %d of %s (cell %d, neuron instance %d) !',nn,fields{f},p,n)
+                    end
+                    allTags = cat(1,allTags,neuron{n}.pp{p}.(fields{f})(nn).tag);
                 end
             end
+        end
+        if numel(allTags) ~= numel(unique(allTags))
+            error('t2n:TagDuplicates','The point process tag strings specified have to be unique in neuron instance %d!',n)
         end
     end
     if t2n_getref(n,neuron,'con') == n

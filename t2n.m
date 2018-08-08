@@ -330,6 +330,7 @@ end
 %% start writing hoc file
 spines_flag = false(numel(neuron),1);
 minterf = cell(numel(tree),1);
+ppIdMap = repmat({struct()},numel(neuron),1);
 for n = 1:numel(neuron)
     makenewrect = true;
     refPar = t2n_getref(n,neuron,'params');
@@ -1105,7 +1106,7 @@ for n = 1:numel(neuron)
                                 inode = find(minterf{neuron{n}.tree(tt)}(:,1) == node(in),1,'first');    %find the index of the node in minterf
                                 fprintf(ofile,'cellList.o(%d).allregobj.o(%d).sec',tt-1,minterf{neuron{n}.tree(tt)}(inode,2) );    % corresponding section of node
                                 fprintf(ofile,'{pp = new %s(%f)\n',ppfield{f1},minterf{neuron{n}.tree(tt)}(inode,3) );  % new pp
-                                fields = setdiff(fieldnames(neuron{n}.pp{t}.(ppfield{f1})(n1)),{'node','id'});
+                                fields = setdiff(fieldnames(neuron{n}.pp{t}.(ppfield{f1})(n1)),{'node','id','tag'});
                                 
                                 if any(strcmp(ppfield{f1},{'IClamp','SEClamp','SEClamp2','VClamp'})) && (any(strcmp(fields,'times')) || (any(strcmp(fields,'dur')) && (numel(neuron{n}.pp{t}.(ppfield{f1})(n1).dur) > 3 || (isfield(neuron{n}.pp{t}.(ppfield{f1})(n1),'del') && neuron{n}.pp{t}.(ppfield{f1})(n1).del == 0))))  % check if field "times" exists or multiple durations are given or del is zero (last point can introduce a bug when cvode is active)
                                     if any(strcmp(fields,'times'))
@@ -1177,7 +1178,8 @@ for n = 1:numel(neuron)
                                 
                                 fprintf(ofile,'}\n');
                                 fprintf(ofile,'io = ppList.append(pp)\n' );  %append pp to ppList
-                                neuron{n}.pp{t}.(ppfield{f1})(n1).id(in) = count;   % save id to pplist in Neuron (for find the correct object for recording later)
+                                
+                                ppIdMap{n}.(neuron{n}.pp{t}.(ppfield{f1})(n1).tag{in}) = count; % save id to pplist in Neuron (to find the correct object for recording later)
                                 count = count +1; %ppnum(t) = ppnum(t) +1;  % counter up
                             end
                         end
@@ -1221,7 +1223,7 @@ for n = 1:numel(neuron)
         if isfield(neuron{n},'con')
             if neuron{refPar}.params.parallel
                 % sort the connections according to their target GID, such
-                % that the gid_exist check only has to be once for the
+                % that the gid_exist check only has to be done once for the
                 % whole set
                 [~,indGID] = ismember(arrayfun(@(x) x.target.cell , neuron{n}.con),cat(1,GIDs.cell));
                 [indGID,ia] = sort(indGID);
@@ -1253,9 +1255,7 @@ for n = 1:numel(neuron)
                             error('A point process was declared as source for a NetCon no point process was declared for neuron instance %d',n)
                         end
                         pp = neuron{n}.con(c).source.pp;
-                        %                         [~,iid] = intersect(neuron{refPP}.pp{cell_source}.(pp).node,neuron{n}.con(c).source.node); % get reference to the node location of the PPs that should be connected
-                        % that is not working if several pp are defined at
-                        % that node. here comes the workaround
+
                         if isfield(neuron{n}.con(c).source,'ppg')  % check for an index to a PP subgroup
                             ppg = neuron{n}.con(c).source.ppg;
                         else
@@ -1302,7 +1302,7 @@ for n = 1:numel(neuron)
                             if neuron{refPar}.params.parallel
                                 str{ii} = sprintf('con_cellP(%d,',neuron{n}.con(c).source.gid);
                             else
-                                str{ii} = sprintf('con = new NetCon(ppList.o(%d),',neuron{refPP}.pp{cell_source}.(pp).id(iid{ii}));
+                                str{ii} = sprintf('con = new NetCon(ppList.o(%d),',ppIdMap{n}.(neuron{refP}.pp{cell_source}.(pp)(ppg(n1)).tag{iid{ii}}));
                             end
                         end
                     else   % a normal section is the source
@@ -1398,7 +1398,7 @@ for n = 1:numel(neuron)
                         end
                         for n1 = 1:numel(iid)
                             for ii = 1:numel(iid{n1})
-                                newstr{count} = sprintf('%sppList.o(%d)',str{1},neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).id(iid{n1}(ii)));
+                                newstr{count} = sprintf('%sppList.o(%d)',str{1},ppIdMap{n}.(neuron{refPP}.pp{cell_target}.(pp)(ppg(n1)).tag{iid{n1}(ii)}));
                                 count = count +1;
                             end
                         end
@@ -1617,17 +1617,17 @@ for n = 1:numel(neuron)
                                                 if makenewrect  % only make a new time vector for recording if a new simulation instance or a new cell (in case of use_local_dt)
                                                     fprintf(ofile,'rect = new Vector(%f)\n',(neuron{refPar}.params.tstop-neuron{refPar}.params.tstart)/neuron{refPar}.params.dt+1 );    % create new recording vector
                                                 end
-                                                fprintf(ofile,'cellList.o(%d).allregobj.o(%d).sec {io = cvode.record(&ppList.o(%d).%s,rec,rect)}\n',tt-1, realrecs(in,1),neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record ); % record the parameter x at site y as specified in neuron{refR}.record
+                                                fprintf(ofile,'cellList.o(%d).allregobj.o(%d).sec {io = cvode.record(&ppList.o(%d).%s,rec,rect)}\n',tt-1, realrecs(in,1), ppIdMap{n}.(neuron{refPP}.pp{t}.(recfields{f1})(ppg).tag{ind}), neuron{refR}.record{t}.(recfields{f1})(r).record ); % record the parameter x at site y as specified in neuron{refR}.record
                                             else
                                                 specField = cellfun(@(x) isfield(neuron{refR}.record{t}.(recfields{f1})(r),x) && ~isempty(neuron{refR}.record{t}.(recfields{f1})(r).(x)) ,sampleFields);
                                                 if sum(specField) == 2
                                                     error('Recording specification has both the Dt and tvec field. Only one (or none) is allowed')
                                                 elseif specField(1)
-                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,%.6f)\n',neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
+                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,%.6f)\n',ppIdMap{n}.(neuron{refPP}.pp{t}.(recfields{f1})(ppg).tag{ind}), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
                                                 elseif specField(2)
-                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,tvecs.o(%d))\n',neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
+                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,tvecs.o(%d))\n',ppIdMap{n}.(neuron{refPP}.pp{t}.(recfields{f1})(ppg).tag{ind}), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
                                                 else
-                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,tvec)\n',neuron{refPP}.pp{t}.(recfields{f1})(ppg).id(ind), neuron{refR}.record{t}.(recfields{f1})(r).record ); % record the parameter x at site y as specified in neuron{refR}.record
+                                                    fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,tvec)\n',ppIdMap{n}.(neuron{refPP}.pp{t}.(recfields{f1})(ppg).tag{ind}), neuron{refR}.record{t}.(recfields{f1})(r).record ); % record the parameter x at site y as specified in neuron{refR}.record
                                                 end
                                             end
                                             fprintf(ofile,'io = recList.append(rec)\n\n' );  %append recording vector to recList
@@ -1905,7 +1905,7 @@ for n = 1:numel(neuron)
                                         fprintf(ofile,'play.scanf(f)\n');     % file is read into play vector
                                         fprintf(ofile,'io = f.close()\n');   %file is closed
                                         fprintf(ofile,'play.label("playing %s %s at node %d of cell %d")\n', playfields{f1}, neuron{n}.play{t}.(playfields{f1})(r).play  , ic(in) ,tt-1); % label the vector for plotting
-                                        fprintf(ofile,'io = play.play(&ppList.o(%d).%s,playt)\n',neuron{refPP}.pp{t}.(playfields{f1})(ppg).id(ind), neuron{refP}.play{t}.(playfields{f1})(r).play ); % play the parameter x at site y as specified in neuron{refP}.play
+                                        fprintf(ofile,'io = play.play(&ppList.o(%d).%s,playt)\n',ppIdMap{n}.(neuron{refPP}.pp{t}.(playfields{f1})(ppg).tag{ind}) , neuron{refP}.play{t}.(playfields{f1})(r).play ); % play the parameter x at site y as specified in neuron{refP}.play
                                         fprintf(ofile,'io = playList.append(play)\n\n' );  %append playing vector to playList
                                         
                                         neuron{refP}.play{t}.(playfields{f1})(r).id(in) = count;   % reference to find playing in playList

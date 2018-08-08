@@ -186,6 +186,7 @@ mkdir('tmpfolder')                % t2n_currSteps saves the result of the simula
                                   % can also be a permanent folder in your simulations
 t2n_currSteps(neuron,tree,'tmpfolder/',ostruct); % run the current step simulations and save the results in tmpfolder
 t2n_FIplot('tmpfolder/',neuron,ostruct); % plot an f-i-relationship from the simulation results
+pause(1)
 rmdir('tmpfolder','s')            % remove the tmpfolder
 
 %% Tutorial E - simulation protocol: several voltage clamp steps (I-V relationship)
@@ -245,6 +246,7 @@ mkdir('tmpfolder')                % t2n_currSteps saves the result of the simula
                                   % can also be a permanent folder in your simulations
 t2n_voltSteps(neuron,tree,amp,duration,holding_voltage,'tmpfolder/'); % run the current step simulations and save the results in tmpfolder
 t2n_IVplot('tmpfolder/',neuron,ostruct); % plot an f-i-relationship from the simulation results
+pause(1)
 rmdir('tmpfolder','s')            % remove the tmpfolder
 %
 % As you can see, the I-V curve is linear at these hyperpolarized steps, 
@@ -296,6 +298,7 @@ mkdir('tmpfolder')                % t2n_currSteps saves the result of the simula
 t2n_bAP(neuron,tree,cstep,'tmpfolder/',0)  % do the simulation
 
 t2n_plotbAP('tmpfolder/',neuron);
+pause(1)
 rmdir('tmpfolder','s')            % remove the tmpfolder
 %% Tutorial G - Do a parameter scan or how to modify mechanism parameters
 % Now we want to analyze the impact of a parameter on spiking, e.g. for optimizing 
