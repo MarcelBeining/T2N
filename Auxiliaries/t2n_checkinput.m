@@ -245,7 +245,7 @@ for n = 1:numel(neuron)
         end
         % if multiple nodes/cells/pps have been defined at once in the con
         % list, make them single
-        if isfield(neuron{n}.con.source,'tag')
+        if isfield(neuron{n}.con(1).source,'tag')
             neuron{n}.con = detangleCon(neuron{n}.con,'source','tag');
         else
             neuron{n}.con = detangleCon(neuron{n}.con,'source','cell');
@@ -255,7 +255,7 @@ for n = 1:numel(neuron)
                 neuron{n}.con = detangleCon(neuron{n}.con,'source','ppg');
             end
         end
-        if isfield(neuron{n}.con.target,'tag')
+        if isfield(neuron{n}.con(1).target,'tag')
             neuron{n}.con = detangleCon(neuron{n}.con,'target','tag');
         else
             neuron{n}.con = detangleCon(neuron{n}.con,'target','cell');
