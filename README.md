@@ -1,3 +1,12 @@
+
+[![GitHub tag](https://img.shields.io/github/tag/MarcelBeining/t2n.svg?style=for-the-badge)](https://github.com/MarcelBeining/T2N/releases)
+![GitHub top language](https://img.shields.io/github/languages/top/MarcelBeining/t2n.svg?style=for-the-badge)
+[![GitHub](https://img.shields.io/github/license/MarcelBeining/t2n.svg?style=for-the-badge)](https://github.com/MarcelBeining/T2N/blob/master/LICENSE)
+[![GitHub contributors](https://img.shields.io/github/contributors/MarcelBeining/t2n.svg?style=for-the-badge)](https://github.com/MarcelBeining/T2N/graphs/contributors)
+![GitHub repo size in bytes](https://img.shields.io/github/repo-size/MarcelBeining/t2n.svg?style=for-the-badge)
+[![GitHub issues](https://img.shields.io/github/issues/MarcelBeining/t2n.svg?style=for-the-badge)](https://github.com/MarcelBeining/T2N/issues)
+
+
 # Short description
 T2N is an extension of the TREES toolbox providing an interface between Matlab and the compartmental modeling environment NEURON.
 
