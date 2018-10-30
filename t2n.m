@@ -2449,7 +2449,7 @@ end
                     end
                 else
                     if parallel
-                        system([sprintf('cd "%s"; mpiexec -n %d nrniv -nobanner -nogui -mpi "',parallel) interf_file '" -c "quit()" > NeuronLogFile.txt 2> ErrorLogFile.txt','&']);
+                        system([sprintf('cd "%s"; mpiexec -n %d nrniv -nobanner -nogui -mpi "',simfold,parallel) interf_file '" -c "quit()" > NeuronLogFile.txt 2> ErrorLogFile.txt','&']);
                     else
                         if ~isempty(regexp(options,'-o','ONCE'))
                             system(['cd "' simfold '" ; echo ''nrniv -nobanner "', interf_file,'" -''> startNeuron.sh;chmod +x startNeuron.sh;open -a terminal startNeuron.sh']);
