@@ -16,7 +16,7 @@ function t2n_bAP(neuron,tree,amp,targetfolder_data,simplicity)
 % 
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
-% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% * Copyright 2016-2019 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
 

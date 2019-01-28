@@ -18,7 +18,7 @@ function [neuron,tree,usestreesof,nocell,exchfolder] = t2n_checkinput(neuron,tre
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
-% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% * Copyright 2016-2019 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
 if ~exist(fullfile(pwd,'morphos','hocs'),'dir')

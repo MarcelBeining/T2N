@@ -16,7 +16,7 @@ function  neuron = t2n_implicitSpines(neuron,scaleAll,tree)
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
-% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% * Copyright 2016-2019 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
 if nargin < 3

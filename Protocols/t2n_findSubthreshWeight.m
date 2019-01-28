@@ -16,7 +16,7 @@ function [weight] = t2n_findSubthreshWeight(neuron,tree,weight,freq,tim)
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
-% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% * Copyright 2016-2019 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
 if nargin < 5 || isempty(weight)
@@ -74,7 +74,6 @@ while ~flag && counter <= counterthresh
         weight = NaN;
         return
     end
-    %         fprintf('Reached Voltage: %2.1f, ',cellfun(@(x) x.v{1}(end),out.record));
     for t = 1:numel(tree)
         if ~isfield(tree{t},'artificial')
                       
@@ -87,7 +86,7 @@ while ~flag && counter <= counterthresh
                         flag = true;
                     end
                 end
-                fprintf('Reached Spike with %g nS weight\n',weight(treeind(t)));
+                fprintf('Reached Spike with %g microS weight\n',weight(treeind(t)));
                 if counter == 1 || sflag(treeind(t))
                     ostep(treeind(t)) = min(weight(treeind(t)),ostep(treeind(t)) * 2);
                     weight(treeind(t)) = weight(treeind(t)) - ostep(treeind(t));
@@ -100,7 +99,7 @@ while ~flag && counter <= counterthresh
                 
             end
             sflag(treeind(t)) = 0;
-            display(sprintf('Reached %g mV with %g nS weight',maxv,weight(treeind(t))));
+            fprintf('Reached %g mV with %g microS weight\n',maxv,weight(treeind(t)));
 
             if ~isnan(spikeamp(treeind(t))) && abs(spikeamp(treeind(t)) - weight(treeind(t))) < e
                 weight(treeind(t)) = spikeamp(treeind(t));

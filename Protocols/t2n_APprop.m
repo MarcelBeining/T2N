@@ -23,7 +23,7 @@ function [props, fig, figname] = t2n_APprop(targetfolder_data,neuron,currstep,tr
 % 
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
-% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% * Copyright 2016-2019 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
 ap = -10; % minimum AP amplitude threshold for detection [mV]

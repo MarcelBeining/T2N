@@ -30,7 +30,7 @@ function [Rin, tau, cap, Vrest] = t2n_passTests(neuron,tree,targetfolder_results
 % If output is defined, no plot will be generated.
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
-% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% * Copyright 2016-2019 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
 

@@ -10,7 +10,7 @@ function t2n_plotCurrSteps(targetfolder_data,neuron,steps)
 % 
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
-% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% * Copyright 2016-2019 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
 load(t2n_catName(targetfolder_data,'Exp_Spiking',neuron.experiment,'.mat'))

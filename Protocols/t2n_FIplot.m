@@ -23,7 +23,7 @@ function fig = t2n_FIplot(targetfolder_data,neuron,ostruct,targetfolder_results)
 %
 % *****************************************************************************************************
 % * This function is part of the T2N software package.                                                *
-% * Copyright 2016, 2017 Marcel Beining <marcel.beining@gmail.com>                                    *
+% * Copyright 2016-2019 Marcel Beining <marcel.beining@gmail.com>                                    *
 % *****************************************************************************************************
 
 if ~exist('targetfolder_results','var')
