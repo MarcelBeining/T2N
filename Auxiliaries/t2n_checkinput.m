@@ -204,7 +204,7 @@ for n = 1:numel(neuron)
             end
         end
         if numel(allTags) ~= numel(unique(allTags))
-            error('t2n:TagDuplicates','The point process tag strings specified have to be unique in neuron instance %d!',n)
+            error('t2n:TagDuplicates','The point process tag strings specified have to be unique in neuron instance %d! Maybe you added multiple point processes of the same type to the same node without applying a unique tag?',n)
         end
     end
     if t2n_getref(n,neuron,'con') == n
