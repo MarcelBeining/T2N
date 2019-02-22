@@ -227,8 +227,8 @@ for n = 1:numel(neuron)
                         % put the structure in field named as the artificial neuron
                         neuron{refR}.record{t} = struct(tree{neuron{n}.tree(tt)}.artificial,neuron{refR}.record{t});
                     end
+                    recfields = fieldnames(neuron{refR}.record{t});
                 end
-                recfields = fieldnames(neuron{refR}.record{t});
                 
                 for f1 = 1:numel(recfields)
                     % these lines filter out multiple
@@ -284,7 +284,7 @@ for n = 1:numel(neuron)
                     if ~isfield(tree{neuron{n}.tree(tt)},'artificial') && ~strcmp(recfields{f1},'cell')
                         for r = 1:numel(neuron{refR}.record{t}.(recfields{f1}))
                             if isfield(neuron{refR}.record{t}.(recfields{f1}),'node')
-                                if isfield(neuron{refR}.record{t}.(recfields{f1}),'tag')
+                                if isfield(neuron{refR}.record{t}.(recfields{f1})(r),'tag') && ~isempty(neuron{refR}.record{t}.(recfields{f1})(r).tag)
                                     warning('You defined tags and nodes in record for %s. Node entry is removed',recfields{f1})
                                 else
                                     % check if ppg feature was used
@@ -313,11 +313,11 @@ for n = 1:numel(neuron)
                                     neuron{refR}.record{t}.(recfields{f1})(r).tag = string(tags);  
                                     legacyOutput(n) = true;
                                 end
-                                % remove node field
-                                neuron{refR}.record{t}.(recfields{f1}) = rmfield(neuron{refR}.record{t}.(recfields{f1}),'node');
+
                             end
                         end
-                        
+                        % remove node field
+                        neuron{refR}.record{t}.(recfields{f1}) = rmfield(neuron{refR}.record{t}.(recfields{f1}),'node');
                     end
                 end
             end
@@ -325,116 +325,6 @@ for n = 1:numel(neuron)
     else
         legacyOutput(n) = legacyOutput(refR);
     end
-    
-    % check recording structure
-    if refR == n
-        for tt = 1:numel(neuron{n}.tree)
-            t = neuron{n}.tree(tt);
-            if numel(neuron{refR}.record) >= t && ~isempty(neuron{refR}.record{t})  % if a recording site was defined for  this tree
-                recfields = fieldnames(neuron{refR}.record{t});
-                if isfield(tree{neuron{n}.tree(tt)},'artificial')
-                    if numel(recfields) > 1 && any(strcmp(recfields,'record'))
-                        % put the structure in field named as the artificial neuron
-                        neuron{refR}.record{t} = struct(tree{neuron{n}.tree(tt)}.artificial,neuron{refR}.record{t});
-                    end
-                end
-                recfields = fieldnames(neuron{refR}.record{t});
-                
-                for f1 = 1:numel(recfields)
-                    
-                    
-                    % these lines filter out multiple
-                    % recording node definitions
-                    if numel(setdiff(fieldnames(neuron{refR}.record{t}.(recfields{f1})),{'tag','record','node','tvec','Dt'}))>0
-                        error('this has not been implemented yet. write to marcel.beining@gmail.com with specification of the error line')
-                    end
-                    % find recording fields with same recording variable
-                    [uniqrecs,~,indrecgroups] = unique({neuron{refR}.record{t}.(recfields{f1}).record});
-                    % rearrange rec structure such that each recording
-                    % is in its own structure. Leave this out if
-                    % several groups of pps are defined
-                    if strcmp(recfields{f1},'cell') || numel(neuron{refPP}.pp{t}.(recfields{f1})) == 1
-                        tmpstruct = neuron{refR}.record{t}.(recfields{f1})([]);
-                        for u = 1:numel(uniqrecs)  % go through variable groups
-                            if isfield(neuron{refR}.record{t}.(recfields{f1}),'node')
-                                % get the unique nodes for that recorded variable
-                                unodes = unique(cat(1,neuron{refR}.record{t}.(recfields{f1})(indrecgroups==u).node));
-                                % save these in a temporary structure
-                                tmpstruct(u).node = unodes;
-                            else
-                                % get the unique tags for that recorded variable
-                                if numel(neuron{refR}.record{t}.(recfields{f1})) > 1
-                                    utags = unique(string(cat(1,neuron{refR}.record{t}.(recfields{f1})(indrecgroups==u).tag)));
-                                else
-                                    utags = string(neuron{refR}.record{t}.(recfields{f1}).tag);
-                                end
-                                % save these in a temporary structure
-                                tmpstruct(u).tag = utags;
-                            end
-                            tmpstruct(u).record = uniqrecs{u};
-                            
-                            if isfield(neuron{refR}.record{t}.(recfields{f1}),'Dt')
-                                tmpstruct(u).Dt = unique(cat(1,neuron{refR}.record{t}.(recfields{f1})(indrecgroups==u).Dt));
-                                if numel(tmpstruct(u).Dt) > 1
-                                    error('Different resampling values Dt given for the same recording variable %s. This is not supported!',uniqrecs{u})
-                                end
-                            end
-                            if isfield(neuron{refR}.record{t}.(recfields{f1}),'tvec')
-                                tmpstruct(u).tvec = unique(cat(1,neuron{refR}.record{t}.(recfields{f1})(indrecgroups==u).tvec));
-                                if numel(tmpstruct(u).tvec) > 1
-                                    error('Different resampling vectors tvec given for the same recording variable %s. This is not supported!',uniqrecs{u})
-                                end
-                            end
-                        end
-                        neuron{refR}.record{t}.(recfields{f1}) = tmpstruct;  % overwrite old record defiition with new record structure
-                    else
-                        warning('It seems recordings of different PP groups have been defined. Make sure that indices match, e.g. .record{1}.ExpSyn(3) is to target only .pp{1}.ExpSyn(3) etc.')
-                    end
-                    
-                    % check if recording is a pp, then replace node
-                    % indices with tag indices
-                    if ~isfield(tree{neuron{n}.tree(tt)},'artificial') && ~strcmp(recfields{f1},'cell')
-                        for r = 1:numel(neuron{refR}.record{t}.(recfields{f1}))
-                            if isfield(neuron{refR}.record{t}.(recfields{f1}),'node')
-                                if isfield(neuron{refR}.record{t}.(recfields{f1}),'tag')
-                                    warning('You defined tags and nodes in record for %s. Node entry is removed',recfields{f1})
-                                else
-                                    % check if ppg feature was used
-                                    if isfield(neuron{refR}.record{t}.(recfields{f1})(r),'ppg')
-                                        ppg = neuron{refR}.record{t}.(recfields{f1})(r).ppg;
-                                    elseif numel(neuron{refPP}.pp{t}.(recfields{f1})) == numel(neuron{refR}.record{t}.(recfields{f1}))
-                                        ppg = r;
-                                    else
-                                        ppg =1;
-                                    end
-                                    tags = cell(numel(neuron{refR}.record{t}.(recfields{f1})(r).node),1);
-                                    % find pp tags that correspond to the record node
-                                    % indices
-                                    for in =  1:numel(neuron{refR}.record{t}.(recfields{f1})(r).node)
-                                        ind = find(neuron{refPP}.pp{t}.(recfields{f1})(ppg).node == neuron{refR}.record{t}.(recfields{f1})(r).node(in));
-                                        if numel(ind) > 1
-                                            warning('There is more than one %s in tree %d at node %d but you did not use the ppg or tag feature to distinguish. Only from one %s is recorded now!',recfields{f1},t,neuron{refR}.record{t}.(recfields{f1})(r).node(in),recfields{f1})
-                                            ind = ind(1);
-                                        elseif isempty(ind)
-                                            warning('Node %d of cell %d does not comprise the PP "%s". Recording is ignored.',neuron{refR}.record{t}.(recfields{f1})(r).node(in),t,recfields{f1})
-                                            continue
-                                        end
-                                        tags{in} = neuron{refPP}.pp{t}.(recfields{f1})(r).tag(ind);
-                                    end
-                                    tags = tags(~cellfun(@isempty,tags));
-                                    neuron{refR}.record{t}.(recfields{f1})(r).tag = string(tags);  
-                                end
-                                % remove node field
-                                neuron{refR}.record{t}.(recfields{f1}) = rmfield(neuron{refR}.record{t}.(recfields{f1}),'node');
-                            end
-                        end
-                        
-                    end
-                end
-            end
-        end
-    end
-    
     
     % check play structure
     if refPL == n
