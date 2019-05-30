@@ -441,7 +441,14 @@ for n = 1:numel(neuron)
             if ispc
                 if ~exist(fullfile(modelFolder,'lib_mech','nrnmech.dll'),'file') || ~isempty(regexp(options,'-m','ONCE'))  % check for existent file, otherwise compile dll
                     nrn_installfolder = regexprep(fileparts(fileparts(nrnivPath)),'\\','/');
-                    tstr = sprintf('cd "%s" && %s/mingw/bin/sh "%s/mknrndll.sh" %s',[nrn_path,'/lib_mech'],nrn_installfolder, regexprep(t2npath,'\\','/'), ['/',regexprep(nrn_installfolder,':','')]);
+                    if exist(fullfile(nrn_installfolder,'/mingw/bin/sh.exe'),'file')
+                        shpath = [nrn_installfolder,'/mingw/bin/sh'];
+                    elseif exist(fullfile(nrn_installfolder,'/mingw/usr/bin/sh.exe'),'file')
+                        shpath = [nrn_installfolder,'/mingw/usr/bin/sh'];
+                    else
+                        error('Neurons sh.exe not found, please contact T2N developer on github')
+                    end
+                    tstr = sprintf('cd "%s" && %s "%s/mknrndll.sh" %s %s',[nrn_path,'/lib_mech'],shpath, regexprep(t2npath,'\\','/'), [' /cygdrive/',regexprep(nrn_installfolder,':','')]);
                     [~,cmdout] = system(tstr);
                     if isempty(regexp(cmdout,'nrnmech.dll was built successfully','ONCE'))
                         error('File nrnmech.dll was not found in lib_mech and compiling it with mknrndll failed! Check your mod files and run mknrndll manually\n Log of compiling:\n%s',cmdout)

@@ -4,11 +4,14 @@ if test -f $1/bin/cygpath ; then
   PATH=$N/bin
 else
   N=$1
-  if test -d $N/mingw ; then
+  if test -d $N/mingw/bin ; then
     PATH=$N/mingw/bin:$PATH
   fi
   if test -d $N/bin64 ; then
     PATH=$N/bin64:$PATH
+  fi
+  if test -d $N/mingw/mingw64/bin ; then
+    PATH=$N/mingw/mingw64/bin:$PATH
   else
     PATH=$N/bin:$PATH
   fi
