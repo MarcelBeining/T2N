@@ -1544,11 +1544,11 @@ for n = 1:numel(neuron)
                                             if sum(specField) == 2
                                                 error('Recording specification has both the Dt and tvec field. Only one (or none) is allowed')
                                             elseif specField(1)
-                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),%.6f)\n',tt-1,realrecs(in,1), neuron{refR}.record{t}.cell(r).record, realrecs(in,2),neuron{refR}.record{t}.cell(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
+                                                fprintf(ofile,'rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),%.6f)\n',tt-1,realrecs(in,1), neuron{refR}.record{t}.cell(r).record, realrecs(in,2),neuron{refR}.record{t}.cell(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
                                             elseif specField(2)
-                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),tvecs.o(%d))\n',tt-1,realrecs(in,1), neuron{refR}.record{t}.cell(r).record, realrecs(in,2),neuron{refR}.record{t}.cell(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
+                                                fprintf(ofile,'rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),tvecs.o(%d))\n',tt-1,realrecs(in,1), neuron{refR}.record{t}.cell(r).record, realrecs(in,2),neuron{refR}.record{t}.cell(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
                                             else
-                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),tvec)\n',tt-1,realrecs(in,1), neuron{refR}.record{t}.cell(r).record, realrecs(in,2) ); % record the parameter x at site y as specified in neuron{refR}.record
+                                                fprintf(ofile,'rec.record(&cellList.o(%d).allregobj.o(%d).sec.%s(%f),tvec)\n',tt-1,realrecs(in,1), neuron{refR}.record{t}.cell(r).record, realrecs(in,2) ); % record the parameter x at site y as specified in neuron{refR}.record
                                             end
                                         end
                                         
@@ -1582,11 +1582,11 @@ for n = 1:numel(neuron)
                                             if sum(specField) == 2
                                                 error('Recording specification has both the Dt and tvec field. Only one (or none) is allowed')
                                             elseif specField(1)
-                                                fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,%.6f)\n',ppIdMap{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
+                                                fprintf(ofile,'rec.record(&ppList.o(%d).%s,%.6f)\n',ppIdMap{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
                                             elseif specField(2)
-                                                fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,tvecs.o(%d))\n',ppIdMap{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
+                                                fprintf(ofile,'rec.record(&ppList.o(%d).%s,tvecs.o(%d))\n',ppIdMap{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}), neuron{refR}.record{t}.(recfields{f1})(r).record, neuron{refR}.record{t}.(recfields{f1})(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
                                             else
-                                                fprintf(ofile,'io = rec.record(&ppList.o(%d).%s,tvec)\n',ppIdMap{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}), neuron{refR}.record{t}.(recfields{f1})(r).record ); % record the parameter x at site y as specified in neuron{refR}.record
+                                                fprintf(ofile,'rec.record(&ppList.o(%d).%s,tvec)\n',ppIdMap{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}), neuron{refR}.record{t}.(recfields{f1})(r).record ); % record the parameter x at site y as specified in neuron{refR}.record
                                             end
                                         end
                                         fprintf(ofile,'io = recList.append(rec)\n\n' );  %append recording vector to recList
@@ -1622,11 +1622,11 @@ for n = 1:numel(neuron)
                                             if sum(specField) == 2
                                                 error('Recording specification has both the Dt and tvec field. Only one (or none) is allowed')
                                             elseif specField(1)
-                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).cell.%s,%.6f)\n', tt-1, neuron{refR}.record{t}.cell(r).record, neuron{refR}.record{t}.cell(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
+                                                fprintf(ofile,'rec.record(&cellList.o(%d).cell.%s,%.6f)\n', tt-1, neuron{refR}.record{t}.cell(r).record, neuron{refR}.record{t}.cell(r).Dt ); % record the parameter x at site y as specified in neuron{refR}.record each Dt ms
                                             elseif specField(2)
-                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).cell.%s,tvecs.o(%d))\n', tt-1, neuron{refR}.record{t}.cell(r).record, neuron{refR}.record{t}.cell(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
+                                                fprintf(ofile,'rec.record(&cellList.o(%d).cell.%s,tvecs.o(%d))\n', tt-1, neuron{refR}.record{t}.cell(r).record, neuron{refR}.record{t}.cell(r).tvec-1 ); % record the parameter x at site y as specified in neuron{refR}.record at timepoints given in tvecs
                                             else
-                                                fprintf(ofile,'io = rec.record(&cellList.o(%d).cell.%s,tvec)\n', tt-1, neuron{refR}.record{t}.cell(r).record ); % record the parameter x of artificial cell tt-1
+                                                fprintf(ofile,'rec.record(&cellList.o(%d).cell.%s,tvec)\n', tt-1, neuron{refR}.record{t}.cell(r).record ); % record the parameter x of artificial cell tt-1
                                             end
                                         end
                                         if neuron{refPar}.params.cvode
@@ -1844,7 +1844,7 @@ for n = 1:numel(neuron)
                                     fprintf(ofile,'play.scanf(f)\n');     % file is read into play vector
                                     fprintf(ofile,'io = f.close()\n');   %file is closed
                                     fprintf(ofile,'play.label("playing %s to %s (tag: %s) of cell %d")\n', neuron{n}.play{t}.(playfields{f1})(r).play, playfields{f1}, neuron{refP}.play{t}.(playfields{f1})(r).tag{in},tt-1); % label the vector for plotting
-                                    fprintf(ofile,'io = play.play(&ppList.o(%d).%s,playt)\n',ppIdMap{n}.(neuron{refP}.play{t}.(playfields{f1})(r).tag{in}) , neuron{refP}.play{t}.(playfields{f1})(r).play ); % play the parameter x at site y as specified in neuron{refP}.play
+                                    fprintf(ofile,'play.play(&ppList.o(%d).%s,playt)\n',ppIdMap{n}.(neuron{refP}.play{t}.(playfields{f1})(r).tag{in}) , neuron{refP}.play{t}.(playfields{f1})(r).play ); % play the parameter x at site y as specified in neuron{refP}.play
                                     fprintf(ofile,'io = playList.append(play)\n\n' );  %append playing vector to playList
                                     
                                     neuron{refP}.play{t}.(playfields{f1})(r).id(in) = count;   % reference to find playing in playList
