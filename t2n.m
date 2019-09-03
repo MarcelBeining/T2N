@@ -1575,8 +1575,8 @@ for n = 1:numel(neuron)
                                             if makenewrect  % only make a new time vector for recording if a new simulation instance or a new cell (in case of use_local_dt)
                                                 fprintf(ofile,'rect = new Vector(%f)\n',(neuron{refPar}.params.tstop-neuron{refPar}.params.tstart)/neuron{refPar}.params.dt+1 );    % create new recording vector
                                             end
-                                            inode = find(minterf{n}(:,1)==ppTag2Node{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}),1,'first');
-                                            fprintf(ofile,'cellList.o(%d).allregobj.o(%d).sec {io = cvode.record(&ppList.o(%d).%s,rec,rect)}\n',tt-1, minterf{n}(inode,2),  ppIdMap{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}), neuron{refR}.record{t}.(recfields{f1})(r).record ); % record the parameter x at site y as specified in neuron{refR}.record
+                                            inode = find(minterf{neuron{n}.tree(tt)}(:,1)==ppTag2Node{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}),1,'first');
+                                            fprintf(ofile,'cellList.o(%d).allregobj.o(%d).sec {io = cvode.record(&ppList.o(%d).%s,rec,rect)}\n',tt-1, minterf{neuron{n}.tree(tt)}(inode,2),  ppIdMap{n}.(neuron{refR}.record{t}.(recfields{f1})(r).tag{in}), neuron{refR}.record{t}.(recfields{f1})(r).record ); % record the parameter x at site y as specified in neuron{refR}.record
                                         else
                                             specField = cellfun(@(x) isfield(neuron{refR}.record{t}.(recfields{f1})(r),x) && ~isempty(neuron{refR}.record{t}.(recfields{f1})(r).(x)) ,sampleFields);
                                             if sum(specField) == 2
@@ -2192,13 +2192,16 @@ if noutfiles > 0 % if output is expected
                             f = fopen(fullfile(modelFolder,exchfolder,sprintf('sim%d',s(ss)),'ErrorLogFile.txt'));
                             txt = fscanf(f,'%c');
                             fclose(f);
-                            errordlg(sprintf('There was an error in Simulation %d (and maybe others):\n******************************\n%s\n******************************\nDue to that t2n has no output to that Simulation.',s(ss),txt(1:min(numel(txt),2000))),'Error in NEURON','replace');
-                            simids(s(ss)) = 3;
-                            r = find(simids==0,1,'first');  % find next not runned simid
-                            if ~isempty(r)
-                                refPar = t2n_getref(r,neuron,'params');
-                                [jobid(r),timN(r)] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
-                                simids(r) = 1;          % mark this as running
+                            txt = strrep(txt, 'Cannot find executable python3 or python', '');
+                            if ~isempty(regexp(txt,'\w','ONCE'))
+                                errordlg(sprintf('There was an error in Simulation %d (and maybe others):\n******************************\n%s\n******************************\nDue to that t2n has no output to that Simulation.',s(ss),txt(1:min(numel(txt),2000))),'Error in NEURON','replace');
+                                simids(s(ss)) = 3;
+                                r = find(simids==0,1,'first');  % find next not runned simid
+                                if ~isempty(r)
+                                    refPar = t2n_getref(r,neuron,'params');
+                                    [jobid(r),timN(r)] = exec_neuron(r,exchfolder,nrn_exchfolder,interf_file,options,neuron{refPar}.params.parallel);           % start new simulation
+                                    simids(r) = 1;          % mark this as running
+                                end
                             end
                         end
                     end
